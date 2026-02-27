@@ -1,0 +1,12 @@
+{
+  "name": "aetherships",
+  "version": "1.0.0",
+  "description": "Desktop pixel art space adventure game using ElectronJS",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^40.6.1"
+  }
+}
