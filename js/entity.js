@@ -162,7 +162,9 @@ class Layer {
 
 		this.blocks[index] = 0; // Set to empty state
 		this.block_count--;
-		this.drawPixel(x, y, 0);
+
+		// Only mark as dirty if layer will still exist (has remaining blocks)
+		if (this.block_count > 0) this.drawPixel(x, y, 0);
 	}
 
 	/**
@@ -237,16 +239,24 @@ class Chunk extends HTMLElement {
 		super();
 		this.pos = { x, y };
 		this.groups = [];
-		this.layers = [];
+		this.layers = [null, null, null];
 	}
 
-	connectedCallback() {
-		for (let i = 0; i < 3; i++) {
-			const layer = new Layer(this);
-			this.layers.push(layer);
-			this.appendChild(layer.main.canvas);
-			this.appendChild(layer.glow.canvas);
-		}
+	/**
+	 * Gets or creates a layer at the specified index
+	 * @param {number} index - The layer index (0-2)
+	 * @param {boolean} create - Whether to create the layer if it doesn't exist
+	 * @returns {Layer|null} The layer at the specified index, or null if it doesn't exist and create is false
+	 */
+	getLayer(index, create = false) {
+		if (this.layers[index]) return this.layers[index];
+		if (!create) return null;
+
+		const layer = new Layer(this);
+		this.layers[index] = layer;
+		this.appendChild(layer.main.canvas);
+		this.appendChild(layer.glow.canvas);
+		return layer;
 	}
 }
 
@@ -295,7 +305,8 @@ class Entity extends HTMLElement {
 	 */
 	setBlock(l, x, y, fields) {
 		const chunk = this.getChunk(x, y, true);
-		chunk.layers[l].setBlock(x % 32, y % 32, fields);
+		const layer = chunk.getLayer(l, true);
+		layer.setBlock(x % 32, y % 32, fields);
 	}
 
 	/**
@@ -307,7 +318,8 @@ class Entity extends HTMLElement {
 	 */
 	setByName(l, x, y, name) {
 		const chunk = this.getChunk(x, y, true);
-		chunk.layers[l].setByName(x % 32, y % 32, name);
+		const layer = chunk.getLayer(l, true);
+		layer.setByName(x % 32, y % 32, name);
 	}
 
 	/**
@@ -319,12 +331,38 @@ class Entity extends HTMLElement {
 	 */
 	setByType(l, x, y, type) {
 		const chunk = this.getChunk(x, y, true);
-		chunk.layers[l].setByType(x % 32, y % 32, type);
+		const layer = chunk.getLayer(l, true);
+		layer.setByType(x % 32, y % 32, type);
+	}
+
+	/**
+	 * Deletes the block at the specified (x, y) coordinates within the entity's chunks
+	 * @param {number} l - The layer index (0-2) to delete the block from.
+	 * @param {number} x - The x-coordinate of the block to delete.
+	 * @param {number} y - The y-coordinate of the block to delete.
+	 */
+	deleteBlock(l, x, y) {
+		const chunk = this.getChunk(x, y, false);
+		if (!chunk) return;
+
+		const layer = chunk.getLayer(l, false);
+		if (!layer) return;
+
+		layer.deleteBlock(x % 32, y % 32);
+
+		// If chunk is now empty, remove it entirely
+		if (chunk.block_count === 0) chunk.remove();
+		// Otherwise, if layer is now empty, remove just the layer
+		else if (layer.block_count === 0) {
+			layer.main.canvas.remove();
+			layer.glow.canvas.remove();
+			chunk.layers[l] = null;
+		}
 	}
 
 	render() {
 		console.log(`Rendering ${this.dirty_layers.length} dirty layers`);
-		for (const dirty_layer of this.dirty_layers) dirty_layer.render();
+		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();
 	}
 }
 
