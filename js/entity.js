@@ -103,7 +103,7 @@ const blocks_by_type = {};
 for (const block_name in blocks) {
 	const block_type = blocks[block_name].init(0, 0).type;
 	if (blocks_by_type[block_type]) throw new Error(`Duplicate block type ${block_type} for block "${block_name}"`);
-	blocks_by_type[block_type] = block_name;
+	blocks_by_type[block_type] = blocks[block_name];
 }
 
 /**
@@ -121,28 +121,34 @@ class Layer {
 		this.glow_count = 0;
 		this.dirty = false;
 
-		for (const type of ['main', 'glow']) {
-			const canvas = document.createElement('canvas');
-			const size = type === 'glow' ? 33 : 32;
-			canvas.width = size;
-			canvas.height = size;
-			if (type === 'glow') canvas.classList.add('glow');
+		this.addCanvas('main');
+	}
 
-			const ctx = canvas.getContext('2d');
-			const img_data = ctx.createImageData(size, size);
-			const buf = new Uint32Array(img_data.data.buffer);
+	/*
+	 * Adds a canvas element to the layer for rendering either the main block colors or glow effects.
+	 * @param {string} type - The type of canvas to add ('main' for block colors, 'glow' for glow effects).
+	 */
+	addCanvas(type) {
+		const canvas = document.createElement('canvas');
+		const size = type === 'glow' ? 33 : 32;
+		canvas.width = size;
+		canvas.height = size;
+		if (type === 'glow') canvas.classList.add('glow');
 
-			this[type] = { canvas, ctx, img_data, buf };
-		}
+		const ctx = canvas.getContext('2d');
+		const img_data = ctx.createImageData(size, size);
+		const buf = new Uint32Array(img_data.data.buffer);
+
+		this[type] = { canvas, ctx, img_data, buf };
+		this.chunk.appendChild(canvas);
 	}
 
 	/**
 	 * Puts the current image data onto the main canvas. Should be called after drawing pixels to update the visible layer.
-	 * NOTE: Glow effects are ignored for now, so the glow canvas is not updated.
 	 */
 	render() {
 		this.main.ctx.putImageData(this.main.img_data, 0, 0);
-		this.glow.ctx.putImageData(this.glow.img_data, 0, 0);
+		this.glow?.ctx.putImageData(this.glow.img_data, 0, 0);
 		this.dirty = false;
 	}
 
@@ -156,17 +162,21 @@ class Layer {
 		if (fields.type === 0) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
 		const layer_blocks = this.blocks;
 		const index = y * 32 + x;
+
 		const old_type = state_struct.type.get(layer_blocks, index);
-		const old_name = blocks_by_type[old_type];
-		const had_glow = old_name ? blocks[old_name].glow : false;
-		const was_empty = old_type === 0;
 		state_struct.update(layer_blocks, index, fields);
 		const new_type = state_struct.type.get(layer_blocks, index);
-		const new_name = blocks_by_type[new_type];
-		const has_glow = new_name ? blocks[new_name].glow : false;
-		if (was_empty) this.block_count++;
-		if (!had_glow && has_glow) this.glow_count++;
+
+		if (old_type === 0) this.block_count++;
+
+		const had_glow = blocks_by_type[old_type]?.glow ?? false;
+		const has_glow = blocks_by_type[new_type]?.glow ?? false;
+		if (!had_glow && has_glow) {
+			this.glow_count++;
+			if (this.glow_count === 1) this.addCanvas('glow');
+		}
 		if (had_glow && !has_glow) this.glow_count--;
+
 		const RGBA4444 = state_struct.color.get(layer_blocks, index);
 		this.drawPixel(x, y, RGBA4444);
 	}
@@ -179,14 +189,20 @@ class Layer {
 	deleteBlock(x, y) {
 		const index = y * 32 + x;
 		const old_type = state_struct.type.get(this.blocks, index);
-		const old_name = blocks_by_type[old_type];
-		const had_glow = old_name ? blocks[old_name].glow : false;
 		const empty = old_type === 0;
 		if (empty) return;
 
 		this.blocks[index] = 0; // Set to empty state
+
+		const had_glow = blocks_by_type[old_type]?.glow ?? false;
+		if (had_glow) {
+			this.glow_count--;
+			if (this.glow_count === 0 && this.glow) {
+				this.glow.canvas.remove();
+				delete this.glow;
+			}
+		}
 		this.block_count--;
-		if (had_glow) this.glow_count--;
 
 		// Only draw if the layer still has blocks
 		if (this.block_count > 0) this.drawPixel(x, y, 0);
@@ -201,11 +217,9 @@ class Layer {
 	 */
 	drawPixel(x, y, RGBA4444) {
 		const main_buf = this.main.buf;
-		const glow_buf = this.glow.buf;
 		const block_index = y * 32 + x;
 		const block_type = state_struct.type.get(this.blocks, block_index);
-		const block_name = blocks_by_type[block_type];
-		const has_glow = block_name ? blocks[block_name].glow : false;
+		const has_glow = blocks_by_type[block_type]?.glow ?? false;
 
 		// Extract 4-bit RGBA components and convert to 8-bit
 		const r = ((RGBA4444 >> 12) & 0xf) * 17;
@@ -216,7 +230,8 @@ class Layer {
 		// Write ABGR format to buffer (little-endian RGBA)
 		main_buf[block_index] = (a << 24) | (b << 16) | (g << 8) | r;
 
-		if (has_glow) {
+		if (has_glow && this.glow) {
+			const glow_buf = this.glow.buf;
 			const glow_RGBA8888 = (a << 24) | (b << 16) | (g << 8) | r;
 
 			for (let offset_y = 0; offset_y < 2; offset_y++) {
@@ -295,8 +310,6 @@ class Chunk extends HTMLElement {
 
 		const layer = new Layer(this);
 		this.layers[index] = layer;
-		this.appendChild(layer.main.canvas);
-		this.appendChild(layer.glow.canvas);
 		return layer;
 	}
 }
@@ -404,6 +417,7 @@ class Entity extends HTMLElement {
 	render() {
 		console.log(`Rendering ${this.dirty_layers.length} dirty layers`);
 		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();
+		this.dirty_layers.length = 0;
 	}
 }
 

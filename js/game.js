@@ -27,13 +27,13 @@ class Game extends HTMLElement {
 		const test_entity = document.createElement('entity-elem');
 		this.appendChild(test_entity);
 
-		for (let i = 0; i < 32; i++) {
+		for (let i = 0; i < 256; i++) {
 			const x = Math.floor(Math.random() * 32);
 			const y = Math.floor(Math.random() * 32);
 			test_entity.setByName(0, x, y, 'dirt');
 		}
 
-		for (let i = 0; i < 32; i++) {
+		for (let i = 0; i < 8; i++) {
 			const x = Math.floor(Math.random() * 32);
 			const y = Math.floor(Math.random() * 32);
 			test_entity.setByName(0, x, y, 'lamp');
