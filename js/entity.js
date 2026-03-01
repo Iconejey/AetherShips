@@ -20,14 +20,15 @@ class Struct {
 	constructor(config) {
 		let offset = 0;
 		for (const [name, size] of config) {
+			const field_offset = offset;
 			this[name] = {
 				get(arr, index) {
 					const int32 = arr[index];
-					return (int32 >>> offset) & ((1 << size) - 1);
+					return (int32 >>> field_offset) & ((1 << size) - 1);
 				},
 				set(arr, index, value) {
 					const int32 = arr[index];
-					arr[index] = (int32 & ~(((1 << size) - 1) << offset)) | ((value & ((1 << size) - 1)) << offset);
+					arr[index] = (int32 & ~(((1 << size) - 1) << field_offset)) | ((value & ((1 << size) - 1)) << field_offset);
 				}
 			};
 			offset += size;
@@ -81,7 +82,7 @@ const blocks = {
 	dirt: {
 		init: (x, y) => ({
 			type: 1,
-			color: 0xf00,
+			color: 0xf00f,
 			health: 2
 		}),
 		death: (arr, index) => (arr[index] = 0), // Empty block on death
@@ -147,7 +148,8 @@ class Layer {
 		const was_empty = state_struct.type.get(blocks, index) === 0;
 		state_struct.update(blocks, index, fields);
 		if (was_empty) this.block_count++;
-		this.drawPixel(x, y, blocks[index]);
+		const RGBA4444 = state_struct.color.get(blocks, index);
+		this.drawPixel(x, y, RGBA4444);
 	}
 
 	/**
@@ -163,7 +165,7 @@ class Layer {
 		this.blocks[index] = 0; // Set to empty state
 		this.block_count--;
 
-		// Only mark as dirty if layer will still exist (has remaining blocks)
+		// Only draw if the layer still has blocks
 		if (this.block_count > 0) this.drawPixel(x, y, 0);
 	}
 
@@ -177,7 +179,7 @@ class Layer {
 	drawPixel(x, y, RGBA4444) {
 		const buf = this.main.buf;
 
-		// Extract 4-bit components and convert to 8-bit by multiplying by 17
+		// Extract 4-bit RGBA components and convert to 8-bit
 		const r = ((RGBA4444 >> 12) & 0xf) * 17;
 		const g = ((RGBA4444 >> 8) & 0xf) * 17;
 		const b = ((RGBA4444 >> 4) & 0xf) * 17;
