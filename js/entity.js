@@ -82,11 +82,20 @@ const blocks = {
 	dirt: {
 		init: (x, y) => ({
 			type: 1,
-			color: 0xf00f,
+			color: 0xa75f,
+			health: 2
+		}),
+		death: (arr, index) => (arr[index] = 0) // Empty block on death
+	},
+	lamp: {
+		init: (x, y) => ({
+			type: 2,
+			color: 0x8f8f,
 			health: 2
 		}),
 		death: (arr, index) => (arr[index] = 0), // Empty block on death
-		can_be_painted: true
+		can_be_painted: true,
+		glow: true
 	}
 };
 
@@ -114,12 +123,13 @@ class Layer {
 
 		for (const type of ['main', 'glow']) {
 			const canvas = document.createElement('canvas');
-			canvas.width = 32;
-			canvas.height = 32;
+			const size = type === 'glow' ? 33 : 32;
+			canvas.width = size;
+			canvas.height = size;
 			if (type === 'glow') canvas.classList.add('glow');
 
 			const ctx = canvas.getContext('2d');
-			const img_data = ctx.createImageData(32, 32);
+			const img_data = ctx.createImageData(size, size);
 			const buf = new Uint32Array(img_data.data.buffer);
 
 			this[type] = { canvas, ctx, img_data, buf };
@@ -132,6 +142,7 @@ class Layer {
 	 */
 	render() {
 		this.main.ctx.putImageData(this.main.img_data, 0, 0);
+		this.glow.ctx.putImageData(this.glow.img_data, 0, 0);
 		this.dirty = false;
 	}
 
@@ -143,12 +154,20 @@ class Layer {
 	 */
 	setBlock(x, y, fields) {
 		if (fields.type === 0) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
-		const blocks = this.blocks;
+		const layer_blocks = this.blocks;
 		const index = y * 32 + x;
-		const was_empty = state_struct.type.get(blocks, index) === 0;
-		state_struct.update(blocks, index, fields);
+		const old_type = state_struct.type.get(layer_blocks, index);
+		const old_name = blocks_by_type[old_type];
+		const had_glow = old_name ? blocks[old_name].glow : false;
+		const was_empty = old_type === 0;
+		state_struct.update(layer_blocks, index, fields);
+		const new_type = state_struct.type.get(layer_blocks, index);
+		const new_name = blocks_by_type[new_type];
+		const has_glow = new_name ? blocks[new_name].glow : false;
 		if (was_empty) this.block_count++;
-		const RGBA4444 = state_struct.color.get(blocks, index);
+		if (!had_glow && has_glow) this.glow_count++;
+		if (had_glow && !has_glow) this.glow_count--;
+		const RGBA4444 = state_struct.color.get(layer_blocks, index);
 		this.drawPixel(x, y, RGBA4444);
 	}
 
@@ -159,11 +178,15 @@ class Layer {
 	 */
 	deleteBlock(x, y) {
 		const index = y * 32 + x;
-		const empty = state_struct.type.get(this.blocks, index) === 0;
+		const old_type = state_struct.type.get(this.blocks, index);
+		const old_name = blocks_by_type[old_type];
+		const had_glow = old_name ? blocks[old_name].glow : false;
+		const empty = old_type === 0;
 		if (empty) return;
 
 		this.blocks[index] = 0; // Set to empty state
 		this.block_count--;
+		if (had_glow) this.glow_count--;
 
 		// Only draw if the layer still has blocks
 		if (this.block_count > 0) this.drawPixel(x, y, 0);
@@ -177,7 +200,12 @@ class Layer {
 	 * @param {number} RGBA4444 - A 16-bit integer representing the color in RGBA4444 format.
 	 */
 	drawPixel(x, y, RGBA4444) {
-		const buf = this.main.buf;
+		const main_buf = this.main.buf;
+		const glow_buf = this.glow.buf;
+		const block_index = y * 32 + x;
+		const block_type = state_struct.type.get(this.blocks, block_index);
+		const block_name = blocks_by_type[block_type];
+		const has_glow = block_name ? blocks[block_name].glow : false;
 
 		// Extract 4-bit RGBA components and convert to 8-bit
 		const r = ((RGBA4444 >> 12) & 0xf) * 17;
@@ -186,7 +214,18 @@ class Layer {
 		const a = (RGBA4444 & 0xf) * 17;
 
 		// Write ABGR format to buffer (little-endian RGBA)
-		buf[y * 32 + x] = (a << 24) | (b << 16) | (g << 8) | r;
+		main_buf[block_index] = (a << 24) | (b << 16) | (g << 8) | r;
+
+		if (has_glow) {
+			const glow_RGBA8888 = (a << 24) | (b << 16) | (g << 8) | r;
+
+			for (let offset_y = 0; offset_y < 2; offset_y++) {
+				for (let offset_x = 0; offset_x < 2; offset_x++) {
+					const glow_index = (y + offset_y) * 33 + x + offset_x;
+					glow_buf[glow_index] = glow_RGBA8888;
+				}
+			}
+		}
 
 		// Mark as dirty for rendering
 		if (!this.dirty) {

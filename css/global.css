@@ -20,8 +20,6 @@ game-elem {
 game-elem entity-elem {
 	display: block;
 	position: fixed;
-	width: 32px;
-	height: 32px;
 	transform: translate(-50%, -50%) scale(var(--game-scale));
 	top: 50%;
 	left: 50%;
@@ -30,11 +28,26 @@ game-elem entity-elem {
 game-elem entity-elem chunk-elem {
 	display: block;
 	position: relative;
-	width: 100%;
-	height: 100%;
+	width: 32px;
+	height: 32px;
 }
 
 game-elem entity-elem chunk-elem canvas {
 	image-rendering: pixelated;
 	position: absolute;
+}
+
+game-elem entity-elem chunk-elem canvas {
+	width: 64px;
+	height: 64px;
+	transform-origin: top left;
+	transform: translate(0, 0) scale(0.5);
+}
+
+game-elem entity-elem chunk-elem canvas.glow {
+	width: 66px;
+	height: 66px;
+	opacity: 0.5;
+	transform: translate(-0.5px, -0.5px) scale(0.5);
+	filter: blur(1px);
 }

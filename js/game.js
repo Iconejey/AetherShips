@@ -33,6 +33,12 @@ class Game extends HTMLElement {
 			test_entity.setByName(0, x, y, 'dirt');
 		}
 
+		for (let i = 0; i < 32; i++) {
+			const x = Math.floor(Math.random() * 32);
+			const y = Math.floor(Math.random() * 32);
+			test_entity.setByName(0, x, y, 'lamp');
+		}
+
 		test_entity.render();
 	}
 }
