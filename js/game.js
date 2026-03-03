@@ -27,22 +27,38 @@ class Game extends HTMLElement {
 		const test_entity = document.createElement('entity-elem');
 		this.appendChild(test_entity);
 
-		for (let i = 0; i < 512; i++) {
-			const x = Math.floor(Math.random() * 32);
-			const y = Math.floor(Math.random() * 32);
+		const radius = 60;
+
+		for (let i = 0; i < 8000; i++) {
+			const angle = Math.random() * Math.PI * 2;
+			const r = Math.sqrt(Math.random()) * radius;
+			const x = Math.floor(Math.cos(angle) * r);
+			const y = Math.floor(Math.sin(angle) * r);
 			test_entity.setByName(1, x, y, 'dirt');
 		}
 
-		for (let i = 0; i < 512; i++) {
-			const x = Math.floor(Math.random() * 32);
-			const y = Math.floor(Math.random() * 32);
+		for (let i = 0; i < 8000; i++) {
+			const angle = Math.random() * Math.PI * 2;
+			const r = Math.sqrt(Math.random()) * radius;
+			const x = Math.floor(Math.cos(angle) * r);
+			const y = Math.floor(Math.sin(angle) * r);
 			test_entity.setByName(0, x, y, 'dirt');
 		}
 
-		for (let i = 0; i < 16; i++) {
-			const x = Math.floor(Math.random() * 32);
-			const y = Math.floor(Math.random() * 32);
+		for (let i = 0; i < 512; i++) {
+			const angle = Math.random() * Math.PI * 2;
+			const r = Math.sqrt(Math.random()) * radius;
+			const x = Math.floor(Math.cos(angle) * r);
+			const y = Math.floor(Math.sin(angle) * r);
 			test_entity.setByName(0, x, y, 'lamp');
+		}
+
+		for (let i = 0; i < 512; i++) {
+			const angle = Math.random() * Math.PI * 2;
+			const r = Math.sqrt(Math.random()) * radius;
+			const x = Math.floor(Math.cos(angle) * r);
+			const y = Math.floor(Math.sin(angle) * r);
+			test_entity.setByName(1, x, y, 'lamp');
 		}
 
 		test_entity.render();

@@ -307,6 +307,8 @@ class Chunk extends HTMLElement {
 		this.pos = { x, y };
 		this.groups = [];
 		this.layers = [null, null, null];
+		this.style.left = `${x * 32}px`;
+		this.style.top = `${y * 32}px`;
 	}
 
 	/**
@@ -333,6 +335,10 @@ customElements.define('chunk-elem', Chunk);
 class Entity extends HTMLElement {
 	get chunks() {
 		return Array.from(this.children);
+	}
+
+	toLocalCoord(value) {
+		return ((value % 32) + 32) % 32;
 	}
 
 	constructor() {
@@ -371,7 +377,9 @@ class Entity extends HTMLElement {
 	setBlock(l, x, y, fields) {
 		const chunk = this.getChunk(x, y, true);
 		const layer = chunk.getLayer(l, true);
-		layer.setBlock(x % 32, y % 32, fields);
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		layer.setBlock(local_x, local_y, fields);
 	}
 
 	/**
@@ -384,7 +392,9 @@ class Entity extends HTMLElement {
 	setByName(l, x, y, name) {
 		const chunk = this.getChunk(x, y, true);
 		const layer = chunk.getLayer(l, true);
-		layer.setByName(x % 32, y % 32, name);
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		layer.setByName(local_x, local_y, name);
 	}
 
 	/**
@@ -397,7 +407,9 @@ class Entity extends HTMLElement {
 	setByType(l, x, y, type) {
 		const chunk = this.getChunk(x, y, true);
 		const layer = chunk.getLayer(l, true);
-		layer.setByType(x % 32, y % 32, type);
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		layer.setByType(local_x, local_y, type);
 	}
 
 	/**
@@ -413,7 +425,9 @@ class Entity extends HTMLElement {
 		const layer = chunk.getLayer(l, false);
 		if (!layer) return;
 
-		layer.deleteBlock(x % 32, y % 32);
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		layer.deleteBlock(local_x, local_y);
 
 		// If chunk is now empty, remove it entirely
 		if (chunk.block_count === 0) chunk.remove();

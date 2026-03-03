@@ -27,9 +27,10 @@ game-elem entity-elem {
 
 game-elem entity-elem chunk-elem {
 	display: block;
-	position: relative;
+	position: absolute;
 	width: 32px;
 	height: 32px;
+	outline: 1px dashed #fff3;
 }
 
 game-elem entity-elem chunk-elem canvas {
