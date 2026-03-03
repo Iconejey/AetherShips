@@ -114,8 +114,9 @@ class Layer {
 		return this.chunk.parentElement;
 	}
 
-	constructor(chunk) {
+	constructor(chunk, layer_index) {
 		this.chunk = chunk;
+		this.layer_index = layer_index;
 		this.blocks = new Uint32Array(1024); // 32x32 blocks
 		this.block_count = 0;
 		this.glow_count = 0;
@@ -134,6 +135,16 @@ class Layer {
 		canvas.width = size;
 		canvas.height = size;
 		if (type === 'glow') canvas.classList.add('glow');
+
+		// Set z-index: main = layer*2, glow = layer*2+1
+		// Layer 0: main=0, glow=1; Layer 1: main=2, glow=3; Layer 2: main=4, glow=5
+		const z_index = this.layer_index * 2 + (type === 'glow' ? 1 : 0);
+		canvas.style.zIndex = z_index.toString();
+
+		// Apply drop shadow only to main canvases in layers 1 and 2 (not layer 0)
+		if (type === 'main' && this.layer_index > 0) {
+			canvas.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, 1))';
+		}
 
 		const ctx = canvas.getContext('2d');
 		const img_data = ctx.createImageData(size, size);
@@ -308,7 +319,7 @@ class Chunk extends HTMLElement {
 		if (this.layers[index]) return this.layers[index];
 		if (!create) return null;
 
-		const layer = new Layer(this);
+		const layer = new Layer(this, index);
 		this.layers[index] = layer;
 		return layer;
 	}
