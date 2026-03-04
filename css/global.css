@@ -9,7 +9,7 @@ body {
 	height: 100vh;
 	overflow: hidden;
 	font-family: 'Courier New', monospace;
-	background: linear-gradient(135deg, #0c0c22 0%, #291a4a 100%);
+	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
 }
 
 game-elem {
@@ -30,7 +30,7 @@ game-elem entity-elem chunk-elem {
 	position: absolute;
 	width: 32px;
 	height: 32px;
-	outline: 1px dashed #fff3;
+	/* outline: 1px dashed #fff3; */
 }
 
 game-elem entity-elem chunk-elem canvas {

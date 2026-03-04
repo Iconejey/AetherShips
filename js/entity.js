@@ -69,12 +69,46 @@ class Struct {
 
 const state_struct = new Struct([
 	['type', 8], // Needed for rules and block type identification
-	['color', 16],
 	['health', 7],
 	['is_burning', 1]
 ]);
 
 console.log(`State struct size: ${state_struct.size} bits`);
+
+/**
+ * Randomly selects one item from the provided array.
+ * @param {Array} arr - The array to select from.
+ * @returns {*} A random element from the array.
+ */
+function oneOf(arr) {
+	return arr[Math.floor(Math.random() * arr.length)];
+}
+
+/**
+ * Creates a slight variation of an RGBA8888 color in lightness and saturation only.
+ * @param {number} rgba8888 - An RGBA8888 color value (32-bit: 8 bits each for R, G, B, A).
+ * @returns {number} A slightly varied color in the same RGBA8888 format.
+ */
+function varyColor(rgba8888) {
+	// Extract RGBA channels (8 bits each)
+	let r = (rgba8888 >> 24) & 0xff;
+	let g = (rgba8888 >> 16) & 0xff;
+	let b = (rgba8888 >> 8) & 0xff;
+	const a = rgba8888 & 0xff;
+
+	const variation = Math.random() * 0.5 + 0.7; // Random variation between 0.7 and 1.2
+	r = Math.min(255, Math.max(0, Math.round(r * variation)));
+	g = Math.min(255, Math.max(0, Math.round(g * variation)));
+	b = Math.min(255, Math.max(0, Math.round(b * variation)));
+
+	// Reconstruct the color
+	const varied = (r << 24) | (g << 16) | (b << 8) | a;
+	const hex = varied.toString(16).padStart(8, '0');
+	console.log(`0x${hex}`);
+	return varied >>> 0; // Ensure unsigned interpretation
+}
+
+for (let i = 0; i < 3; i++) varyColor(0x888888ff);
 
 // Define block types and their default states, properties, and colors
 const blocks = {
@@ -82,15 +116,35 @@ const blocks = {
 	dirt: {
 		init: (x, y) => ({
 			type: 1,
-			color: 0xa75f,
+			color: oneOf([0x79563aff, 0x916745ff, 0x815c3eff, 0x835d3fff]),
 			health: 2
 		}),
 		death: (arr, index) => (arr[index] = 0) // Empty block on death
 	},
-	lamp: {
+	stone: {
 		init: (x, y) => ({
 			type: 2,
-			color: 0x8f8f,
+			color: oneOf([0x606060ff, 0x686868ff, 0x6f6f6fff]),
+			health: 4
+		}),
+		death: (arr, index) => (arr[index] = 0) // Empty block on death
+	},
+
+	// Vegetation
+	grass: {
+		init: (x, y) => ({
+			type: 3,
+			color: oneOf([0x858f4fff, 0x7a8547ff, 0x8a9a57ff, 0x80904eff]),
+			health: 1
+		}),
+		death: (arr, index) => (arr[index] = 0) // Empty block on death
+	},
+
+	// Decorative
+	lamp: {
+		init: (x, y) => ({
+			type: 32,
+			color: 0xffff88ff,
 			health: 2
 		}),
 		death: (arr, index) => (arr[index] = 0), // Empty block on death
@@ -117,7 +171,8 @@ class Layer {
 	constructor(chunk, layer_index) {
 		this.chunk = chunk;
 		this.layer_index = layer_index;
-		this.blocks = new Uint32Array(1024); // 32x32 blocks
+		this.blocks = new Uint32Array(1024); // 32x32 blocks (type, health, is_burning)
+		this.block_colors = new Uint32Array(1024); // 32x32 colors (32-bit RGBA8888)
 		this.block_count = 0;
 		this.glow_count = 0;
 		this.dirty = false;
@@ -188,8 +243,11 @@ class Layer {
 		}
 		if (had_glow && !has_glow) this.glow_count--;
 
-		const RGBA4444 = state_struct.color.get(layer_blocks, index);
-		this.drawPixel(x, y, RGBA4444);
+		// Store color separately
+		if (fields.color !== undefined) {
+			this.block_colors[index] = fields.color;
+		}
+		this.drawPixel(x, y);
 	}
 
 	/**
@@ -204,6 +262,7 @@ class Layer {
 		if (empty) return;
 
 		this.blocks[index] = 0; // Set to empty state
+		this.block_colors[index] = 0; // Clear color
 
 		const had_glow = blocks_by_type[old_type]?.glow ?? false;
 		if (had_glow) {
@@ -216,27 +275,29 @@ class Layer {
 		this.block_count--;
 
 		// Only draw if the layer still has blocks
-		if (this.block_count > 0) this.drawPixel(x, y, 0);
+		if (this.block_count > 0) this.drawPixel(x, y);
 	}
 
 	/**
 	 * Draws a pixel of the specified color at the specified (x, y) coordinates within the layer
-	 * NOTE: Glow effects are ignored for now
+	 * Uses the 32-bit color stored in block_colors array
 	 * @param {number} x - The x-coordinate of the pixel to draw (0-31).
 	 * @param {number} y - The y-coordinate of the pixel to draw (0-31).
-	 * @param {number} RGBA4444 - A 16-bit integer representing the color in RGBA4444 format.
 	 */
-	drawPixel(x, y, RGBA4444) {
+	drawPixel(x, y) {
 		const main_buf = this.main.buf;
 		const block_index = y * 32 + x;
 		const block_type = state_struct.type.get(this.blocks, block_index);
 		const has_glow = blocks_by_type[block_type]?.glow ?? false;
 
-		// Extract 4-bit RGBA components and convert to 8-bit
-		const r = ((RGBA4444 >> 12) & 0xf) * 17;
-		const g = ((RGBA4444 >> 8) & 0xf) * 17;
-		const b = ((RGBA4444 >> 4) & 0xf) * 17;
-		const a = (RGBA4444 & 0xf) * 17;
+		// Get the 32-bit RGBA8888 color
+		const rgba8888 = this.block_colors[block_index];
+
+		// Extract RGBA components (already 8-bit)
+		const r = (rgba8888 >> 24) & 0xff;
+		const g = (rgba8888 >> 16) & 0xff;
+		const b = (rgba8888 >> 8) & 0xff;
+		const a = rgba8888 & 0xff;
 
 		// Write ABGR format to buffer (little-endian RGBA)
 		main_buf[block_index] = (a << 24) | (b << 16) | (g << 8) | r;
@@ -439,6 +500,56 @@ class Entity extends HTMLElement {
 		}
 	}
 
+	/**
+	 * Fills a rectangular area of blocks at the specified (x, y, w, h) coordinates
+	 * @param {number} l - The layer index (0-2) to set the blocks in.
+	 * @param {number} x - The x-coordinate of the top-left corner of the rectangle to fill.
+	 * @param {number} y - The y-coordinate of the top-left corner of the rectangle to fill.
+	 * @param {number} w - The width of the rectangle to fill (in blocks).
+	 * @param {number} h - The height of the rectangle to fill (in blocks).
+	 * @param {string} name - The name of the block type to fill with (e.g., "dirt").
+	 */
+	fillRect(l, x, y, w, h, name) {
+		for (let offset_y = 0; offset_y < h; offset_y++) {
+			for (let offset_x = 0; offset_x < w; offset_x++) {
+				this.setByName(l, x + offset_x, y + offset_y, name);
+			}
+		}
+	}
+
+	/**
+	 * Fills an elliptical area of blocks centered at the specified (x, y) coordinates.
+	 * @param {number} l - The layer index (0-2) to set the blocks in.
+	 * @param {number} x - The x-coordinate of the center of the ellipse to fill.
+	 * @param {number} y - The y-coordinate of the center of the ellipse to fill.
+	 * @param {number} w - The width of the ellipse to fill (in blocks).
+	 * @param {number} h - The height of the ellipse to fill (in blocks).
+	 * @param {string} name - The name of the block type to fill with (e.g., "dirt").
+	 */
+	fillEllipse(l, x, y, w, h, name) {
+		x--;
+		y--;
+		const half_w = w / 2;
+		const half_h = h / 2;
+		const start_x = Math.round(x - (w - 1) / 2);
+		const start_y = Math.round(y - (h - 1) / 2);
+
+		for (let offset_y = 0; offset_y < h; offset_y++) {
+			for (let offset_x = 0; offset_x < w; offset_x++) {
+				const normalized_x = (offset_x + 0.5 - half_w) / half_w;
+				const normalized_y = (offset_y + 0.5 - half_h) / half_h;
+				if (normalized_x ** 2 + normalized_y ** 2 <= 1) {
+					const local_x = start_x + offset_x;
+					const local_y = start_y + offset_y;
+					this.setByName(l, local_x, local_y, name);
+				}
+			}
+		}
+	}
+
+	/**
+	 * Renders all dirty layers of the entity by calling their render methods, then clears the dirty layers list
+	 */
 	render() {
 		console.log(`Rendering ${this.dirty_layers.length} dirty layers`);
 		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();

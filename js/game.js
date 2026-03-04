@@ -2,64 +2,39 @@
  * Custom HTMLElement representing the game, which contains entities (ships, asteroids, planets, etc.)
  */
 class Game extends HTMLElement {
-	static get observedAttributes() {
-		return ['scale'];
-	}
-
 	constructor() {
 		super();
 	}
 
-	attributeChangedCallback(name, old_value, new_value) {
-		if (name === 'scale' && old_value !== new_value) this.updateScaleVariable();
+	set scale(value) {
+		this.free_scale = Math.min(Math.max(1, value), 20);
+		this.style.setProperty('--game-scale', this.scale);
 	}
 
-	updateScaleVariable() {
-		const scale_value = Number.parseFloat(this.getAttribute('scale'));
-		const safe_scale_value = Number.isFinite(scale_value) && scale_value > 0 ? scale_value : 1;
-		this.style.setProperty('--game-scale', safe_scale_value.toString());
+	get scale() {
+		return Math.round(this.free_scale);
+	}
+
+	zoom(delta) {
+		this.scale = this.free_scale + delta;
 	}
 
 	connectedCallback() {
-		this.updateScaleVariable();
+		this.scale = 5;
+
+		// Add wheel event for scale control
+		window.addEventListener('wheel', event => {
+			this.zoom(event.deltaY * -0.02);
+		});
 
 		// Let's add a test entity to the game
 		const test_entity = document.createElement('entity-elem');
 		this.appendChild(test_entity);
 
-		const radius = 60;
-
-		for (let i = 0; i < 8000; i++) {
-			const angle = Math.random() * Math.PI * 2;
-			const r = Math.sqrt(Math.random()) * radius;
-			const x = Math.floor(Math.cos(angle) * r);
-			const y = Math.floor(Math.sin(angle) * r);
-			test_entity.setByName(1, x, y, 'dirt');
-		}
-
-		for (let i = 0; i < 8000; i++) {
-			const angle = Math.random() * Math.PI * 2;
-			const r = Math.sqrt(Math.random()) * radius;
-			const x = Math.floor(Math.cos(angle) * r);
-			const y = Math.floor(Math.sin(angle) * r);
-			test_entity.setByName(0, x, y, 'dirt');
-		}
-
-		for (let i = 0; i < 512; i++) {
-			const angle = Math.random() * Math.PI * 2;
-			const r = Math.sqrt(Math.random()) * radius;
-			const x = Math.floor(Math.cos(angle) * r);
-			const y = Math.floor(Math.sin(angle) * r);
-			test_entity.setByName(0, x, y, 'lamp');
-		}
-
-		for (let i = 0; i < 512; i++) {
-			const angle = Math.random() * Math.PI * 2;
-			const r = Math.sqrt(Math.random()) * radius;
-			const x = Math.floor(Math.cos(angle) * r);
-			const y = Math.floor(Math.sin(angle) * r);
-			test_entity.setByName(1, x, y, 'lamp');
-		}
+		test_entity.fillEllipse(0, 0, 0, 128, 128, 'stone');
+		test_entity.fillEllipse(1, 0, 0, 96, 96, 'dirt');
+		test_entity.fillEllipse(2, 0, 0, 64, 64, 'grass');
+		test_entity.fillEllipse(2, 0, 0, 16, 16, 'lamp');
 
 		test_entity.render();
 	}
