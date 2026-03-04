@@ -17,10 +17,22 @@ game-root {
 	display: block;
 }
 
+game-root .fps_counter {
+	position: fixed;
+	top: 8px;
+	right: 10px;
+	z-index: 1000;
+	color: #fff;
+	font-size: 14px;
+	line-height: 1;
+	pointer-events: none;
+}
+
 entity-root {
 	display: block;
 	position: fixed;
-	transform: translate(-50%, -50%) scale(var(--game-scale));
+	--entity-rotation: 0rad;
+	transform: translate(-50%, -50%) rotate(var(--entity-rotation)) scale(var(--game-scale));
 	top: 50%;
 	left: 50%;
 }

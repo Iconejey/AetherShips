@@ -108,8 +108,6 @@ function varyColor(rgba8888) {
 	return varied >>> 0; // Ensure unsigned interpretation
 }
 
-for (let i = 0; i < 3; i++) varyColor(0x888888ff);
-
 // Define block types and their default states, properties, and colors
 const blocks = {
 	// Minerals
@@ -419,7 +417,7 @@ class Entity extends HTMLElement {
 		super();
 		this.position = { x: 0, y: 0, r: 0 };
 		this.velocity = { vx: 0, vy: 0, vr: 0 };
-		this.mass = { cx: 0, cy: 0, mass: 0 };
+		this.mass = { cx: 0, cy: 0, total: 0 };
 		this.dirty_layers = [];
 	}
 
