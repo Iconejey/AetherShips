@@ -165,11 +165,12 @@ for (const block_name in blocks) {
  */
 class Layer {
 	get entity() {
-		return this.chunk.parentElement;
+		return this.entity_layer.parentElement;
 	}
 
-	constructor(chunk, layer_index) {
-		this.chunk = chunk;
+	constructor(chunk_layer, layer_index, entity_layer) {
+		this.chunk_layer = chunk_layer;
+		this.entity_layer = entity_layer;
 		this.layer_index = layer_index;
 		this.blocks = new Uint32Array(1024); // 32x32 blocks (type, health, is_burning)
 		this.block_colors = new Uint32Array(1024); // 32x32 colors (32-bit RGBA8888)
@@ -191,22 +192,21 @@ class Layer {
 		canvas.height = size;
 		if (type === 'glow') canvas.classList.add('glow');
 
-		// Set z-index: main = layer*2, glow = layer*2+1
-		// Layer 0: main=0, glow=1; Layer 1: main=2, glow=3; Layer 2: main=4, glow=5
-		const z_index = this.layer_index * 2 + (type === 'glow' ? 1 : 0);
-		canvas.style.zIndex = z_index.toString();
+		// Z-index within layer: main = 0, glow = 1
+		const z_index_within_layer = type === 'glow' ? 1 : 0;
+		canvas.style.zIndex = z_index_within_layer.toString();
 
-		// Apply drop shadow only to main canvases in layers 1 and 2 (not layer 0)
-		if (type === 'main' && this.layer_index > 0) {
-			canvas.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, 1))';
-		}
+		// Position canvas for its chunk
+		canvas.style.position = 'absolute';
+		canvas.style.left = `${this.chunk_layer.chunk_x * 32}px`;
+		canvas.style.top = `${this.chunk_layer.chunk_y * 32}px`;
 
 		const ctx = canvas.getContext('2d');
 		const img_data = ctx.createImageData(size, size);
 		const buf = new Uint32Array(img_data.data.buffer);
 
 		this[type] = { canvas, ctx, img_data, buf };
-		this.chunk.appendChild(canvas);
+		this.entity_layer.appendChild(canvas);
 	}
 
 	/**
@@ -274,7 +274,8 @@ class Layer {
 		}
 		this.block_count--;
 
-		// Only draw if the layer still has blocks
+		// If layer still has blocks but no glow, keep main canvas
+		// If layer is completely empty, remove main canvas (handled by Entity)
 		if (this.block_count > 0) this.drawPixel(x, y);
 	}
 
@@ -347,57 +348,69 @@ class Layer {
 }
 
 /**
- * Custom HTMLElement representing a chunk of blocks
- * Each chunk contains a 32x32 grid of blocks, stored as a Uint32Array of length 1024
+ * Represents a chunk location within an entity layer
+ * Stores references to Layer data at this chunk position
  */
-class Chunk extends HTMLElement {
-	get block_count() {
-		let count = 0;
-		for (const layer of this.layers) count += layer?.block_count ?? 0;
-		return count;
-	}
-
-	get glow_count() {
-		let count = 0;
-		for (const layer of this.layers) count += layer?.glow_count ?? 0;
-		return count;
-	}
-
-	constructor(x, y) {
-		super();
-		this.pos = { x, y };
-		this.groups = [];
-		this.layers = [null, null, null];
-		this.style.left = `${x * 32}px`;
-		this.style.top = `${y * 32}px`;
-	}
-
-	/**
-	 * Gets or creates a layer at the specified index
-	 * @param {number} index - The layer index (0-2)
-	 * @param {boolean} create - Whether to create the layer if it doesn't exist
-	 * @returns {Layer|null} The layer at the specified index, or null if it doesn't exist and create is false
-	 */
-	getLayer(index, create = false) {
-		if (this.layers[index]) return this.layers[index];
-		if (!create) return null;
-
-		const layer = new Layer(this, index);
-		this.layers[index] = layer;
-		return layer;
+class ChunkLayer {
+	constructor(chunk_x, chunk_y) {
+		this.chunk_x = chunk_x;
+		this.chunk_y = chunk_y;
+		this.layer = null; // Will be set to the Layer instance
 	}
 }
 
-customElements.define('chunk-elem', Chunk);
+/**
+ * Custom HTMLElement representing a single layer (0, 1, or 2) within an entity
+ * Contains all canvases for blocks at this depth
+ */
+class EntityLayer extends HTMLElement {
+	constructor() {
+		super();
+		this.chunk_layers = new Map(); // Map of "cx,cy" -> ChunkLayer
+	}
+
+	/**
+	 * Gets or creates a chunk-layer at the specified chunk coordinates
+	 * @param {number} cx - The chunk x coordinate
+	 * @param {number} cy - The chunk y coordinate
+	 * @param {boolean} create - Whether to create if it doesn't exist
+	 * @returns {ChunkLayer|null}
+	 */
+	getChunkLayer(cx, cy, create = false) {
+		const key = `${cx},${cy}`;
+		let chunk_layer = this.chunk_layers.get(key);
+
+		if (!chunk_layer && create) {
+			chunk_layer = new ChunkLayer(cx, cy);
+			this.chunk_layers.set(key, chunk_layer);
+		}
+
+		return chunk_layer;
+	}
+
+	/**
+	 * Removes a chunk-layer and its canvases
+	 * @param {number} cx - The chunk x coordinate
+	 * @param {number} cy - The chunk y coordinate
+	 */
+	removeChunkLayer(cx, cy) {
+		const key = `${cx},${cy}`;
+		const chunk_layer = this.chunk_layers.get(key);
+		if (chunk_layer && chunk_layer.layer) {
+			// Remove canvases from DOM
+			chunk_layer?.layer?.main?.canvas?.remove();
+			chunk_layer?.layer?.glow?.canvas?.remove();
+		}
+		this.chunk_layers.delete(key);
+	}
+}
+
+customElements.define('entity-layer', EntityLayer);
 
 /**
  * Custom HTMLElement representing an entity (ship, asteroid, planet, etc.)
  */
 class Entity extends HTMLElement {
-	get chunks() {
-		return Array.from(this.children);
-	}
-
 	toLocalCoord(value) {
 		return ((value % 32) + 32) % 32;
 	}
@@ -410,34 +423,89 @@ class Entity extends HTMLElement {
 		this.dirty_layers = [];
 	}
 
-	/*
-	 * Gets the chunk at the specified (x, y) coordinates
-	 * @param {number} x - The x-coordinate of the chunk to get (0-31).
-	 * @param {number} y - The y-coordinate of the chunk to get (0-31).
-	 * @param {boolean} create - Whether to create the chunk if it doesn't exist.
-	 * @return {Chunk} The chunk at the specified coordinates, or null if it doesn't exist and create is false.
-	 */
-	getChunk(bx, by, create = false) {
-		const cx = Math.floor(bx / 32);
-		const cy = Math.floor(by / 32);
-		let chunk = this.chunks.find(c => c.pos.x === cx && c.pos.y === cy);
-		if (!chunk && create) {
-			chunk = new Chunk(cx, cy);
-			this.appendChild(chunk);
+	connectedCallback() {
+		// Create three entity-layers (one for each block layer)
+		if (this.children.length === 0) {
+			for (let i = 0; i < 3; i++) {
+				const entity_layer = document.createElement('entity-layer');
+				entity_layer.layer_index = i;
+				entity_layer.dataset.layer = i;
+				// Set z-index based on layer depth
+				entity_layer.style.zIndex = i.toString();
+				if (i > 0) {
+					entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, 1))';
+				}
+				this.appendChild(entity_layer);
+			}
 		}
-		return chunk;
+	}
+
+	/**
+	 * Gets the EntityLayer at the specified layer index
+	 * @param {number} layer_index - The layer index (0-2)
+	 * @returns {EntityLayer}
+	 */
+	getEntityLayer(layer_index) {
+		return this.children[layer_index];
+	}
+
+	/**
+	 * Gets or creates a chunk-layer at the specified chunk coordinates and layer
+	 * @param {number} layer_index - The layer index (0-2)
+	 * @param {number} cx - The chunk x coordinate
+	 * @param {number} cy - The chunk y coordinate
+	 * @param {boolean} create - Whether to create if it doesn't exist
+	 * @returns {ChunkLayer|null}
+	 */
+	getChunkLayer(layer_index, cx, cy, create = false) {
+		const entity_layer = this.getEntityLayer(layer_index);
+		return entity_layer.getChunkLayer(cx, cy, create);
+	}
+
+	/**
+	 * Gets or creates a Layer for the specified chunk coordinates and layer index
+	 * @param {number} layer_index - The layer index (0-2)
+	 * @param {number} cx - The chunk x coordinate
+	 * @param {number} cy - The chunk y coordinate
+	 * @param {boolean} create - Whether to create if it doesn't exist
+	 * @returns {Layer|null}
+	 */
+	getLayer(layer_index, cx, cy, create = false) {
+		const entity_layer = this.getEntityLayer(layer_index);
+		const chunk_layer = entity_layer.getChunkLayer(cx, cy, create);
+		if (!chunk_layer) return null;
+
+		if (chunk_layer.layer) return chunk_layer.layer;
+		if (!create) return null;
+
+		const layer = new Layer(chunk_layer, layer_index, entity_layer);
+		chunk_layer.layer = layer;
+		return layer;
 	}
 
 	/*
-	 * Sets the block at the specified (x, y) coordinates within the entity's chunks to the given fields.
+	 * Gets all chunk-layers (across all entity-layers)
+	 * @returns {Array<ChunkLayer>}
+	 */
+	getAllChunkLayers() {
+		const chunk_layers = [];
+		for (let i = 0; i < 3; i++) {
+			chunk_layers.push(...this.getEntityLayer(i).chunk_layers.values());
+		}
+		return chunk_layers;
+	}
+
+	/*
+	 * Sets the block at the specified (x, y) coordinates within the entity's layers to the given fields.
 	 * @param {number} l - The layer index (0-2) to set the block in.
 	 * @param {number} x - The x-coordinate of the block to set.
 	 * @param {number} y - The y-coordinate of the block to set.
 	 * @param {Object} fields - An object containing the fields to set for the block, where keys correspond to the struct's field names.
 	 */
 	setBlock(l, x, y, fields) {
-		const chunk = this.getChunk(x, y, true);
-		const layer = chunk.getLayer(l, true);
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.setBlock(local_x, local_y, fields);
@@ -451,8 +519,9 @@ class Entity extends HTMLElement {
 	 * @param {string} name - The name of the block type to initialize (e.g., "dirt").
 	 */
 	setByName(l, x, y, name) {
-		const chunk = this.getChunk(x, y, true);
-		const layer = chunk.getLayer(l, true);
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.setByName(local_x, local_y, name);
@@ -466,37 +535,35 @@ class Entity extends HTMLElement {
 	 * @param {number} type - The numeric type of the block to initialize (e.g., 1 for dirt).
 	 */
 	setByType(l, x, y, type) {
-		const chunk = this.getChunk(x, y, true);
-		const layer = chunk.getLayer(l, true);
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.setByType(local_x, local_y, type);
 	}
 
 	/**
-	 * Deletes the block at the specified (x, y) coordinates within the entity's chunks
+	 * Deletes the block at the specified (x, y) coordinates within the entity's layers
 	 * @param {number} l - The layer index (0-2) to delete the block from.
 	 * @param {number} x - The x-coordinate of the block to delete.
 	 * @param {number} y - The y-coordinate of the block to delete.
 	 */
 	deleteBlock(l, x, y) {
-		const chunk = this.getChunk(x, y, false);
-		if (!chunk) return;
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const entity_layer = this.getEntityLayer(l);
+		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
+		if (!chunk_layer || !chunk_layer.layer) return;
 
-		const layer = chunk.getLayer(l, false);
-		if (!layer) return;
-
+		const layer = chunk_layer.layer;
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.deleteBlock(local_x, local_y);
 
-		// If chunk is now empty, remove it entirely
-		if (chunk.block_count === 0) chunk.remove();
-		// Otherwise, if layer is now empty, remove just the layer
-		else if (layer.block_count === 0) {
-			layer.main.canvas.remove();
-			layer.glow.canvas.remove();
-			chunk.layers[l] = null;
+		// If layer is now empty, remove the chunk-layer entirely
+		if (layer.block_count === 0) {
+			entity_layer.removeChunkLayer(cx, cy);
 		}
 	}
 
@@ -557,4 +624,4 @@ class Entity extends HTMLElement {
 	}
 }
 
-customElements.define('entity-elem', Entity);
+customElements.define('entity-root', Entity);

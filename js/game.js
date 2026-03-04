@@ -28,16 +28,16 @@ class Game extends HTMLElement {
 		});
 
 		// Let's add a test entity to the game
-		const test_entity = document.createElement('entity-elem');
+		const test_entity = document.createElement('entity-root');
 		this.appendChild(test_entity);
 
 		test_entity.fillEllipse(0, 0, 0, 128, 128, 'stone');
-		test_entity.fillEllipse(1, 0, 0, 96, 96, 'dirt');
 		test_entity.fillEllipse(2, 0, 0, 64, 64, 'grass');
+		test_entity.fillEllipse(1, 0, 0, 96, 96, 'dirt');
 		test_entity.fillEllipse(2, 0, 0, 16, 16, 'lamp');
 
 		test_entity.render();
 	}
 }
 
-customElements.define('game-elem', Game);
+customElements.define('game-root', Game);

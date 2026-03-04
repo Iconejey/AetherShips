@@ -12,12 +12,12 @@ body {
 	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
 }
 
-game-elem {
+game-root {
 	--game-scale: 1;
 	display: block;
 }
 
-game-elem entity-elem {
+entity-root {
 	display: block;
 	position: fixed;
 	transform: translate(-50%, -50%) scale(var(--game-scale));
@@ -25,27 +25,23 @@ game-elem entity-elem {
 	left: 50%;
 }
 
-game-elem entity-elem chunk-elem {
+entity-root entity-layer {
 	display: block;
 	position: absolute;
-	width: 32px;
-	height: 32px;
-	/* outline: 1px dashed #fff3; */
+	width: 100%;
+	height: 100%;
 }
 
-game-elem entity-elem chunk-elem canvas {
+entity-root entity-layer canvas {
 	image-rendering: pixelated;
 	position: absolute;
-}
-
-game-elem entity-elem chunk-elem canvas {
 	width: 64px;
 	height: 64px;
 	transform-origin: top left;
 	transform: translate(0, 0) scale(0.5);
 }
 
-game-elem entity-elem chunk-elem canvas.glow {
+entity-root entity-layer canvas.glow {
 	width: 66px;
 	height: 66px;
 	opacity: 0.5;
