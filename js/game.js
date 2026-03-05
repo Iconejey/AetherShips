@@ -2,6 +2,12 @@
  * Represents the game camera with world position and rotation
  */
 class Camera {
+	/**
+	 * Creates a camera instance
+	 * @param {number} [x=0] - Initial world x coordinate
+	 * @param {number} [y=0] - Initial world y coordinate
+	 * @param {number} [r=0] - Initial camera rotation in radians
+	 */
 	constructor(x = 0, y = 0, r = 0) {
 		this.x = x;
 		this.y = y;
@@ -88,6 +94,9 @@ class Camera {
  * Custom HTMLElement representing the game, which contains entities (ships, asteroids, planets, etc.)
  */
 class Game extends HTMLElement {
+	/**
+	 * Creates a game instance
+	 */
 	constructor() {
 		super();
 		this.camera = new Camera(0, 0, 0);
@@ -99,6 +108,10 @@ class Game extends HTMLElement {
 		this.followed_entity = null;
 	}
 
+	/**
+	 * Updates the FPS counter display
+	 * @param {number} delta_seconds - Elapsed time in seconds since last frame
+	 */
 	updateFpsCounter(delta_seconds) {
 		if (!this.fps_counter) return;
 
@@ -113,6 +126,10 @@ class Game extends HTMLElement {
 		}
 	}
 
+	/**
+	 * Updates entity positions based on velocities and applies friction
+	 * @param {number} delta_seconds - Elapsed time in seconds since last frame
+	 */
 	updateEntities(delta_seconds) {
 		const delta_frames = delta_seconds * 60;
 		const friction_factor = 0.99 ** delta_frames;
@@ -139,6 +156,9 @@ class Game extends HTMLElement {
 		}
 	}
 
+	/**
+	 * Starts the game loop using requestAnimationFrame
+	 */
 	startGameLoop() {
 		const tick = now => {
 			if (this.last_frame_time === null) {
@@ -160,6 +180,9 @@ class Game extends HTMLElement {
 		}
 	}
 
+	/**
+	 * Stops the game loop
+	 */
 	stopGameLoop() {
 		if (this.animation_frame_id !== null) {
 			window.cancelAnimationFrame(this.animation_frame_id);
@@ -168,55 +191,29 @@ class Game extends HTMLElement {
 		this.last_frame_time = null;
 	}
 
+	/**
+	 * Sets the game scale (zoom level, clamped between 1 and 20)
+	 * @param {number} value - The scale value to set
+	 */
 	set scale(value) {
 		this.free_scale = Math.min(Math.max(1, value), 20);
 		this.style.setProperty('--game-scale', this.scale);
-		this.updateEntityPositions();
 	}
 
+	/**
+	 * Gets the current game scale (zoom level)
+	 * @returns {number} The current scale, rounded to integer
+	 */
 	get scale() {
 		return Math.round(this.free_scale);
 	}
 
+	/**
+	 * Adjusts the game scale by the given delta
+	 * @param {number} delta - The amount to adjust the scale by
+	 */
 	zoom(delta) {
 		this.scale = this.free_scale + delta;
-	}
-
-	/**
-	 * Moves the camera to a specific world position
-	 * @param {number} x - World x coordinate
-	 * @param {number} y - World y coordinate
-	 * @param {number} r - Camera rotation in radians
-	 */
-	moveCameraTo(x, y, r = this.camera.r) {
-		this.camera.moveTo(x, y, r);
-		this.updateEntityPositions();
-	}
-
-	/**
-	 * Offsets the camera position by the given delta
-	 * @param {number} dx - Delta x
-	 * @param {number} dy - Delta y
-	 * @param {number} dr - Delta rotation in radians
-	 */
-	offsetCamera(dx, dy, dr = 0) {
-		this.camera.offset(dx, dy, dr);
-		this.updateEntityPositions();
-	}
-
-	/**
-	 * Makes the camera continuously follow an entity
-	 * @param {Entity} entity - The entity to follow
-	 */
-	cameraFollowEntity(entity) {
-		this.followed_entity = entity;
-	}
-
-	/**
-	 * Stops the camera from following an entity
-	 */
-	stopFollowingEntity() {
-		this.followed_entity = null;
 	}
 
 	/**
@@ -240,6 +237,9 @@ class Game extends HTMLElement {
 		}
 	}
 
+	/**
+	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
+	 */
 	connectedCallback() {
 		this.scale = 5;
 
@@ -287,6 +287,9 @@ class Game extends HTMLElement {
 		this.startGameLoop();
 	}
 
+	/**
+	 * Called when the element is removed from the DOM. Stops the game loop.
+	 */
 	disconnectedCallback() {
 		this.stopGameLoop();
 	}
