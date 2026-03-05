@@ -431,7 +431,7 @@ class Entity extends HTMLElement {
 				// Set z-index based on layer depth
 				entity_layer.style.zIndex = i.toString();
 				if (i > 0) {
-					entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, 1))';
+					entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
 				}
 				this.appendChild(entity_layer);
 			}
