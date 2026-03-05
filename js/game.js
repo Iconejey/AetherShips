@@ -50,6 +50,38 @@ class Camera {
 			y: this.y + unrotated_y / scale
 		};
 	}
+
+	/**
+	 * Moves the camera to a specific world position
+	 * @param {number} x - World x coordinate
+	 * @param {number} y - World y coordinate
+	 * @param {number} r - Camera rotation in radians
+	 */
+	moveTo(x, y, r = this.r) {
+		this.x = x;
+		this.y = y;
+		this.r = r;
+	}
+
+	/**
+	 * Offsets the camera position by the given delta
+	 * @param {number} dx - Delta x
+	 * @param {number} dy - Delta y
+	 * @param {number} dr - Delta rotation in radians
+	 */
+	offset(dx, dy, dr = 0) {
+		this.x += dx;
+		this.y += dy;
+		this.r += dr;
+	}
+
+	/**
+	 * Updates camera position and rotation to focus on an entity
+	 * @param {Entity} entity - The entity to focus on
+	 */
+	focusOn(entity) {
+		this.moveTo(entity.position.x, entity.position.y, entity.position.r);
+	}
 }
 
 /**
@@ -64,6 +96,7 @@ class Game extends HTMLElement {
 		this.fps_counter = null;
 		this.fps_timer = 0;
 		this.fps_frame_count = 0;
+		this.followed_entity = null;
 	}
 
 	updateFpsCounter(delta_seconds) {
@@ -98,6 +131,11 @@ class Game extends HTMLElement {
 			if (Math.abs(entity.velocity.vx) < 0.0001) entity.velocity.vx = 0;
 			if (Math.abs(entity.velocity.vy) < 0.0001) entity.velocity.vy = 0;
 			if (Math.abs(entity.velocity.vr) < 0.0001) entity.velocity.vr = 0;
+		}
+
+		// Update camera to follow entity if one is being followed
+		if (this.followed_entity) {
+			this.camera.focusOn(this.followed_entity);
 		}
 	}
 
@@ -151,9 +189,7 @@ class Game extends HTMLElement {
 	 * @param {number} r - Camera rotation in radians
 	 */
 	moveCameraTo(x, y, r = this.camera.r) {
-		this.camera.x = x;
-		this.camera.y = y;
-		this.camera.r = r;
+		this.camera.moveTo(x, y, r);
 		this.updateEntityPositions();
 	}
 
@@ -164,18 +200,23 @@ class Game extends HTMLElement {
 	 * @param {number} dr - Delta rotation in radians
 	 */
 	offsetCamera(dx, dy, dr = 0) {
-		this.camera.x += dx;
-		this.camera.y += dy;
-		this.camera.r += dr;
+		this.camera.offset(dx, dy, dr);
 		this.updateEntityPositions();
 	}
 
 	/**
-	 * Makes the camera follow an entity
+	 * Makes the camera continuously follow an entity
 	 * @param {Entity} entity - The entity to follow
 	 */
 	cameraFollowEntity(entity) {
-		this.moveCameraTo(entity.position.x, entity.position.y, entity.position.r);
+		this.followed_entity = entity;
+	}
+
+	/**
+	 * Stops the camera from following an entity
+	 */
+	stopFollowingEntity() {
+		this.followed_entity = null;
 	}
 
 	/**
@@ -228,13 +269,16 @@ class Game extends HTMLElement {
 		test_entity.fillEllipse(1, 0, 0, 96, 96, 'dirt');
 		test_entity.fillEllipse(2, 0, 0, 16, 16, 'lamp');
 
+		test_entity.render();
+
+		// Follow entity with camera
+		this.cameraFollowEntity(test_entity);
+
 		setInterval(() => {
 			test_entity.velocity.vx += (Math.random() - 0.5) * 0.5;
 			test_entity.velocity.vy += (Math.random() - 0.5) * 0.5;
 			test_entity.velocity.vr += (Math.random() - 0.5) * 0.01;
 		}, 1000);
-
-		test_entity.render();
 
 		// Update positions after initial setup
 		this.updateEntityPositions();
