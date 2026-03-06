@@ -73,8 +73,6 @@ const state_struct = new Struct([
 	['is_burning', 1]
 ]);
 
-console.log(`State struct size: ${state_struct.size} bits`);
-
 /**
  * Randomly selects one item from the provided array.
  * @param {Array} arr - The array to select from.

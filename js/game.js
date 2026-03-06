@@ -158,7 +158,7 @@ class Game extends HTMLElement {
 
 		if (this.fps_timer >= 0.25) {
 			const fps = Math.round(this.fps_frame_count / this.fps_timer);
-			this.fps_counter.textContent = `FPS: ${fps}`;
+			this.fps_counter.textContent = fps;
 			this.fps_timer = 0;
 			this.fps_frame_count = 0;
 		}
@@ -423,8 +423,6 @@ class Game extends HTMLElement {
 		this.camera.setMode(new_mode);
 		document.body.classList.toggle('inspect-mode', new_mode === 'inspect');
 
-		console.log(`Switched to ${new_mode} mode`);
-
 		// Reset camera offset when switching to navigation
 		if (new_mode === 'navigation') {
 			this.camera.inspect_offset_screen_x = 0;
@@ -446,7 +444,7 @@ class Game extends HTMLElement {
 		if (!this.fps_counter) {
 			this.fps_counter = document.createElement('div');
 			this.fps_counter.className = 'fps_counter';
-			this.fps_counter.textContent = 'FPS: 0';
+			this.fps_counter.textContent = '0';
 			this.appendChild(this.fps_counter);
 		}
 
