@@ -13,6 +13,9 @@ class Camera {
 		this.y = y;
 		this.r = r;
 		this.followed_entity = null;
+		this.mode = 'navigation'; // 'navigation' or 'inspect'
+		this.inspect_offset_screen_x = 0;
+		this.inspect_offset_screen_y = 0;
 	}
 
 	/**
@@ -83,11 +86,34 @@ class Camera {
 	}
 
 	/**
-	 * Updates camera position and rotation to focus on an entity
+	 * Updates camera position based on mode and entity focus
 	 * @param {Entity} entity - The entity to focus on
 	 */
-	focusOn(entity) {
-		this.moveTo(entity.position.x, entity.position.y, entity.position.r);
+	update(entity, scale = 1) {
+		if (!entity) return;
+
+		if (this.mode === 'navigation') {
+			// Center camera on entity
+			this.moveTo(entity.position.x, entity.position.y, entity.position.r);
+		} else if (this.mode === 'inspect') {
+			// Apply screen-space inspect offset transformed into world-space
+			const cos_r = Math.cos(-entity.position.r);
+			const sin_r = Math.sin(-entity.position.r);
+			const world_offset_x = (this.inspect_offset_screen_x * cos_r - this.inspect_offset_screen_y * sin_r) / scale;
+			const world_offset_y = (this.inspect_offset_screen_x * sin_r + this.inspect_offset_screen_y * cos_r) / scale;
+
+			this.moveTo(entity.position.x + world_offset_x, entity.position.y + world_offset_y, entity.position.r);
+		}
+	}
+
+	/**
+	 * Sets the camera mode
+	 * @param {string} mode - 'navigation' or 'inspect'
+	 */
+	setMode(mode) {
+		if (mode === 'navigation' || mode === 'inspect') {
+			this.mode = mode;
+		}
 	}
 }
 
@@ -113,6 +139,11 @@ class Game extends HTMLElement {
 		this.pressed_keys = {};
 		this.viewport_center_x = window.innerWidth / 2;
 		this.viewport_center_y = window.innerHeight / 2;
+		this.is_dragging = false;
+		this.drag_start_x = 0;
+		this.drag_start_y = 0;
+		this.drag_origin_offset_x = 0;
+		this.drag_origin_offset_y = 0;
 	}
 
 	/**
@@ -241,6 +272,7 @@ class Game extends HTMLElement {
 	 */
 	handleKeyboardInput(delta_frames) {
 		if (!this.camera.followed_entity) return;
+		if (this.camera.mode !== 'navigation') return;
 
 		const thrust_force = 0.02;
 		const rotation_speed = 0.001;
@@ -295,7 +327,7 @@ class Game extends HTMLElement {
 
 		// Update camera to follow entity if one is being followed
 		if (this.camera.followed_entity) {
-			this.camera.focusOn(this.camera.followed_entity);
+			this.camera.update(this.camera.followed_entity, this.scale);
 		}
 	}
 
@@ -382,10 +414,31 @@ class Game extends HTMLElement {
 	}
 
 	/**
+	 * Toggles between 'navigation' and 'inspect' modes.
+	 * In 'navigation' mode, the camera centers on the followed entity. In 'inspect' mode, the camera allows free movement around the followed entity using mouse dragging.
+	 * @param {string|null} mode - Optional mode to switch to ('navigation' or 'inspect'). If null, it toggles to the opposite mode.
+	 */
+	switchMode(mode = null) {
+		const new_mode = mode ?? (this.camera.mode === 'navigation' ? 'inspect' : 'navigation');
+		this.camera.setMode(new_mode);
+		document.body.classList.toggle('inspect-mode', new_mode === 'inspect');
+
+		console.log(`Switched to ${new_mode} mode`);
+
+		// Reset camera offset when switching to navigation
+		if (new_mode === 'navigation') {
+			this.camera.inspect_offset_screen_x = 0;
+			this.camera.inspect_offset_screen_y = 0;
+			this.is_dragging = false;
+		}
+	}
+
+	/**
 	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
 	 */
 	connectedCallback() {
 		this.scale = 5;
+		document.body.classList.remove('inspect-mode');
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -409,6 +462,31 @@ class Game extends HTMLElement {
 			this.updateEntityPositions();
 		});
 
+		// Add mouse controls for inspect mode
+		window.addEventListener('mousedown', event => {
+			if (this.camera.mode === 'inspect') {
+				this.is_dragging = true;
+				this.drag_start_x = event.clientX;
+				this.drag_start_y = event.clientY;
+				this.drag_origin_offset_x = this.camera.inspect_offset_screen_x;
+				this.drag_origin_offset_y = this.camera.inspect_offset_screen_y;
+			}
+		});
+
+		window.addEventListener('mousemove', event => {
+			if (this.is_dragging && this.camera.mode === 'inspect') {
+				const delta_x = event.clientX - this.drag_start_x;
+				const delta_y = event.clientY - this.drag_start_y;
+				// Apply offset opposite to mouse movement
+				this.camera.inspect_offset_screen_x = this.drag_origin_offset_x - delta_x;
+				this.camera.inspect_offset_screen_y = this.drag_origin_offset_y - delta_y;
+			}
+		});
+
+		window.addEventListener('mouseup', () => {
+			this.is_dragging = false;
+		});
+
 		// Add keyboard controls for ZQSD movement
 		window.addEventListener('keydown', event => {
 			this.pressed_keys[event.key] = true;
@@ -417,6 +495,10 @@ class Game extends HTMLElement {
 		window.addEventListener('keyup', event => {
 			this.pressed_keys[event.key] = false;
 		});
+
+		// Setup toolbar mode buttons
+		document.getElementById('set-mode-inspect').onclick = () => this.switchMode('inspect');
+		document.getElementById('set-mode-navigate').onclick = () => this.switchMode('navigation');
 
 		// Let's add a test entity to the game
 		const test_entity = document.createElement('entity-root');

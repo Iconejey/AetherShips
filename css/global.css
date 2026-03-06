@@ -10,11 +10,29 @@ body {
 	overflow: hidden;
 	font-family: 'Courier New', monospace;
 	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
+	position: relative;
+}
+
+body::before {
+	content: '';
+	position: fixed;
+	inset: 0;
+	background: linear-gradient(135deg, #0f0f14 0%, #111119 100%);
+	opacity: 0;
+	transition: opacity 0.35s ease;
+	pointer-events: none;
+	z-index: 0;
+}
+
+body.inspect-mode::before {
+	opacity: 1;
 }
 
 game-root {
 	--game-scale: 1;
 	display: block;
+	position: relative;
+	z-index: 1;
 }
 
 game-root .fps_counter {
