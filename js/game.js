@@ -13,7 +13,6 @@ class Camera {
 		this.y = y;
 		this.r = r;
 		this.followed_entity = null;
-		this.mode = 'navigation'; // 'navigation' or 'inspect'
 		this.inspect_offset_screen_x = 0;
 		this.inspect_offset_screen_y = 0;
 	}
@@ -88,14 +87,12 @@ class Camera {
 	/**
 	 * Updates camera position based on mode and entity focus
 	 * @param {Entity} entity - The entity to focus on
+	 * @param {'navigation'|'inspect'} mode - Active game mode
 	 */
-	update(entity, scale = 1) {
+	update(entity, scale = 1, free = false) {
 		if (!entity) return;
 
-		if (this.mode === 'navigation') {
-			// Center camera on entity
-			this.moveTo(entity.position.x, entity.position.y, entity.position.r);
-		} else if (this.mode === 'inspect') {
+		if (free) {
 			// Apply screen-space inspect offset transformed into world-space
 			const cos_r = Math.cos(-entity.position.r);
 			const sin_r = Math.sin(-entity.position.r);
@@ -104,16 +101,9 @@ class Camera {
 
 			this.moveTo(entity.position.x + world_offset_x, entity.position.y + world_offset_y, entity.position.r);
 		}
-	}
 
-	/**
-	 * Sets the camera mode
-	 * @param {string} mode - 'navigation' or 'inspect'
-	 */
-	setMode(mode) {
-		if (mode === 'navigation' || mode === 'inspect') {
-			this.mode = mode;
-		}
+		// Center camera on entity
+		else this.moveTo(entity.position.x, entity.position.y, entity.position.r);
 	}
 }
 
@@ -121,6 +111,8 @@ class Camera {
  * Custom HTMLElement representing the game, which contains entities (ships, asteroids, planets, etc.)
  */
 class Game extends HTMLElement {
+	static modes = ['navigation', 'inspect', 'edit'];
+
 	/**
 	 * Creates a game instance
 	 */
@@ -143,6 +135,33 @@ class Game extends HTMLElement {
 		this.prev_mouse_x = 0;
 		this.prev_mouse_y = 0;
 		this.scale = 1;
+	}
+
+	/**
+	 * Current mode derived from body classes.
+	 * @returns {'inspect'|'navigation'|'map'|'edit'}
+	 */
+	get mode() {
+		for (const mode of Game.modes) {
+			if (document.body.classList.contains(mode)) return mode;
+		}
+		return 'navigation';
+	}
+
+	/**
+	 * Applies the selected mode to body classes and camera behavior.
+	 * @param {'inspect'|'navigation'|'map'|'edit'} mode - Selected toolbar mode.
+	 */
+	set mode(value = 'navigation') {
+		document.body.classList.remove(...Game.modes);
+		document.body.classList.add(value);
+
+		// Reset camera offset when switching to navigation
+		if (value === 'navigation') {
+			this.camera.inspect_offset_screen_x = 0;
+			this.camera.inspect_offset_screen_y = 0;
+			this.has_prev_mouse_position = false;
+		}
 	}
 
 	/**
@@ -271,7 +290,7 @@ class Game extends HTMLElement {
 	 */
 	handleKeyboardInput(delta_frames) {
 		if (!this.camera.followed_entity) return;
-		if (this.camera.mode !== 'navigation') return;
+		if (this.mode !== 'navigation') return;
 
 		const thrust_force = 0.02;
 		const rotation_speed = 0.001;
@@ -326,7 +345,7 @@ class Game extends HTMLElement {
 
 		// Update camera to follow entity if one is being followed
 		if (this.camera.followed_entity) {
-			this.camera.update(this.camera.followed_entity, this.scale);
+			this.camera.update(this.camera.followed_entity, this.scale, this.mode !== 'navigation');
 		}
 	}
 
@@ -425,7 +444,7 @@ class Game extends HTMLElement {
 		this.camera.inspect_offset_screen_x += (target_offset_x - this.camera.inspect_offset_screen_x) * zoom_movement_factor;
 		this.camera.inspect_offset_screen_y += (target_offset_y - this.camera.inspect_offset_screen_y) * zoom_movement_factor;
 
-		this.camera.update(followed_entity, new_scale);
+		this.camera.update(followed_entity, new_scale, true);
 	}
 
 	/**
@@ -450,30 +469,12 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Toggles between 'navigation' and 'inspect' modes.
-	 * In 'navigation' mode, the camera centers on the followed entity. In 'inspect' mode, the camera allows free movement around the followed entity using mouse dragging.
-	 * @param {string|null} mode - Optional mode to switch to ('navigation' or 'inspect'). If null, it toggles to the opposite mode.
-	 */
-	switchMode(mode = null) {
-		const new_mode = mode ?? (this.camera.mode === 'navigation' ? 'inspect' : 'navigation');
-		this.camera.setMode(new_mode);
-		document.body.classList.toggle('inspect-mode', new_mode === 'inspect');
-
-		// Reset camera offset when switching to navigation
-		if (new_mode === 'navigation') {
-			this.camera.inspect_offset_screen_x = 0;
-			this.camera.inspect_offset_screen_y = 0;
-			this.has_prev_mouse_position = false;
-		}
-	}
-
-	/**
 	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
 	 */
 	connectedCallback() {
-		this.scale = 10;
+		this.scale = 12;
 		this.style.setProperty('--game-scale', this.scale);
-		document.body.classList.remove('inspect-mode');
+		this.mode = 'navigation';
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -491,7 +492,7 @@ class Game extends HTMLElement {
 			event => {
 				const zoom_delta = event.deltaY * -0.01;
 
-				if (this.camera.mode === 'inspect') {
+				if (this.mode !== 'navigation') {
 					event.preventDefault();
 					return this.zoomInspectAtCursor(zoom_delta, event.clientX, event.clientY);
 				}
@@ -504,7 +505,7 @@ class Game extends HTMLElement {
 
 		// Add mouse move controls for inspect mode (active while Space is held)
 		window.addEventListener('mousemove', event => {
-			if (this.camera.mode !== 'inspect' || !this.isSpacePressed()) {
+			if (this.mode === 'navigation' || !this.isSpacePressed()) {
 				this.has_prev_mouse_position = false;
 				return;
 			}
@@ -543,8 +544,10 @@ class Game extends HTMLElement {
 		});
 
 		// Setup toolbar mode buttons
-		document.getElementById('set-mode-inspect').onclick = () => this.switchMode('inspect');
-		document.getElementById('set-mode-navigate').onclick = () => this.switchMode('navigation');
+		for (const mode of Game.modes) {
+			const button = document.getElementById(`set-mode-${mode}`);
+			button.onclick = () => (this.mode = mode);
+		}
 
 		// Let's add a test entity to the game
 		const test_entity = document.createElement('entity-root');
