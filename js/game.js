@@ -139,11 +139,10 @@ class Game extends HTMLElement {
 		this.pressed_keys = {};
 		this.viewport_center_x = window.innerWidth / 2;
 		this.viewport_center_y = window.innerHeight / 2;
-		this.is_dragging = false;
-		this.drag_start_x = 0;
-		this.drag_start_y = 0;
-		this.drag_origin_offset_x = 0;
-		this.drag_origin_offset_y = 0;
+		this.has_prev_mouse_position = false;
+		this.prev_mouse_x = 0;
+		this.prev_mouse_y = 0;
+		this.scale = 1;
 	}
 
 	/**
@@ -368,28 +367,65 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Sets the game scale (zoom level, clamped between 1 and 20)
-	 * @param {number} value - The scale value to set
-	 */
-	set scale(value) {
-		this.free_scale = Math.min(Math.max(1, value), 20);
-		this.style.setProperty('--game-scale', this.scale);
-	}
-
-	/**
-	 * Gets the current game scale (zoom level)
-	 * @returns {number} The current scale, rounded to integer
-	 */
-	get scale() {
-		return Math.round(this.free_scale);
-	}
-
-	/**
 	 * Adjusts the game scale by the given delta
 	 * @param {number} delta - The amount to adjust the scale by
 	 */
 	zoom(delta) {
-		this.scale = this.free_scale + delta;
+		this.scale = Math.min(Math.max(1, this.scale + delta), 20);
+		this.style.setProperty('--game-scale', this.scale);
+	}
+
+	/**
+	 * Returns true when the space key is currently pressed
+	 * @returns {boolean}
+	 */
+	isSpacePressed() {
+		return Boolean(this.pressed_keys[' '] || this.pressed_keys['Space']);
+	}
+
+	/**
+	 * Zooms while keeping cursor world focus stable by updating inspect screen offset
+	 * @param {number} delta - Wheel-based zoom delta
+	 * @param {number} client_x - Mouse x position in viewport
+	 * @param {number} client_y - Mouse y position in viewport
+	 */
+	zoomInspectAtCursor(delta, client_x, client_y) {
+		const relative_mouse_x = client_x - this.viewport_center_x;
+		const relative_mouse_y = client_y - this.viewport_center_y;
+		const old_scale = this.scale;
+
+		this.zoom(delta);
+		const new_scale = this.scale;
+
+		if (new_scale === old_scale || !this.camera.followed_entity) return;
+
+		const followed_entity = this.camera.followed_entity;
+
+		// Zoom in: anchor at mouse cursor (move toward mouse)
+		// Zoom out: anchor at opposite side (move away from mouse)
+
+		// Scale movement factor by actual scale change for responsiveness
+		const scale_change = Math.abs(new_scale - old_scale);
+		const zoom_movement_factor = Math.min(0.15 * (scale_change / Math.abs(delta)), 1);
+
+		// For zoom in, use mouse position; for zoom out, use opposite direction
+		const anchor_x = delta > 0 ? relative_mouse_x : -relative_mouse_x;
+		const anchor_y = delta > 0 ? relative_mouse_y : -relative_mouse_y;
+
+		const anchor_world_pos = this.camera.screenToWorld(anchor_x, anchor_y, old_scale);
+		const world_offset_x = anchor_world_pos.x - followed_entity.position.x;
+		const world_offset_y = anchor_world_pos.y - followed_entity.position.y;
+		const cos_r = Math.cos(followed_entity.position.r);
+		const sin_r = Math.sin(followed_entity.position.r);
+
+		const target_offset_x = (world_offset_x * cos_r - world_offset_y * sin_r) * new_scale;
+		const target_offset_y = (world_offset_x * sin_r + world_offset_y * cos_r) * new_scale;
+
+		// Lerp toward target offset
+		this.camera.inspect_offset_screen_x += (target_offset_x - this.camera.inspect_offset_screen_x) * zoom_movement_factor;
+		this.camera.inspect_offset_screen_y += (target_offset_y - this.camera.inspect_offset_screen_y) * zoom_movement_factor;
+
+		this.camera.update(followed_entity, new_scale);
 	}
 
 	/**
@@ -427,7 +463,7 @@ class Game extends HTMLElement {
 		if (new_mode === 'navigation') {
 			this.camera.inspect_offset_screen_x = 0;
 			this.camera.inspect_offset_screen_y = 0;
-			this.is_dragging = false;
+			this.has_prev_mouse_position = false;
 		}
 	}
 
@@ -435,7 +471,8 @@ class Game extends HTMLElement {
 	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
 	 */
 	connectedCallback() {
-		this.scale = 5;
+		this.scale = 10;
+		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.remove('inspect-mode');
 
 		// Initialize stars first (so they're behind other elements)
@@ -449,8 +486,43 @@ class Game extends HTMLElement {
 		}
 
 		// Add wheel event for scale control
-		window.addEventListener('wheel', event => {
-			this.zoom(event.deltaY * -0.02);
+		window.addEventListener(
+			'wheel',
+			event => {
+				const zoom_delta = event.deltaY * -0.01;
+
+				if (this.camera.mode === 'inspect') {
+					event.preventDefault();
+					return this.zoomInspectAtCursor(zoom_delta, event.clientX, event.clientY);
+				}
+
+				// Navigation mode: always zoom
+				this.zoom(zoom_delta);
+			},
+			{ passive: false }
+		);
+
+		// Add mouse move controls for inspect mode (active while Space is held)
+		window.addEventListener('mousemove', event => {
+			if (this.camera.mode !== 'inspect' || !this.isSpacePressed()) {
+				this.has_prev_mouse_position = false;
+				return;
+			}
+
+			if (!this.has_prev_mouse_position) {
+				this.prev_mouse_x = event.clientX;
+				this.prev_mouse_y = event.clientY;
+				this.has_prev_mouse_position = true;
+				return;
+			}
+
+			const delta_x = event.clientX - this.prev_mouse_x;
+			const delta_y = event.clientY - this.prev_mouse_y;
+			// Apply offset opposite to mouse movement
+			this.camera.inspect_offset_screen_x -= delta_x;
+			this.camera.inspect_offset_screen_y -= delta_y;
+			this.prev_mouse_x = event.clientX;
+			this.prev_mouse_y = event.clientY;
 		});
 
 		// Add resize listener to update entity positions
@@ -460,31 +532,6 @@ class Game extends HTMLElement {
 			this.updateEntityPositions();
 		});
 
-		// Add mouse controls for inspect mode
-		window.addEventListener('mousedown', event => {
-			if (this.camera.mode === 'inspect') {
-				this.is_dragging = true;
-				this.drag_start_x = event.clientX;
-				this.drag_start_y = event.clientY;
-				this.drag_origin_offset_x = this.camera.inspect_offset_screen_x;
-				this.drag_origin_offset_y = this.camera.inspect_offset_screen_y;
-			}
-		});
-
-		window.addEventListener('mousemove', event => {
-			if (this.is_dragging && this.camera.mode === 'inspect') {
-				const delta_x = event.clientX - this.drag_start_x;
-				const delta_y = event.clientY - this.drag_start_y;
-				// Apply offset opposite to mouse movement
-				this.camera.inspect_offset_screen_x = this.drag_origin_offset_x - delta_x;
-				this.camera.inspect_offset_screen_y = this.drag_origin_offset_y - delta_y;
-			}
-		});
-
-		window.addEventListener('mouseup', () => {
-			this.is_dragging = false;
-		});
-
 		// Add keyboard controls for ZQSD movement
 		window.addEventListener('keydown', event => {
 			this.pressed_keys[event.key] = true;
@@ -492,6 +539,7 @@ class Game extends HTMLElement {
 
 		window.addEventListener('keyup', event => {
 			this.pressed_keys[event.key] = false;
+			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
 		});
 
 		// Setup toolbar mode buttons
