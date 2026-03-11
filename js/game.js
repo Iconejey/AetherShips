@@ -233,17 +233,20 @@ class Game extends HTMLElement {
 		const delta_x = this.camera.x - this.prev_camera_x;
 		const delta_y = this.camera.y - this.prev_camera_y;
 		const delta_r = this.camera.r - this.prev_camera_r;
+		const camera_rotation = this.camera.r;
 
 		this.prev_camera_x = this.camera.x;
 		this.prev_camera_y = this.camera.y;
 		this.prev_camera_r = this.camera.r;
 
-		// Transform world-space camera movement to screen-space using camera rotation
-		// This ensures visual movement direction stays consistent relative to screen
-		const cos_r = Math.cos(-this.prev_camera_r);
-		const sin_r = Math.sin(-this.prev_camera_r);
-		const screen_delta_x = delta_x * cos_r - delta_y * sin_r;
-		const screen_delta_y = delta_x * sin_r + delta_y * cos_r;
+		// Convert camera world movement back into the current screen basis.
+		// This keeps parallax aligned with inspect-mode panning after rotation.
+		const scaled_delta_x = delta_x * this.scale;
+		const scaled_delta_y = delta_y * this.scale;
+		const cos_r = Math.cos(camera_rotation);
+		const sin_r = Math.sin(camera_rotation);
+		const screen_delta_x = scaled_delta_x * cos_r - scaled_delta_y * sin_r;
+		const screen_delta_y = scaled_delta_x * sin_r + scaled_delta_y * cos_r;
 
 		const viewport_diagonal = Math.sqrt(window.innerWidth ** 2 + window.innerHeight ** 2);
 		const max_circle_radius = viewport_diagonal / 2;
