@@ -64,7 +64,7 @@ body.edit #set-mode-edit {
 	body.rectangle & #rectangle-tool,
 	body.ellipse & #ellipse-tool,
 	body.erase & #erase-tool,
-	body.color-picker-tool & #color-picker-tool {
+	body.paint & #paint-tool {
 		color: var(--mode-selected-color) !important;
 		background: rgba(0, 234, 255, 0.12) !important;
 	}

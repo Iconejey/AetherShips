@@ -112,7 +112,7 @@ class Camera {
  */
 class Game extends HTMLElement {
 	static modes = ['navigation', 'inspect', 'edit'];
-	static tools = ['pen', 'line', 'rectangle', 'ellipse', 'erase', 'color-picker'];
+	static tools = ['pen', 'line', 'rectangle', 'ellipse', 'erase', 'paint'];
 
 	/**
 	 * Creates a game instance
@@ -167,7 +167,7 @@ class Game extends HTMLElement {
 
 	/**
 	 * Sets the active tool in edit mode by updating body classes.
-	 * @param {'pen'|'line'|'rectangle'|'ellipse'|'erase'|'color-picker'} tool - Selected edit tool.
+	 * @param {'pen'|'line'|'rectangle'|'ellipse'|'erase'|'paint'} tool - Selected edit tool.
 	 */
 	set tool(value) {
 		document.body.classList.remove(...Game.tools);
