@@ -112,6 +112,7 @@ class Camera {
  */
 class Game extends HTMLElement {
 	static modes = ['navigation', 'inspect', 'edit'];
+	static tools = ['pen', 'line', 'rectangle', 'ellipse', 'erase', 'color-picker'];
 
 	/**
 	 * Creates a game instance
@@ -152,7 +153,7 @@ class Game extends HTMLElement {
 	 * Applies the selected mode to body classes and camera behavior.
 	 * @param {'inspect'|'navigation'|'map'|'edit'} mode - Selected toolbar mode.
 	 */
-	set mode(value = 'navigation') {
+	set mode(value) {
 		document.body.classList.remove(...Game.modes);
 		document.body.classList.add(value);
 
@@ -162,6 +163,15 @@ class Game extends HTMLElement {
 			this.camera.inspect_offset_screen_y = 0;
 			this.has_prev_mouse_position = false;
 		}
+	}
+
+	/**
+	 * Sets the active tool in edit mode by updating body classes.
+	 * @param {'pen'|'line'|'rectangle'|'ellipse'|'erase'|'color-picker'} tool - Selected edit tool.
+	 */
+	set tool(value) {
+		document.body.classList.remove(...Game.tools);
+		document.body.classList.add(value);
 	}
 
 	/**
@@ -478,6 +488,7 @@ class Game extends HTMLElement {
 		this.scale = 12;
 		this.style.setProperty('--game-scale', this.scale);
 		this.mode = 'navigation';
+		this.tool = 'pen';
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -550,6 +561,12 @@ class Game extends HTMLElement {
 		for (const mode of Game.modes) {
 			const button = document.getElementById(`set-mode-${mode}`);
 			button.onclick = () => (this.mode = mode);
+		}
+
+		// Setup toolbar edit tool buttons
+		for (const tool of Game.tools) {
+			const button = document.getElementById(`${tool}-tool`);
+			button.onclick = () => (this.tool = tool);
 		}
 
 		// Let's add a test entity to the game

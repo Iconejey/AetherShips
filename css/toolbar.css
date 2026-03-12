@@ -52,3 +52,20 @@ body.edit #set-mode-edit {
 	color: var(--mode-selected-color) !important;
 	background: rgba(0, 234, 255, 0.12) !important;
 }
+
+.edit-tools {
+	/* Show only in edit mode */
+	body:not(.edit) & {
+		display: none !important;
+	}
+
+	body.pen & #pen-tool,
+	body.line & #line-tool,
+	body.rectangle & #rectangle-tool,
+	body.ellipse & #ellipse-tool,
+	body.erase & #erase-tool,
+	body.color-picker-tool & #color-picker-tool {
+		color: var(--mode-selected-color) !important;
+		background: rgba(0, 234, 255, 0.12) !important;
+	}
+}
