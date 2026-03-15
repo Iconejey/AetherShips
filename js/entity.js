@@ -136,6 +136,16 @@ const blocks = {
 		death: (arr, index) => (arr[index] = 0) // Empty block on death
 	},
 
+	// Structural
+	fuselage: {
+		init: (x, y) => ({
+			type: 16,
+			color: oneOf([0xa0a0a0ff, 0xa2a2a2ff, 0xa4a4a4ff]),
+			health: 10
+		}),
+		death: (arr, index) => (arr[index] = 0) // Empty block on death
+	},
+
 	// Decorative
 	lamp: {
 		init: (x, y) => ({

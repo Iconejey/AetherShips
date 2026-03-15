@@ -4,9 +4,9 @@ class ToolBar extends HTMLElement {
 
 		const multi_select = this.$('multi-select');
 
-		multi_select.add('navigation', 'navigation', 'Switch to navigation mode');
-		multi_select.add('inspect', 'gesture_select', 'Switch to inspect mode');
-		multi_select.add('edit', 'edit', 'Switch to edit mode');
+		multi_select.add('navigation', 'navigation', 'Switch to navigation mode', 'Ctrl+N');
+		multi_select.add('inspect', 'gesture_select', 'Switch to inspect mode', 'Ctrl+I');
+		multi_select.add('edit', 'edit', 'Switch to edit mode', 'Ctrl+E');
 
 		multi_select.onchange = value => {
 			const sidebar = $('side-bar');
@@ -14,7 +14,7 @@ class ToolBar extends HTMLElement {
 			document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
 
 			// Reset camera offset when switching to navigation
-			if (value === 'navigation') {
+			if (window.game && value === 'navigation') {
 				game.camera.inspect_offset_screen_x = 0;
 				game.camera.inspect_offset_screen_y = 0;
 				game.has_prev_mouse_position = false;
@@ -24,7 +24,19 @@ class ToolBar extends HTMLElement {
 			if (value === 'edit') sidebar.showEditTools();
 		};
 
-		multi_select.value = 'edit';
+		window.addEventListener('keydown', e => this.handleShortcut(e));
+
+		multi_select.value = 'navigation';
+	}
+
+	handleShortcut(event) {
+		if (event.metaKey || event.altKey) return;
+
+		const mode = this.$('multi-select').getValueForEvent(event);
+		if (!mode) return;
+
+		event.preventDefault();
+		this.$('multi-select').value = mode;
 	}
 }
 
