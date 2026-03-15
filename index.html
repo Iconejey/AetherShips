@@ -5,32 +5,29 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' https://fonts.googleapis.com; font-src https://fonts.gstatic.com" />
 		<title>AetherShips</title>
+
+		<!-- Fonts -->
 		<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+
+		<!-- Styles -->
 		<link rel="stylesheet" href="css/global.css" />
-		<link rel="stylesheet" href="css/toolbar.css" />
+		<link rel="stylesheet" href="css/tool-bar.css" />
+		<link rel="stylesheet" href="css/side-bar.css" />
 		<link rel="stylesheet" href="css/entity.css" />
 		<link rel="stylesheet" href="css/stars.css" />
+
+		<!-- Components -->
+		<script src="js/components/component.js" defer></script>
+		<script src="js/components/tool-bar.js" defer></script>
+		<script src="js/components/side-bar.js" defer></script>
+
+		<!-- Scripts -->
 		<script src="js/entity.js" defer></script>
 		<script src="js/game.js" defer></script>
 	</head>
 	<body>
 		<game-root></game-root>
-		<div id="tool-bar">
-			<div class="group">
-				<button id="set-mode-map" title="Switch to map mode">map</button>
-				<button id="set-mode-navigation" title="Switch to navigation mode">navigation</button>
-				<button id="set-mode-inspect" title="Switch to inspect mode">gesture_select</button>
-				<button id="set-mode-edit" title="Switch to edit mode">edit</button>
-			</div>
-
-			<div class="group edit-tools">
-				<button id="pen-tool" title="Select pen tool">draw</button>
-				<button id="line-tool" title="Select line tool">diagonal_line</button>
-				<button id="rectangle-tool" title="Select rectangle tool">crop_square</button>
-				<button id="ellipse-tool" title="Select ellipse tool">radio_button_unchecked</button>
-				<button id="erase-tool" title="Select erase tool">ink_eraser</button>
-				<button id="paint-tool" title="Select paint tool">format_paint</button>
-			</div>
-		</div>
+		<tool-bar></tool-bar>
+		<side-bar></side-bar>
 	</body>
 </html>
