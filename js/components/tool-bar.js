@@ -15,9 +15,7 @@ class ToolBar extends HTMLElement {
 
 			// Reset camera offset when switching to navigation
 			if (window.game && value === 'navigation') {
-				game.camera.inspect_offset_screen_x = 0;
-				game.camera.inspect_offset_screen_y = 0;
-				game.has_prev_mouse_position = false;
+				window.game.resetInspectOffset();
 			}
 
 			// Open sidebar with edit tools when switching to edit mode

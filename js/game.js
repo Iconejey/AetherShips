@@ -24,6 +24,8 @@ class Game extends HTMLElement {
 		this.has_prev_mouse_position = false;
 		this.prev_mouse_x = 0;
 		this.prev_mouse_y = 0;
+		this.last_space_keydown_at = 0;
+		this.space_double_press_window_ms = 300;
 		this.scale = 1;
 	}
 
@@ -298,6 +300,19 @@ class Game extends HTMLElement {
 	}
 
 	/**
+	 * Resets inspect camera offset and re-centers the followed entity
+	 */
+	resetInspectOffset() {
+		this.camera.inspect_offset_screen_x = 0;
+		this.camera.inspect_offset_screen_y = 0;
+		this.has_prev_mouse_position = false;
+
+		if (this.camera.followed_entity && this.mode !== 'navigation') {
+			this.camera.update(this.camera.followed_entity, this.scale, true);
+		}
+	}
+
+	/**
 	 * Zooms while keeping cursor world focus stable by updating inspect screen offset
 	 * @param {number} delta - Wheel-based zoom delta
 	 * @param {number} client_x - Mouse x position in viewport
@@ -430,6 +445,18 @@ class Game extends HTMLElement {
 		// Add keyboard controls for ZQSD movement and A/E strafing
 		window.addEventListener('keydown', event => {
 			this.pressed_keys[event.key] = true;
+
+			if ((event.key === ' ' || event.code === 'Space') && !event.repeat) {
+				const now = performance.now();
+				const within_double_press_window = now - this.last_space_keydown_at <= this.space_double_press_window_ms;
+
+				if (this.mode !== 'navigation' && within_double_press_window) {
+					this.resetInspectOffset();
+					this.last_space_keydown_at = 0;
+				} else {
+					this.last_space_keydown_at = now;
+				}
+			}
 		});
 
 		window.addEventListener('keyup', event => {
