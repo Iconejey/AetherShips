@@ -329,8 +329,8 @@ class Game extends HTMLElement {
 		const anchor_world_pos = this.camera.screenToWorld(anchor_x, anchor_y, old_scale);
 		const world_offset_x = anchor_world_pos.x - followed_entity.position.x;
 		const world_offset_y = anchor_world_pos.y - followed_entity.position.y;
-		const cos_r = Math.cos(followed_entity.position.r);
-		const sin_r = Math.sin(followed_entity.position.r);
+		const cos_r = Math.cos(-followed_entity.position.r);
+		const sin_r = Math.sin(-followed_entity.position.r);
 
 		const target_offset_x = (world_offset_x * cos_r - world_offset_y * sin_r) * new_scale;
 		const target_offset_y = (world_offset_x * sin_r + world_offset_y * cos_r) * new_scale;

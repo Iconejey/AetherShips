@@ -101,9 +101,9 @@ class Camera {
 		if (!entity) return;
 
 		if (free) {
-			// Apply screen-space inspect offset transformed into world-space
-			const cos_r = Math.cos(-entity.position.r);
-			const sin_r = Math.sin(-entity.position.r);
+			// Convert inspect screen offset back into world-space using camera rotation.
+			const cos_r = Math.cos(entity.position.r);
+			const sin_r = Math.sin(entity.position.r);
 			const world_offset_x = (this.inspect_offset_screen_x * cos_r - this.inspect_offset_screen_y * sin_r) / scale;
 			const world_offset_y = (this.inspect_offset_screen_x * sin_r + this.inspect_offset_screen_y * cos_r) / scale;
 
