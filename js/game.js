@@ -113,10 +113,10 @@ class Game extends HTMLElement {
 	updateStars() {
 		if (this.stars.length === 0) return;
 
+		const prev_camera_rotation = this.prev_camera_r;
 		const delta_x = this.camera.x - this.prev_camera_x;
 		const delta_y = this.camera.y - this.prev_camera_y;
 		const delta_r = this.camera.r - this.prev_camera_r;
-		const camera_rotation = this.camera.r;
 
 		this.prev_camera_x = this.camera.x;
 		this.prev_camera_y = this.camera.y;
@@ -126,8 +126,8 @@ class Game extends HTMLElement {
 		// This keeps parallax aligned with inspect-mode panning after rotation.
 		const scaled_delta_x = delta_x * this.scale;
 		const scaled_delta_y = delta_y * this.scale;
-		const cos_r = Math.cos(camera_rotation);
-		const sin_r = Math.sin(camera_rotation);
+		const cos_r = Math.cos(-prev_camera_rotation);
+		const sin_r = Math.sin(-prev_camera_rotation);
 		const screen_delta_x = scaled_delta_x * cos_r - scaled_delta_y * sin_r;
 		const screen_delta_y = scaled_delta_x * sin_r + scaled_delta_y * cos_r;
 
