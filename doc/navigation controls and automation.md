@@ -97,3 +97,7 @@ For example, the player could set up an automation to deploy a defense drone whe
 **Actions :**
 
 - Move to target rack (Mothership's docking bay) (Will dock once in range)
+
+## Stabilisation
+
+Some ships have a stabilisation system that automatically applies counter-thrusters to reduce unwanted velocity and rotation when not actively maneuvering. This can be toggled on or off.
