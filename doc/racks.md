@@ -6,9 +6,9 @@ A ship docked to a rack on the ship's layer 0 will be considered physically part
 
 ## Examples of rack usage:
 
-- A small ship on a large ship
-- A ship docked to a station
-- A ship docked to a planet
-- A turret docked to a ship
-- A drone docked to a ship
-- A container docked to a ship and moving along a track of racks to deliver cargo to different parts of the ship
+- A small ship on a large ship, a station or a planet.
+- Drones and turrets that are part of a bigger entity.
+- Moving parts.
+- Containers.
+
+We can imagine a small mining drone coming back to the mother ship to deliver its full container. The drone then goes back to the docks with the others while the container gets routed to the storage room.
