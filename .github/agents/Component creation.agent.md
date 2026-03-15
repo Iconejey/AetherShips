@@ -5,7 +5,7 @@ description: This custom agent creates a new component based on the provided tag
 
 Use the provided tag and optional description to create a new component js and css file. Example with tag `my-elem` and no description:
 
-1. Create a file named `my-elem.js` in the components directory with the following content:
+1. Create a file named `my-elem.js` in the components directory with the following default content. If no description is provided, do not try to implement any functionality in the component, just create the file with the default content.
 
 ```js
 class MyElem extends HTMLElement {
