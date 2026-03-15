@@ -2,6 +2,15 @@
  * Represents the game camera with world position and rotation
  */
 class Camera {
+	get followed_entity() {
+		return $('entity-root.followed');
+	}
+
+	set followed_entity(new_followed_entity) {
+		this.followed_entity?.classList.remove('followed');
+		new_followed_entity.classList.add('followed');
+	}
+
 	/**
 	 * Creates a camera instance
 	 * @param {number} [x=0] - Initial world x coordinate
@@ -12,7 +21,6 @@ class Camera {
 		this.x = x;
 		this.y = y;
 		this.r = r;
-		this.followed_entity = null;
 		this.inspect_offset_screen_x = 0;
 		this.inspect_offset_screen_y = 0;
 	}

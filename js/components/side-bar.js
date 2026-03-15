@@ -12,9 +12,16 @@ class SideBar extends HTMLElement {
 
 		// Layers
 		const edit_layer_select = this.$('#edit-layer');
-		edit_layer_select.add('1', 'filter_1', 'Edit layer 1');
-		edit_layer_select.add('2', 'filter_2', 'Edit layer 2');
-		edit_layer_select.add('3', 'filter_3', 'Edit layer 3');
+
+		edit_layer_select.onchange = () => {
+			// Update body class to reflect selected layer
+			document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
+			document.body.classList.add(`edit-layer-${edit_layer_select.value}`);
+		};
+
+		edit_layer_select.add('0', 'filter_1', 'Edit layer 1');
+		edit_layer_select.add('1', 'filter_2', 'Edit layer 2');
+		edit_layer_select.add('2', 'filter_3', 'Edit layer 3');
 		edit_layer_select.value = '1';
 
 		// Blocks

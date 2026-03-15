@@ -11,6 +11,7 @@ class ToolBar extends HTMLElement {
 		multi_select.onchange = value => {
 			const sidebar = $('side-bar');
 			sidebar.classList.remove('open');
+			document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
 
 			// Reset camera offset when switching to navigation
 			if (value === 'navigation') {

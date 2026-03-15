@@ -36,7 +36,7 @@ class Game extends HTMLElement {
 	}
 
 	get selected_layer() {
-		return $('side-bar multi-select#edit-layer').value - 1;
+		return +$('side-bar multi-select#edit-layer').value;
 	}
 
 	get selected_block() {
