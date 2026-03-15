@@ -5,29 +5,37 @@ class SideBar extends HTMLElement {
 
 	showEditTools() {
 		this.innerHTML = html`
-			<div id="block-list"></div>
-			<div id="edit-tools">
-				<button class="round" id="pen-tool" title="Select pen tool">draw</button>
-				<button class="round" id="line-tool" title="Select line tool">diagonal_line</button>
-				<button class="round" id="rectangle-tool" title="Select rectangle tool">crop_square</button>
-				<button class="round" id="ellipse-tool" title="Select ellipse tool">radio_button_unchecked</button>
-				<button class="round" id="erase-tool" title="Select erase tool">ink_eraser</button>
-				<button class="round" id="paint-tool" title="Select paint tool">format_paint</button>
-			</div>
+			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
+			<multi-select id="block-list" type="text left"></multi-select>
+			<multi-select class="round-button-group" id="edit-tools" type="round"></multi-select>
 		`;
 
+		// Layers
+		const edit_layer_select = this.$('#edit-layer');
+		edit_layer_select.add('1', 'filter_1', 'Edit layer 1');
+		edit_layer_select.add('2', 'filter_2', 'Edit layer 2');
+		edit_layer_select.add('3', 'filter_3', 'Edit layer 3');
+		edit_layer_select.value = '1';
+
+		// Blocks
+		const block_list_select = this.$('#block-list');
 		for (const block_name in blocks) {
-			const block_button = document.createElement('button');
-			block_button.classList.add('text', 'left');
-			block_button.textContent = block_name[0].toUpperCase() + block_name.slice(1);
-
-			block_button.onclick = () => {
-				console.log(`Selected block: ${block_name}`);
-			};
-
-			this.$('#block-list').appendChild(block_button);
+			const label = block_name[0].toUpperCase() + block_name.slice(1);
+			block_list_select.add(block_name, label, `Select ${label} block`);
 		}
+		block_list_select.value = 'dirt';
 
+		// Tools
+		const edit_tools_select = this.$('#edit-tools');
+		edit_tools_select.add('pen', 'draw', 'Select pen tool');
+		edit_tools_select.add('line', 'diagonal_line', 'Select line tool');
+		edit_tools_select.add('rectangle', 'crop_square', 'Select rectangle tool');
+		edit_tools_select.add('ellipse', 'radio_button_unchecked', 'Select ellipse tool');
+		edit_tools_select.add('erase', 'ink_eraser', 'Select erase tool');
+		edit_tools_select.add('paint', 'format_paint', 'Select paint tool');
+		edit_tools_select.value = 'pen';
+
+		// Open sidebar
 		this.classList.add('open');
 	}
 }

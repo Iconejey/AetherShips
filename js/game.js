@@ -137,11 +137,23 @@ class Game extends HTMLElement {
 	}
 
 	get mode() {
-		return $('tool-bar button.active').id.replace('set-mode-', '');
+		return $('tool-bar multi-select').value;
 	}
 
 	set mode(new_mode) {
-		$(`button#set-mode-${new_mode}`).click();
+		$('tool-bar multi-select').value = new_mode;
+	}
+
+	get selected_layer() {
+		return $('side-bar multi-select#edit-layer').value - 1;
+	}
+
+	get selected_block() {
+		return $('side-bar multi-select#block-list').value;
+	}
+
+	get selected_tool() {
+		return $('side-bar multi-select#edit-tools').value;
 	}
 
 	/**
@@ -457,7 +469,6 @@ class Game extends HTMLElement {
 	connectedCallback() {
 		this.scale = 12;
 		this.style.setProperty('--game-scale', this.scale);
-		this.mode = 'edit';
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
