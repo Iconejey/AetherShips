@@ -428,24 +428,11 @@ class Game extends HTMLElement {
 			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
 		});
 
-		// Let's add a test entity to the game
-		const test_entity = document.createElement('entity-root');
-		this.appendChild(test_entity);
-
-		test_entity.fillEllipse(0, 0, 0, 32, 32, 'stone');
-		test_entity.fillEllipse(1, 0, 0, 32, 32, 'dirt');
-		test_entity.fillEllipse(2, 0, 0, 32, 32, 'grass');
-
-		test_entity.render();
-
-		// Follow entity with camera
-		this.camera.followed_entity = test_entity;
-
-		// Update positions after initial setup
-		this.updateEntityPositions();
 		this.fps_timer = 0;
 		this.fps_frame_count = 0;
 		this.startGameLoop();
+
+		setTimeout(() => this.test(), 1);
 	}
 
 	/**
@@ -453,6 +440,30 @@ class Game extends HTMLElement {
 	 */
 	disconnectedCallback() {
 		this.stopGameLoop();
+	}
+
+	/**
+	 * Tests for dev purposes
+	 */
+	test() {
+		// Test planet
+		const test_planet = document.createElement('entity-root');
+		this.appendChild(test_planet);
+
+		test_planet.fillEllipse(0, 0, 0, 64, 64, 'stone');
+		test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
+		test_planet.fillEllipse(2, 0, 0, 32, 32, 'grass');
+		test_planet.render();
+
+		// Test ship
+		const test_ship = document.createElement('entity-root');
+		this.appendChild(test_ship);
+
+		test_ship.fillRect(2, -8, -16, 16, 32, 'fuselage');
+		test_ship.render();
+
+		// Follow ship with camera
+		this.camera.followed_entity = test_ship;
 	}
 }
 
