@@ -12,35 +12,5 @@ tool-bar {
 		gap: 8px;
 		padding: 4px;
 		border-radius: 50vh;
-
-		& button {
-			width: 40px;
-			height: 40px;
-			display: flex;
-			align-items: center;
-			justify-content: center;
-			border-radius: 50vh;
-			border: none;
-			background: transparent;
-			outline: none;
-			color: rgba(255, 255, 255, 0.7);
-			font-family: 'Material Symbols Outlined';
-			cursor: pointer;
-			user-select: none;
-			font-size: 24px;
-
-			&:hover {
-				background: rgba(40, 40, 50, 0.6);
-				color: rgba(255, 255, 255, 0.9);
-			}
-		}
 	}
-}
-
-body.navigation #set-mode-navigation,
-body.inspect #set-mode-inspect,
-body.map #set-mode-map,
-body.edit #set-mode-edit {
-	color: var(--primary) !important;
-	background: rgba(0, 234, 255, 0.12) !important;
 }

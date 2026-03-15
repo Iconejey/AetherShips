@@ -111,8 +111,6 @@ class Camera {
  * Custom HTMLElement representing the game, which contains entities (ships, asteroids, planets, etc.)
  */
 class Game extends HTMLElement {
-	static modes = ['navigation', 'inspect', 'edit'];
-
 	/**
 	 * Creates a game instance
 	 */
@@ -138,31 +136,12 @@ class Game extends HTMLElement {
 		this.scale = 1;
 	}
 
-	/**
-	 * Current mode derived from body classes.
-	 * @returns {'inspect'|'navigation'|'map'|'edit'}
-	 */
 	get mode() {
-		for (const mode of Game.modes) {
-			if (document.body.classList.contains(mode)) return mode;
-		}
-		return 'navigation';
+		return $('tool-bar button.active').id.replace('set-mode-', '');
 	}
 
-	/**
-	 * Applies the selected mode to body classes and camera behavior.
-	 * @param {'inspect'|'navigation'|'map'|'edit'} mode - Selected toolbar mode.
-	 */
-	set mode(value) {
-		document.body.classList.remove(...Game.modes);
-		document.body.classList.add(value);
-
-		// Reset camera offset when switching to navigation
-		if (value === 'navigation') {
-			this.camera.inspect_offset_screen_x = 0;
-			this.camera.inspect_offset_screen_y = 0;
-			this.has_prev_mouse_position = false;
-		}
+	set mode(new_mode) {
+		$(`button#set-mode-${new_mode}`).click();
 	}
 
 	/**
@@ -478,8 +457,7 @@ class Game extends HTMLElement {
 	connectedCallback() {
 		this.scale = 12;
 		this.style.setProperty('--game-scale', this.scale);
-		this.mode = 'navigation';
-		this.tool = 'pen';
+		this.mode = 'edit';
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -547,12 +525,6 @@ class Game extends HTMLElement {
 			this.pressed_keys[event.key] = false;
 			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
 		});
-
-		// Setup toolbar mode buttons
-		for (const mode of Game.modes) {
-			const button = document.getElementById(`set-mode-${mode}`);
-			button.onclick = () => (this.mode = mode);
-		}
 
 		// Let's add a test entity to the game
 		const test_entity = document.createElement('entity-root');

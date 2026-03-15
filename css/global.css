@@ -1,7 +1,16 @@
+@font-face {
+	font-family: 'Console';
+	src: url('../fonts/console.woff2') format('woff2');
+	font-weight: 400;
+	font-style: normal;
+	font-display: swap;
+}
+
 * {
 	margin: 0;
 	padding: 0;
 	box-sizing: border-box;
+	font-family: inherit;
 }
 
 body {
@@ -10,24 +19,67 @@ body {
 	--pirate-primary: #ff6e00;
 	--pirate-trans: #ff6e001f;
 
+	--primary: var(--ura-primary);
+	--primary-trans: var(--ura-trans);
+
 	--bg: #0f0f14cc;
 	--border: #ffffff1a;
 
-	--primary: var(--ura-primary);
-	--primary-trans: var(--ura-trans);
+	--text: #ffffffb3;
+	--text-highlight: #ffffffff;
+	--hover-bg: #28283299;
 
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
-	font-family: 'Courier New', monospace;
+	font-family: 'Console', 'Courier New', monospace;
 	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
 	position: relative;
 }
 
 .ui {
 	background: var(--bg);
-	border: 1px solid var(--border);
+	outline: 1px solid var(--border);
 	backdrop-filter: blur(2px);
+}
+
+button {
+	border: none;
+	outline: none;
+	color: var(--text);
+	background: none;
+	cursor: pointer;
+	user-select: none;
+	font-family: inherit;
+
+	&:hover {
+		background: var(--hover-bg);
+		color: var(--text-highlight);
+	}
+
+	&.active {
+		color: var(--primary);
+		background: var(--primary-trans);
+	}
+
+	&.round {
+		width: 40px;
+		height: 40px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		border-radius: 50vh;
+		font-family: 'Material Symbols Outlined';
+		font-size: 24px;
+	}
+
+	&.text {
+		padding: 8px;
+
+		&.left {
+			text-align: left;
+		}
+	}
 }
 
 game-root {

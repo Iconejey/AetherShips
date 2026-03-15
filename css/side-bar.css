@@ -1,0 +1,35 @@
+side-bar {
+	display: flex;
+	flex-direction: column;
+	position: fixed;
+	right: 8px;
+	top: 8px;
+	bottom: 8px;
+	width: calc(40px * 3 + 8px * 4);
+	border-radius: 8px;
+	z-index: 1000;
+	transition:
+		transform 0.2s,
+		opacity 0.2s;
+
+	&:not(.open) {
+		transform: translateX(calc(100% + 16px));
+		opacity: 0;
+		user-select: none;
+		pointer-events: none;
+	}
+
+	& #block-list {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+	}
+
+	& #edit-tools {
+		display: flex;
+		flex-direction: row;
+		flex-wrap: wrap;
+		padding: 8px;
+		gap: 8px;
+	}
+}
