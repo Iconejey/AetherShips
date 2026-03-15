@@ -32,5 +32,14 @@ side-bar {
 		flex-wrap: wrap;
 		padding: 8px;
 		gap: 8px;
+
+		&.reverse {
+			flex-direction: row-reverse;
+			flex-wrap: wrap-reverse;
+		}
+
+		& + .round-button-group {
+			border-top: 1px dashed var(--border);
+		}
 	}
 }

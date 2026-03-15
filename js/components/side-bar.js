@@ -33,7 +33,8 @@ class SideBar extends HTMLElement {
 		this.innerHTML = html`
 			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
 			<multi-select id="block-list" type="text left"></multi-select>
-			<multi-select class="round-button-group" id="edit-tools" type="round"></multi-select>
+			<multi-select class="round-button-group reverse" id="edit-tools" type="round"></multi-select>
+			<multi-select class="round-button-group" id="edit-mode" type="round"></multi-select>
 		`;
 
 		// Layers
@@ -60,13 +61,18 @@ class SideBar extends HTMLElement {
 
 		// Tools
 		const edit_tools_select = this.$('#edit-tools');
-		edit_tools_select.add('pen', 'draw', 'Select pen tool', 'P');
-		edit_tools_select.add('line', 'diagonal_line', 'Select line tool', 'L');
-		edit_tools_select.add('rectangle', 'crop_square', 'Select rectangle tool', 'R');
 		edit_tools_select.add('ellipse', 'radio_button_unchecked', 'Select ellipse tool', 'C');
-		edit_tools_select.add('erase', 'ink_eraser', 'Select erase tool', 'E');
-		edit_tools_select.add('paint', 'format_paint', 'Select paint tool');
+		edit_tools_select.add('rectangle', 'crop_square', 'Select rectangle tool', 'R');
+		edit_tools_select.add('line', 'diagonal_line', 'Select line tool', 'L');
+		edit_tools_select.add('pen', 'draw', 'Select pen tool', 'P');
 		edit_tools_select.value = 'pen';
+
+		// Modes
+		const edit_mode_select = this.$('#edit-mode');
+		edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+P');
+		edit_mode_select.add('erase', 'ink_eraser', 'Select erase mode', 'Alt+E');
+		edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+C');
+		edit_mode_select.value = 'place';
 
 		// Open sidebar
 		this.classList.add('open');
