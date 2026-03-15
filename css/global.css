@@ -5,27 +5,29 @@
 }
 
 body {
+	--ura-primary: #00eaff;
+	--ura-trans: #00eaff1f;
+	--pirate-primary: #ff6e00;
+	--pirate-trans: #ff6e001f;
+
+	--bg: #0f0f14cc;
+	--border: #ffffff1a;
+
+	--primary: var(--ura-primary);
+	--primary-trans: var(--ura-trans);
+
 	width: 100vw;
 	height: 100vh;
 	overflow: hidden;
 	font-family: 'Courier New', monospace;
 	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
 	position: relative;
+}
 
-	&::before {
-		content: '';
-		position: fixed;
-		inset: 0;
-		background: linear-gradient(135deg, #0f0f14 0%, #111119 100%);
-		opacity: 0;
-		transition: opacity 0.35s ease;
-		pointer-events: none;
-		z-index: 0;
-	}
-
-	&:not(.navigation)::before {
-		opacity: 1;
-	}
+.ui {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	backdrop-filter: blur(2px);
 }
 
 game-root {
