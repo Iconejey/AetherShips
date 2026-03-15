@@ -180,6 +180,7 @@ class Game extends HTMLElement {
 
 		const thrust_force = 0.02;
 		const rotation_speed = 0.001;
+		const angle = this.camera.followed_entity.position.r;
 
 		// Rotation controls
 		if (this.pressed_keys['q'] || this.pressed_keys['Q']) {
@@ -191,14 +192,22 @@ class Game extends HTMLElement {
 
 		// Forward/backward movement
 		if (this.pressed_keys['z'] || this.pressed_keys['Z']) {
-			const angle = this.camera.followed_entity.position.r;
 			this.camera.followed_entity.velocity.vx += Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy -= Math.cos(angle) * thrust_force * delta_frames;
 		}
 		if (this.pressed_keys['s'] || this.pressed_keys['S']) {
-			const angle = this.camera.followed_entity.position.r;
 			this.camera.followed_entity.velocity.vx -= Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy += Math.cos(angle) * thrust_force * delta_frames;
+		}
+
+		// Left/right strafing
+		if (this.pressed_keys['a'] || this.pressed_keys['A']) {
+			this.camera.followed_entity.velocity.vx -= Math.cos(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.velocity.vy -= Math.sin(angle) * thrust_force * delta_frames;
+		}
+		if (this.pressed_keys['e'] || this.pressed_keys['E']) {
+			this.camera.followed_entity.velocity.vx += Math.cos(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.velocity.vy += Math.sin(angle) * thrust_force * delta_frames;
 		}
 	}
 
@@ -418,7 +427,7 @@ class Game extends HTMLElement {
 			this.updateEntityPositions();
 		});
 
-		// Add keyboard controls for ZQSD movement
+		// Add keyboard controls for ZQSD movement and A/E strafing
 		window.addEventListener('keydown', event => {
 			this.pressed_keys[event.key] = true;
 		});
