@@ -28,9 +28,9 @@ class Camera {
 		const relative_x = (world_x - this.x) * scale;
 		const relative_y = (world_y - this.y) * scale;
 
-		// Apply camera rotation
-		const cos_r = Math.cos(this.r);
-		const sin_r = Math.sin(this.r);
+		// Apply inverse camera rotation (world rotates opposite to camera)
+		const cos_r = Math.cos(-this.r);
+		const sin_r = Math.sin(-this.r);
 		const rotated_x = relative_x * cos_r - relative_y * sin_r;
 		const rotated_y = relative_x * sin_r + relative_y * cos_r;
 
@@ -48,9 +48,9 @@ class Camera {
 	 * @returns {Object} World position {x, y}
 	 */
 	screenToWorld(screen_x, screen_y, scale) {
-		// Reverse camera rotation
-		const cos_r = Math.cos(-this.r);
-		const sin_r = Math.sin(-this.r);
+		// Reverse worldToScreen by applying camera rotation
+		const cos_r = Math.cos(this.r);
+		const sin_r = Math.sin(this.r);
 		const unrotated_x = screen_x * cos_r - screen_y * sin_r;
 		const unrotated_y = screen_x * sin_r + screen_y * cos_r;
 
