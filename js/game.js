@@ -112,13 +112,13 @@ class Camera {
  */
 class Game extends HTMLElement {
 	static modes = ['navigation', 'inspect', 'edit'];
-	static tools = ['pen', 'line', 'rectangle', 'ellipse', 'erase', 'paint'];
 
 	/**
 	 * Creates a game instance
 	 */
 	constructor() {
 		super();
+		window.game = this;
 		this.camera = new Camera(0, 0, 0);
 		this.animation_frame_id = null;
 		this.last_frame_time = null;
@@ -163,15 +163,6 @@ class Game extends HTMLElement {
 			this.camera.inspect_offset_screen_y = 0;
 			this.has_prev_mouse_position = false;
 		}
-	}
-
-	/**
-	 * Sets the active tool in edit mode by updating body classes.
-	 * @param {'pen'|'line'|'rectangle'|'ellipse'|'erase'|'paint'} tool - Selected edit tool.
-	 */
-	set tool(value) {
-		document.body.classList.remove(...Game.tools);
-		document.body.classList.add(value);
 	}
 
 	/**
@@ -563,20 +554,13 @@ class Game extends HTMLElement {
 			button.onclick = () => (this.mode = mode);
 		}
 
-		// Setup toolbar edit tool buttons
-		for (const tool of Game.tools) {
-			const button = document.getElementById(`${tool}-tool`);
-			button.onclick = () => (this.tool = tool);
-		}
-
 		// Let's add a test entity to the game
 		const test_entity = document.createElement('entity-root');
 		this.appendChild(test_entity);
 
-		test_entity.fillEllipse(0, 0, 0, 64, 64, 'stone');
-		test_entity.fillEllipse(1, 0, 0, 64, 64, 'dirt');
-		test_entity.fillEllipse(2, 0, 0, 64, 64, 'grass');
-		test_entity.fillEllipse(2, 0, 0, 16, 16, 'lamp');
+		test_entity.fillEllipse(0, 0, 0, 32, 32, 'stone');
+		test_entity.fillEllipse(1, 0, 0, 32, 32, 'dirt');
+		test_entity.fillEllipse(2, 0, 0, 32, 32, 'grass');
 
 		test_entity.render();
 

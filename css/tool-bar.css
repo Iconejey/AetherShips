@@ -1,7 +1,4 @@
-/* Toolbar styles */
-#tool-bar {
-	--mode-selected-color: #00eaff;
-
+tool-bar {
 	position: fixed;
 	bottom: 8px;
 	width: 100%;
@@ -14,10 +11,7 @@
 		display: flex;
 		gap: 8px;
 		padding: 4px;
-		background: rgba(15, 15, 20, 0.8);
-		border: 1px solid rgba(255, 255, 255, 0.1);
 		border-radius: 50vh;
-		backdrop-filter: blur(10px);
 
 		& button {
 			width: 40px;
@@ -47,23 +41,6 @@ body.navigation #set-mode-navigation,
 body.inspect #set-mode-inspect,
 body.map #set-mode-map,
 body.edit #set-mode-edit {
-	color: var(--mode-selected-color) !important;
+	color: var(--primary) !important;
 	background: rgba(0, 234, 255, 0.12) !important;
-}
-
-.edit-tools {
-	/* Show only in edit mode */
-	body:not(.edit) & {
-		display: none !important;
-	}
-
-	body.pen & #pen-tool,
-	body.line & #line-tool,
-	body.rectangle & #rectangle-tool,
-	body.ellipse & #ellipse-tool,
-	body.erase & #erase-tool,
-	body.paint & #paint-tool {
-		color: var(--mode-selected-color) !important;
-		background: rgba(0, 234, 255, 0.12) !important;
-	}
 }
