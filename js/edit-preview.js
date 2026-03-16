@@ -320,6 +320,27 @@ class EditPreview extends HTMLElement {
 		return blocks;
 	}
 
+	/**
+	 * Picks grid intervals so zooming out does not flood the screen with lines.
+	 * When density gets too high, previous major lines become minor lines, then
+	 * every 4 minor lines becomes the new major line.
+	 * @param {number} scale
+	 * @returns {{ minor_step: number, major_step: number }}
+	 */
+	getGridSteps(scale) {
+		const min_minor_spacing_px = 32;
+		let minor_step = 8;
+
+		while (minor_step * scale < min_minor_spacing_px) {
+			minor_step *= 4;
+		}
+
+		return {
+			minor_step,
+			major_step: minor_step * 4
+		};
+	}
+
 	// ── Preview logic ─────────────────────────────────────────────────────────
 
 	getPreviewBlocks() {
@@ -394,12 +415,14 @@ class EditPreview extends HTMLElement {
 		const first = -block_radius;
 		const last = block_radius;
 
-		// Minor lines every 8 blocks
+		const { minor_step, major_step } = this.getGridSteps(scale);
+
+		// Minor lines every `minor_step` blocks
 		ctx.strokeStyle = 'rgba(255,255,255,0.08)';
 		ctx.lineWidth = 1;
 		ctx.beginPath();
-		for (let b = Math.ceil(first / 8) * 8; b <= last; b += 8) {
-			if (b % 32 === 0) continue; // drawn in thick pass
+		for (let b = Math.ceil(first / minor_step) * minor_step; b <= last; b += minor_step) {
+			if (b % major_step === 0) continue; // drawn in major pass
 			ctx.moveTo(b * scale, first * scale);
 			ctx.lineTo(b * scale, last * scale);
 			ctx.moveTo(first * scale, b * scale);
@@ -407,11 +430,10 @@ class EditPreview extends HTMLElement {
 		}
 		ctx.stroke();
 
-		// Major lines every 32 blocks (chunk boundaries)
+		// Major lines every `major_step` blocks
 		ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-		ctx.lineWidth = 2;
 		ctx.beginPath();
-		for (let b = Math.ceil(first / 32) * 32; b <= last; b += 32) {
+		for (let b = Math.ceil(first / major_step) * major_step; b <= last; b += major_step) {
 			ctx.moveTo(b * scale, first * scale);
 			ctx.lineTo(b * scale, last * scale);
 			ctx.moveTo(first * scale, b * scale);
