@@ -49,11 +49,18 @@ class EditPreview extends HTMLElement {
 		this.canvas.height = window.innerHeight;
 	}
 
+	isUiPointerEvent(event) {
+		const target_element = event.target;
+		if (!(target_element instanceof Element)) return false;
+		return Boolean(target_element.closest('.ui'));
+	}
+
 	onMouseMove(e) {
 		this.mouse_x = e.clientX;
 		this.mouse_y = e.clientY;
 
 		if (this.pen_is_down) {
+			if (this.isUiPointerEvent(e)) return;
 			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
 			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
@@ -62,6 +69,7 @@ class EditPreview extends HTMLElement {
 	onMouseDown(e) {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
+		if (this.isUiPointerEvent(e)) return;
 		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
 
 		const is_pick_action = [1, 2, 3, 4].includes(e.button) || (e.button === 0 && e.ctrlKey);
@@ -100,6 +108,7 @@ class EditPreview extends HTMLElement {
 	onAuxClick(e) {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
+		if (this.isUiPointerEvent(e)) return;
 
 		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
 		const is_pick_action = [1, 2, 3, 4].includes(e.button);
