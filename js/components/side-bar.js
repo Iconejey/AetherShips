@@ -33,6 +33,13 @@ class SideBar extends HTMLElement {
 		this.innerHTML = html`
 			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
 			<multi-select id="block-list" type="text left"></multi-select>
+			<div id="paint-panel" class="paint-panel">
+				<div class="paint-controls">
+					<input id="paint-color-picker" type="color" value="#ffffff" title="Pick color" />
+					<button id="add-paint-color" class="round" title="Add picked color">add</button>
+				</div>
+				<multi-select id="paint-colors" type="round"></multi-select>
+			</div>
 			<multi-select class="round-button-group reverse" id="edit-tools" type="round"></multi-select>
 			<multi-select class="round-button-group" id="edit-mode" type="round"></multi-select>
 		`;
@@ -59,6 +66,18 @@ class SideBar extends HTMLElement {
 		}
 		block_list_select.value = 'dirt';
 
+		// Paint palette
+		const add_paint_color_button = this.$('#add-paint-color');
+		add_paint_color_button.textContent = 'palette';
+		add_paint_color_button.classList.add('material-symbols-outlined');
+		add_paint_color_button.addEventListener('click', () => {
+			const color_hex = this.$('#paint-color-picker')?.value;
+			if (!color_hex) return;
+			this.addPaintColor(color_hex, true);
+		});
+
+		this.addPaintColor('#ffffff', true);
+
 		// Tools
 		const edit_tools_select = this.$('#edit-tools');
 		edit_tools_select.add('ellipse', 'radio_button_unchecked', 'Select ellipse tool', 'C');
@@ -69,13 +88,49 @@ class SideBar extends HTMLElement {
 
 		// Modes
 		const edit_mode_select = this.$('#edit-mode');
+		edit_mode_select.onchange = value => this.setEditModeUi(value);
 		edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+P');
 		edit_mode_select.add('erase', 'ink_eraser', 'Select erase mode', 'Alt+E');
 		edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+C');
 		edit_mode_select.value = 'place';
+		this.setEditModeUi('place');
 
 		// Open sidebar
 		this.classList.add('open');
+	}
+
+	setEditModeUi(edit_mode) {
+		const block_list = this.$('#block-list');
+		const paint_panel = this.$('#paint-panel');
+		const paint_mode_active = edit_mode === 'paint';
+		block_list?.classList.toggle('hidden', paint_mode_active);
+		paint_panel?.classList.toggle('active', paint_mode_active);
+	}
+
+	addPaintColor(color_hex, select = true) {
+		if (!color_hex) return;
+		const normalized_hex = color_hex.toLowerCase();
+		const paint_colors = this.$('#paint-colors');
+		if (!paint_colors) return;
+
+		const existing_button = paint_colors.$(`[data-value="${normalized_hex}"]`);
+		if (!existing_button) {
+			paint_colors.add(normalized_hex, '', `Use ${normalized_hex}`);
+			const new_button = paint_colors.$(`[data-value="${normalized_hex}"]`);
+			if (new_button) {
+				new_button.classList.add('paint-color-button');
+				new_button.style.background = normalized_hex;
+				new_button.style.borderColor = '#ffffff44';
+			}
+		}
+
+		if (select) paint_colors.value = normalized_hex;
+		const color_picker = this.$('#paint-color-picker');
+		if (color_picker) color_picker.value = normalized_hex;
+	}
+
+	getSelectedPaintColor() {
+		return this.$('#paint-colors')?.value || null;
 	}
 }
 

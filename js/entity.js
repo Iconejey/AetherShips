@@ -351,6 +351,45 @@ class Layer {
 		if (!block_name) throw new Error(`Block type "${type}" does not exist`);
 		this.setByName(x, y, block_name);
 	}
+
+	/**
+	 * Gets block metadata at local coordinates.
+	 * @param {number} x - Local block x (0-31)
+	 * @param {number} y - Local block y (0-31)
+	 * @returns {{ type: number, color: number, is_empty: boolean, can_be_painted: boolean }}
+	 */
+	getBlockInfo(x, y) {
+		const index = y * 32 + x;
+		const type = state_struct.type.get(this.blocks, index);
+		const is_empty = type === 0;
+		const block_def = blocks_by_type[type];
+		const can_be_painted = is_empty ? false : (block_def?.can_be_painted ?? true);
+
+		return {
+			type,
+			color: this.block_colors[index],
+			is_empty,
+			can_be_painted
+		};
+	}
+
+	/**
+	 * Paints block color when block is non-empty and paintable.
+	 * @param {number} x - Local block x (0-31)
+	 * @param {number} y - Local block y (0-31)
+	 * @param {number} color - RGBA8888 color
+	 * @returns {boolean} True when color was applied
+	 */
+	paintBlock(x, y, color) {
+		const info = this.getBlockInfo(x, y);
+		if (info.is_empty || !info.can_be_painted) return false;
+		if (info.color === color) return false;
+
+		const index = y * 32 + x;
+		this.block_colors[index] = color;
+		this.drawPixel(x, y);
+		return true;
+	}
 }
 
 /**
@@ -571,6 +610,47 @@ class Entity extends HTMLElement {
 		if (layer.block_count === 0) {
 			entity_layer.removeChunkLayer(cx, cy);
 		}
+	}
+
+	/**
+	 * Returns block metadata at world block coordinates.
+	 * @param {number} l - Layer index (0-2)
+	 * @param {number} x - World block x
+	 * @param {number} y - World block y
+	 * @returns {{ type: number, color: number, is_empty: boolean, can_be_painted: boolean }}
+	 */
+	getBlockInfo(l, x, y) {
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const entity_layer = this.getEntityLayer(l);
+		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
+		if (!chunk_layer || !chunk_layer.layer) {
+			return { type: 0, color: 0, is_empty: true, can_be_painted: false };
+		}
+
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		return chunk_layer.layer.getBlockInfo(local_x, local_y);
+	}
+
+	/**
+	 * Paints block color at world block coordinates when block is non-empty and paintable.
+	 * @param {number} l - Layer index (0-2)
+	 * @param {number} x - World block x
+	 * @param {number} y - World block y
+	 * @param {number} color - RGBA8888 color
+	 * @returns {boolean} True when color was applied
+	 */
+	paintBlock(l, x, y, color) {
+		const cx = Math.floor(x / 32);
+		const cy = Math.floor(y / 32);
+		const entity_layer = this.getEntityLayer(l);
+		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
+		if (!chunk_layer || !chunk_layer.layer) return false;
+
+		const local_x = this.toLocalCoord(x);
+		const local_y = this.toLocalCoord(y);
+		return chunk_layer.layer.paintBlock(local_x, local_y, color);
 	}
 
 	/**

@@ -26,7 +26,11 @@ class EditPreview extends HTMLElement {
 
 		window.addEventListener('mousemove', e => this.onMouseMove(e));
 		window.addEventListener('mousedown', e => this.onMouseDown(e));
+		window.addEventListener('auxclick', e => this.onAuxClick(e));
 		window.addEventListener('mouseup', () => this.onMouseUp());
+		window.addEventListener('contextmenu', e => {
+			if (game?.mode === 'edit') e.preventDefault();
+		});
 		window.addEventListener('keydown', e => this.onKeyDown(e));
 		window.addEventListener('resize', () => this.onResize());
 
@@ -51,20 +55,29 @@ class EditPreview extends HTMLElement {
 
 		if (this.pen_is_down) {
 			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
 	}
 
 	onMouseDown(e) {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
+		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+
+		const is_pick_action = [1, 2, 3, 4].includes(e.button) || (e.button === 0 && e.ctrlKey);
+		if (edit_mode === 'paint' && is_pick_action) {
+			e.preventDefault();
+			this.copyBlockColorUnderCursor();
+			return;
+		}
+
+		if (e.button !== 0) return;
 
 		const tool = game.selected_tool;
 
 		if (tool === 'pen') {
 			this.pen_is_down = true;
-			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 			return;
 		}
 
@@ -79,9 +92,23 @@ class EditPreview extends HTMLElement {
 	onMouseUp() {
 		if (this.is_dragging) {
 			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
 		this.cancelDrag();
+	}
+
+	onAuxClick(e) {
+		if (game?.mode !== 'edit') return;
+		if (game.isSpacePressed()) return;
+
+		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+		const is_pick_action = [1, 2, 3, 4].includes(e.button);
+		if (edit_mode !== 'paint' || !is_pick_action) return;
+
+		e.preventDefault();
+		this.mouse_x = e.clientX;
+		this.mouse_y = e.clientY;
+		this.copyBlockColorUnderCursor();
 	}
 
 	onKeyDown(e) {
@@ -102,15 +129,59 @@ class EditPreview extends HTMLElement {
 		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
 		const layer = game.selected_layer;
 		const block_name = game.selected_block;
+		const selected_paint_hex = $('side-bar')?.getSelectedPaintColor?.();
+		const selected_paint_color = selected_paint_hex ? this.hexToRgba8888(selected_paint_hex) : null;
 		const blocks = this.getPreviewBlocks();
 		if (blocks.length === 0) return;
 
+		let has_any_change = false;
 		for (const [bx, by] of blocks) {
-			if (edit_mode === 'place') entity.setByName(layer, bx, by, block_name);
-			else if (edit_mode === 'erase') entity.deleteBlock(layer, bx, by);
+			if (edit_mode === 'place') {
+				entity.setByName(layer, bx, by, block_name);
+				has_any_change = true;
+			} else if (edit_mode === 'erase') {
+				entity.deleteBlock(layer, bx, by);
+				has_any_change = true;
+			} else if (edit_mode === 'paint' && selected_paint_color !== null) {
+				const painted = entity.paintBlock(layer, bx, by, selected_paint_color);
+				has_any_change = has_any_change || painted;
+			}
 		}
 
-		entity.render();
+		if (has_any_change) entity.render();
+	}
+
+	copyBlockColorUnderCursor() {
+		const entity = game?.camera?.followed_entity;
+		if (!entity) return;
+
+		const cursor = this.screenToBlock(this.mouse_x, this.mouse_y);
+		if (!cursor) return;
+
+		const layer = game.selected_layer;
+		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
+		if (info.is_empty) return;
+
+		const color_hex = this.rgba8888ToHex(info.color);
+		$('side-bar')?.addPaintColor?.(color_hex, true);
+	}
+
+	hexToRgba8888(color_hex) {
+		const raw = color_hex?.replace('#', '');
+		if (!raw || raw.length !== 6) return null;
+
+		const r = parseInt(raw.slice(0, 2), 16);
+		const g = parseInt(raw.slice(2, 4), 16);
+		const b = parseInt(raw.slice(4, 6), 16);
+		const a = 0xff;
+		return (((r << 24) >>> 0) | (g << 16) | (b << 8) | a) >>> 0;
+	}
+
+	rgba8888ToHex(color_value) {
+		const r = ((color_value >>> 24) & 0xff).toString(16).padStart(2, '0');
+		const g = ((color_value >>> 16) & 0xff).toString(16).padStart(2, '0');
+		const b = ((color_value >>> 8) & 0xff).toString(16).padStart(2, '0');
+		return `#${r}${g}${b}`;
 	}
 
 	scheduleDraw() {
