@@ -300,6 +300,46 @@ class EditPreview extends HTMLElement {
 		ctx.translate(entity_left, entity_top);
 		ctx.rotate(entity_rotation);
 
+		// ── Grid ─────────────────────────────────────────────────────────────
+		// Compute the visible block range by inverse-projecting the canvas corners
+		// into entity space (no rotation needed here — we're already in the
+		// rotated ctx).  We over-extend by a few blocks to avoid clipping.
+		const hw = this.canvas.width / 2 + entity_left;
+		const hh = this.canvas.height / 2 + entity_top;
+		const half_diag = Math.sqrt(hw * hw + hh * hh);
+		const block_radius = Math.ceil(half_diag / scale) + 32;
+
+		// Snap grid origin to entity block 0,0 — no manual offset needed because
+		// the ctx is already translated to entity_left/top.
+		const first = -block_radius;
+		const last = block_radius;
+
+		// Minor lines every 8 blocks
+		ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+		ctx.lineWidth = 1;
+		ctx.beginPath();
+		for (let b = Math.ceil(first / 8) * 8; b <= last; b += 8) {
+			if (b % 32 === 0) continue; // drawn in thick pass
+			ctx.moveTo(b * scale, first * scale);
+			ctx.lineTo(b * scale, last * scale);
+			ctx.moveTo(first * scale, b * scale);
+			ctx.lineTo(last * scale, b * scale);
+		}
+		ctx.stroke();
+
+		// Major lines every 32 blocks (chunk boundaries)
+		ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		for (let b = Math.ceil(first / 32) * 32; b <= last; b += 32) {
+			ctx.moveTo(b * scale, first * scale);
+			ctx.lineTo(b * scale, last * scale);
+			ctx.moveTo(first * scale, b * scale);
+			ctx.lineTo(last * scale, b * scale);
+		}
+		ctx.stroke();
+		// ─────────────────────────────────────────────────────────────────────
+
 		// Fill pass — all preview blocks in one path for performance
 		ctx.fillStyle = fill_color;
 		ctx.beginPath();
