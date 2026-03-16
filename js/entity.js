@@ -285,6 +285,18 @@ class Layer {
 		if (this.block_count > 0) this.drawPixel(x, y);
 	}
 
+	clearGlowPixel(x, y) {
+		if (!this.glow) return;
+
+		const glow_buf = this.glow.buf;
+		for (let offset_y = 0; offset_y < 2; offset_y++) {
+			for (let offset_x = 0; offset_x < 2; offset_x++) {
+				const glow_index = (y + offset_y) * 33 + x + offset_x;
+				glow_buf[glow_index] = 0;
+			}
+		}
+	}
+
 	/**
 	 * Draws a pixel of the specified color at the specified (x, y) coordinates within the layer
 	 * Uses the 32-bit color stored in block_colors array
@@ -308,6 +320,8 @@ class Layer {
 
 		// Write ABGR format to buffer (little-endian RGBA)
 		main_buf[block_index] = (a << 24) | (b << 16) | (g << 8) | r;
+
+		this.clearGlowPixel(x, y);
 
 		if (has_glow && this.glow) {
 			const glow_buf = this.glow.buf;
