@@ -6,7 +6,7 @@ class SideBar extends HTMLElement {
 
 	handleShortcut(event) {
 		if (game.mode !== 'edit') return;
-		if (event.metaKey || event.altKey) return;
+		if (event.metaKey) return;
 
 		const target = event.target;
 		const is_editable_target = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
@@ -26,6 +26,14 @@ class SideBar extends HTMLElement {
 		if (tool_value) {
 			event.preventDefault();
 			edit_tools_select.value = tool_value;
+			return;
+		}
+
+		const edit_mode_select = this.$('#edit-mode');
+		const mode_value = edit_mode_select?.getValueForEvent(event);
+		if (mode_value) {
+			event.preventDefault();
+			edit_mode_select.value = mode_value;
 		}
 	}
 
@@ -89,9 +97,9 @@ class SideBar extends HTMLElement {
 		// Modes
 		const edit_mode_select = this.$('#edit-mode');
 		edit_mode_select.onchange = value => this.setEditModeUi(value);
-		edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+P');
+		edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+A');
 		edit_mode_select.add('erase', 'ink_eraser', 'Select erase mode', 'Alt+E');
-		edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+C');
+		edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+P');
 		edit_mode_select.value = 'place';
 		this.setEditModeUi('place');
 
