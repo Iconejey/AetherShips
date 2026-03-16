@@ -13,6 +13,7 @@ class EditPreview extends HTMLElement {
 		this.drag_start_block_x = null;
 		this.drag_start_block_y = null;
 		this.is_dragging = false;
+		this.pen_is_down = false;
 		this.raf_id = null;
 	}
 
@@ -26,6 +27,7 @@ class EditPreview extends HTMLElement {
 		window.addEventListener('mousemove', e => this.onMouseMove(e));
 		window.addEventListener('mousedown', e => this.onMouseDown(e));
 		window.addEventListener('mouseup', () => this.onMouseUp());
+		window.addEventListener('keydown', e => this.onKeyDown(e));
 		window.addEventListener('resize', () => this.onResize());
 
 		this.scheduleDraw();
@@ -46,6 +48,11 @@ class EditPreview extends HTMLElement {
 	onMouseMove(e) {
 		this.mouse_x = e.clientX;
 		this.mouse_y = e.clientY;
+
+		if (this.pen_is_down) {
+			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+		}
 	}
 
 	onMouseDown(e) {
@@ -53,7 +60,13 @@ class EditPreview extends HTMLElement {
 		if (game.isSpacePressed()) return;
 
 		const tool = game.selected_tool;
-		if (tool === 'pen') return;
+
+		if (tool === 'pen') {
+			this.pen_is_down = true;
+			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+			return;
+		}
 
 		const block = this.screenToBlock(this.mouse_x, this.mouse_y);
 		if (!block) return;
@@ -64,9 +77,40 @@ class EditPreview extends HTMLElement {
 	}
 
 	onMouseUp() {
+		if (this.is_dragging) {
+			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+			if (edit_mode === 'place' || edit_mode === 'erase') this.applyEdit();
+		}
+		this.cancelDrag();
+	}
+
+	onKeyDown(e) {
+		if (e.key === 'Escape') this.cancelDrag();
+	}
+
+	cancelDrag() {
 		this.is_dragging = false;
+		this.pen_is_down = false;
 		this.drag_start_block_x = null;
 		this.drag_start_block_y = null;
+	}
+
+	applyEdit() {
+		const entity = game?.camera?.followed_entity;
+		if (!entity) return;
+
+		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+		const layer = game.selected_layer;
+		const block_name = game.selected_block;
+		const blocks = this.getPreviewBlocks();
+		if (blocks.length === 0) return;
+
+		for (const [bx, by] of blocks) {
+			if (edit_mode === 'place') entity.setByName(layer, bx, by, block_name);
+			else if (edit_mode === 'erase') entity.deleteBlock(layer, bx, by);
+		}
+
+		entity.render();
 	}
 
 	scheduleDraw() {
