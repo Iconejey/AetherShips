@@ -1,20 +1,24 @@
 # Blocks
 
-Blocks are the basic building units of entities. They are identified by type, which is limited to a range of 0-255. To make sure we use this range effectively, this document will list all the block types with their craft composition grouped by category.
+Blocks are the basic building units of entities. They are identified by type, which is limited to a range of 0-255 (0 being empty block).
+
+To make sure we use this range effectively, this document will list them by category and range.
+
+Ranges take more type IDs than needed so that we can still add new blocks to the game.
 
 ## Raw Resources (0-19)
 
-0. **Rock**
-1. **Iron Ore**
-2. **Copper Ore**
-3. **Titanium Ore**
-4. **Lead Ore**
-5. **Uranium Ore**
-6. **Coal**
-7. **Sand**
-8. **Raw Crystal**
-9. **Dirt**
-10. **Vegetation**
+1. **Rock**
+2. **Iron Ore**
+3. **Copper Ore**
+4. **Titanium Ore**
+5. **Lead Ore**
+6. **Uranium Ore**
+7. **Coal**
+8. **Sand**
+9. **Raw Crystal**
+10. **Dirt**
+11. **Vegetation**
 
 ## Refined Materials & Components (20-49)
 
@@ -39,7 +43,6 @@ Blocks are the basic building units of entities. They are identified by type, wh
 52. **Titanium Hull - Tier 3**
 53. **Alloy Hull - Tier 4**
 54. **Glass Window**
-55. **Greenhouse**
 
 ## Energy & Transformation (80-109)
 
@@ -52,7 +55,7 @@ Blocks are the basic building units of entities. They are identified by type, wh
 86. **Industrial Refinery**
 87. **Uranium Refinery**
 88. **Bio-Refinery**
-89. **Shield Generator**
+89. **Greenhouse**
 
 ## Propulsion (110-139)
 
@@ -70,19 +73,23 @@ Blocks are the basic building units of entities. They are identified by type, wh
 144. **Explosive Charge - Tier 1**
 145. **Explosive Charge - Tier 2**
 146. **Explosive Charge - Tier 3**
+147. **Shield Generator**
+148. **Shield plasma**
 
 ## Logistics & Automation (170-199)
 
-170: **Basic Container**
-171: **Bio-Fuel Container**
-172: **Uranium Container**
-173: **Rack**
-174: **Linear Actuator**
-175: **Rotary Actuator / Pivot**
+170. **Industrial Container**
+171. **Bio-Fuel Container**
+172. **Uranium Container**
+173. **Rack**
 
 ## Control Systems (Cores) (200-229)
 
-200: **Circuit Core - Tier 1**
-201: **Processor Core - Tier 2**
-202: **Command Core - Tier 3**
-203: **Station AI Core - Tier 4**
+200. **Ship Core - Tier 1**
+201. **Ship Core - Tier 2**
+202. **Ship Core - Tier 3**
+203. **Ship Core - Tier 4**
+204. **Actuator - Tier 1**
+205. **Actuator - Tier 2**
+206. **Actuator - Tier 3**
+207. **Actuator - Tier 4**
