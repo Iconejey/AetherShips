@@ -43,6 +43,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 52. **Titanium Hull - Tier 3**
 53. **Alloy Hull - Tier 4**
 54. **Glass Window**
+55. **Lamp**
 
 ## [Energy & Transformation (80-109)](blocks/energy-transformation.md)
 
@@ -75,6 +76,12 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 146. **Explosive Charge - Tier 3**
 147. **Shield Generator**
 148. **Shield plasma**
+149. **Drill - Tier 1**
+150. **Drill - Tier 2**
+151. **Drill - Tier 3**
+152. **Missile Launcher - Tier 1**
+153. **Missile Launcher - Tier 2**
+154. **Missile Launcher - Tier 3**
 
 ## [Logistics & Automation (170-199)](blocks/logistics-automation.md)
 
@@ -93,3 +100,4 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 205. **Actuator - Tier 2**
 206. **Actuator - Tier 3**
 207. **Actuator - Tier 4**
+208. **Cryo Chamber**

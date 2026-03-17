@@ -36,3 +36,10 @@ The pinnacle of hull technology, combining the strength of titanium with the tou
 **Craft:** Glass
 
 Transparent structural panel that allows light — and a view — through ship walls. Slightly less durable than metal hulls, but essential for visibility and aesthetics.
+
+---
+
+## Lamp
+**Craft:** Glass + Copper Wire
+
+A simple electric light source. Used for decoration and as a required light input for Greenhouses, where it supplements or replaces natural starlight to sustain plant growth.

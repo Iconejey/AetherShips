@@ -49,7 +49,7 @@ An advanced capacitor with far greater storage capacity. Essential for ships wit
 ## Industrial Refinery
 **Craft:** Iron Hull - Tier 1 + Copper Wire
 
-The workhorse of material processing. Smelts ores into ingots and refines raw materials into usable components. Required for the vast majority of crafting recipes.
+The workhorse of material processing. Smelts ores into ingots and refines raw materials into usable components. Also converts Vegetation into Coal, making a Greenhouse a convenient step toward Steel production. Required for the vast majority of crafting recipes.
 
 ---
 
@@ -68,6 +68,6 @@ A biological processing unit that converts Vegetation into Bio-Fuel. Provides a 
 ---
 
 ## Greenhouse
-**Craft:** Glass Window + Dirt
+**Craft:** Glass Window + Dirt + Lamp
 
-A transparent enclosure filled with soil that cultivates Vegetation over time. Enables a fully renewable Bio-Fuel supply chain on ships or stations.
+A transparent enclosure filled with soil and equipped with artificial lighting that cultivates Vegetation over time. Enables a fully renewable Bio-Fuel supply chain on ships or stations, and provides Vegetation that can be converted into Coal via the Industrial Refinery.

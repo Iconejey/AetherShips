@@ -57,3 +57,10 @@ A high-precision actuator capable of handling demanding automation chains with m
 **Craft:** Titanium Ingot + Processor + Cut Crystal
 
 The most advanced actuator, with crystal-enhanced precision. Supports the full breadth of navigation and combat automation available in the game.
+
+---
+
+## Cryo Chamber
+**Craft:** Electronic Component + Glass
+
+A life-support pod installed aboard a ship or station. Upon the player's death, the Cryo Chamber preserves their neural pattern and respawns them at its location. Without one, respawning is impossible in the field.
