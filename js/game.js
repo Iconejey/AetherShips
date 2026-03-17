@@ -444,6 +444,14 @@ class Game extends HTMLElement {
 
 		// Add keyboard controls for ZQSD movement and A/E strafing
 		window.addEventListener('keydown', event => {
+			const is_reload_shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r';
+			if (is_reload_shortcut) {
+				event.preventDefault();
+				const should_reload = window.confirm('Reload the page? Unsaved changes may be lost.');
+				if (should_reload) window.location.reload();
+				return;
+			}
+
 			this.pressed_keys[event.key] = true;
 
 			if ((event.key === ' ' || event.code === 'Space') && !event.repeat) {
