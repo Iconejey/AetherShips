@@ -6,6 +6,14 @@ class SideBar extends HTMLElement {
 
 	handleShortcut(event) {
 		if (game.mode !== 'edit') return;
+
+		const is_find_shortcut = (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f';
+		if (is_find_shortcut) {
+			event.preventDefault();
+			this.focusBlockSearch();
+			return;
+		}
+
 		if (event.metaKey) return;
 
 		const target = event.target;
@@ -40,6 +48,9 @@ class SideBar extends HTMLElement {
 	showEditTools() {
 		this.innerHTML = html`
 			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
+			<div id="block-search-wrapper">
+				<input id="block-search" type="search" placeholder="Search blocks" aria-label="Search blocks" />
+			</div>
 			<div id="block-list"></div>
 			<div id="paint-panel" class="paint-panel">
 				<div class="paint-controls">
@@ -88,6 +99,10 @@ class SideBar extends HTMLElement {
 				const block_label = block.name.replace(/_/g, ' ');
 				const formatted_label = block_label[0].toUpperCase() + block_label.slice(1);
 				cat_select.add(block.name, formatted_label, `Select ${formatted_label} block`);
+				const block_button = cat_select.lastElementChild;
+				if (block_button instanceof HTMLButtonElement) {
+					block_button.setAttribute('data-search', `${formatted_label} ${block.name}`.toLowerCase());
+				}
 			}
 
 			details.appendChild(cat_select);
@@ -97,6 +112,9 @@ class SideBar extends HTMLElement {
 		// Select first block by default
 		const first_button = block_list.$('button');
 		if (first_button) first_button.classList.add('active');
+
+		const block_search = this.$('#block-search');
+		block_search?.addEventListener('input', () => this.filterBlockList(block_search.value));
 
 		// Paint palette
 		const add_paint_color_button = this.$('#add-paint-color');
@@ -129,6 +147,50 @@ class SideBar extends HTMLElement {
 
 		// Open sidebar
 		this.classList.add('open');
+	}
+
+	focusBlockSearch(select_text = true) {
+		const block_search = this.$('#block-search');
+		if (!block_search) return;
+		block_search.focus();
+		if (select_text) block_search.select();
+	}
+
+	filterBlockList(search_term) {
+		const normalized_search = search_term.trim().toLowerCase();
+		const block_list = this.$('#block-list');
+		if (!block_list) return;
+
+		for (const category_details of block_list.$$('details')) {
+			let has_visible_button = false;
+
+			for (const button of category_details.$$('multi-select button')) {
+				const search_text = button.getAttribute('data-search') || button.textContent?.toLowerCase() || '';
+				const is_match = !normalized_search || search_text.includes(normalized_search);
+				button.classList.toggle('hidden', !is_match);
+				has_visible_button ||= is_match;
+			}
+
+			category_details.classList.toggle('hidden', !has_visible_button);
+			if (normalized_search && has_visible_button) category_details.open = true;
+		}
+
+		this.ensureVisibleBlockSelection();
+	}
+
+	ensureVisibleBlockSelection() {
+		const block_list = this.$('#block-list');
+		if (!block_list) return;
+
+		const active_button = block_list.$('button.active');
+		const has_visible_active_button = active_button && !active_button.classList.contains('hidden') && !active_button.closest('details')?.classList.contains('hidden');
+		if (has_visible_active_button) return;
+
+		const first_visible_button = block_list.$('details:not(.hidden) multi-select button:not(.hidden)');
+		if (!first_visible_button) return;
+
+		const multi_select = first_visible_button.closest('multi-select');
+		multi_select?.setActiveButton(first_visible_button);
 	}
 
 	setEditModeUi(edit_mode) {
