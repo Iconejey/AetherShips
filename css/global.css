@@ -88,6 +88,12 @@ button {
 	user-select: none;
 	font-family: inherit;
 
+	&:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: -2px;
+		box-shadow: 0 0 0 2px var(--primary-trans);
+	}
+
 	&:hover {
 		background: var(--hover-bg);
 		color: var(--text-highlight);
