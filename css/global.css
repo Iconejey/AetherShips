@@ -15,12 +15,12 @@
 
 body {
 	--ura-primary: #00eaff;
-	--ura-trans: #00eaff1f;
+	--ura-trans: color-mix(in srgb, var(--ura-primary) 12%, transparent);
 	--pirate-primary: #ff6e00;
-	--pirate-trans: #ff6e001f;
+	--pirate-trans: color-mix(in srgb, var(--pirate-primary) 12%, transparent);
 
 	--primary: var(--ura-primary);
-	--primary-trans: var(--ura-trans);
+	--primary-trans: color-mix(in srgb, var(--primary) 12%, transparent);
 
 	--bg: #0f0f14cc;
 	--border: #ffffff1a;
@@ -41,6 +41,42 @@ body {
 	background: var(--bg);
 	outline: 1px solid var(--border);
 	backdrop-filter: blur(2px);
+	--ui-scrollbar-size: 10px;
+	--ui-scrollbar-thumb: color-mix(in srgb, var(--text) 20%, transparent);
+	--ui-scrollbar-thumb-hover: color-mix(in srgb, var(--text) 40%, transparent);
+	--ui-scrollbar-track: transparent;
+	scrollbar-width: thin;
+	scrollbar-color: var(--ui-scrollbar-thumb) var(--ui-scrollbar-track);
+
+	& * {
+		scrollbar-width: thin;
+		scrollbar-color: var(--ui-scrollbar-thumb) var(--ui-scrollbar-track);
+	}
+
+	&::-webkit-scrollbar,
+	& *::-webkit-scrollbar {
+		width: var(--ui-scrollbar-size);
+		height: var(--ui-scrollbar-size);
+	}
+
+	&::-webkit-scrollbar-track,
+	& *::-webkit-scrollbar-track {
+		background: var(--ui-scrollbar-track);
+	}
+
+	&::-webkit-scrollbar-thumb,
+	& *::-webkit-scrollbar-thumb {
+		background: var(--ui-scrollbar-thumb);
+		border-radius: 999px;
+		border: 2px solid transparent;
+		background-clip: padding-box;
+	}
+
+	&::-webkit-scrollbar-thumb:hover,
+	& *::-webkit-scrollbar-thumb:hover {
+		background: var(--ui-scrollbar-thumb-hover);
+		background-clip: padding-box;
+	}
 }
 
 button {

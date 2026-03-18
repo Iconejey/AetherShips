@@ -292,6 +292,18 @@ class Game extends HTMLElement {
 	}
 
 	/**
+	 * Returns true when a wheel event originates from UI controls.
+	 * This lets UI panels use native wheel scrolling without triggering game zoom.
+	 * @param {WheelEvent} event - Wheel event to inspect
+	 * @returns {boolean}
+	 */
+	isUiWheelEvent(event) {
+		const target_element = event.target;
+		if (!(target_element instanceof Element)) return false;
+		return Boolean(target_element.closest('.ui'));
+	}
+
+	/**
 	 * Returns true when the space key is currently pressed
 	 * @returns {boolean}
 	 */
@@ -399,6 +411,8 @@ class Game extends HTMLElement {
 		window.addEventListener(
 			'wheel',
 			event => {
+				if (this.isUiWheelEvent(event)) return;
+
 				const zoom_delta = event.deltaY * -0.01;
 
 				if (this.mode !== 'navigation') {
