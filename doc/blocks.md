@@ -6,7 +6,9 @@ To make sure we use this range effectively, this document will list them by cate
 
 Ranges take more type IDs than needed so that we can still add new blocks to the game.
 
-## [Raw Resources (0-19)](blocks/raw-resources.md)
+## Raw Resources (0-19)
+
+0. **Empty Block** (Reserved)
 
 1. **Rock**
 2. **Iron Ore**
@@ -20,7 +22,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 10. **Dirt**
 11. **Vegetation**
 
-## [Refined Materials & Components (20-49)](blocks/refined-materials.md)
+## Refined Materials & Components (20-49)
 
 20. **Iron Ingot**
 21. **Copper Ingot**
@@ -36,7 +38,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 31. **Processor**
 32. **Lead plate**
 
-## [Structure (50-79)](blocks/structure.md)
+## Structure (50-79)
 
 50. **Iron Hull - Tier 1**
 51. **Steel Hull - Tier 2**
@@ -45,7 +47,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 54. **Glass Window**
 55. **Lamp**
 
-## [Energy & Transformation (80-109)](blocks/energy-transformation.md)
+## Energy & Transformation (80-109)
 
 80. **Solar Panel - Tier 1**
 81. **Solar Panel - Tier 2**
@@ -58,14 +60,14 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 88. **Bio-Refinery**
 89. **Greenhouse**
 
-## [Propulsion (110-139)](blocks/propulsion.md)
+## Propulsion (110-139)
 
 110. **Electric Thruster**
 111. **Bio-Fuel Thruster**
 112. **Uranium Thruster**
 113. **Warp Drive**
 
-## [Combat & Defense (140-169)](blocks/combat-defense.md)
+## Combat & Defense (140-169)
 
 140. **Cannon - Tier 1**
 141. **Cannon - Tier 2**
@@ -74,30 +76,19 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 144. **Explosive Charge - Tier 1**
 145. **Explosive Charge - Tier 2**
 146. **Explosive Charge - Tier 3**
-147. **Shield Generator**
-148. **Shield plasma**
-149. **Drill - Tier 1**
-150. **Drill - Tier 2**
-151. **Drill - Tier 3**
-152. **Missile Launcher - Tier 1**
-153. **Missile Launcher - Tier 2**
-154. **Missile Launcher - Tier 3**
+147. **Drill - Tier 1**
+148. **Drill - Tier 2**
+149. **Drill - Tier 3**
+150. **Missile Launcher - Tier 1**
+151. **Missile Launcher - Tier 2**
+152. **Missile Launcher - Tier 3**
 
-## [Logistics & Automation (170-199)](blocks/logistics-automation.md)
+## Logistics & Automation (170-199)
 
 170. **Industrial Container**
 171. **Bio-Fuel Container**
 172. **Uranium Container**
-173. **Rack**
-
-## [Control Systems (Cores) (200-229)](blocks/control-systems.md)
-
-200. **Ship Core - Tier 1**
-201. **Ship Core - Tier 2**
-202. **Ship Core - Tier 3**
-203. **Ship Core - Tier 4**
-204. **Actuator - Tier 1**
-205. **Actuator - Tier 2**
-206. **Actuator - Tier 3**
-207. **Actuator - Tier 4**
-208. **Cryo Chamber**
+173. **Conveyor**
+174. **Sorter**
+175. **Rack**
+176. **Module**
