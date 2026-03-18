@@ -385,13 +385,13 @@ class EditPreview extends HTMLElement {
 		if (preview_blocks.length === 0) return;
 
 		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-		let fill_color, stroke_color;
 
-		fill_color = {
-			erase: '#ff3c3c4d',
-			paint: '#ffc83c4d',
-			place: '#ffffff4d'
-		}[edit_mode];
+		let fill_color =
+			{
+				erase: '#ff3c3c4d',
+				paint: '#ffc83c4d',
+				place: '#ffffff4d'
+			}[edit_mode] ?? '#ffffff4d';
 
 		// Apply the same transform the entity-root CSS uses:
 		//   translate(entity_left, entity_top)  →  rotate(entity_rotation)  →  scale(game_scale)
@@ -449,14 +449,6 @@ class EditPreview extends HTMLElement {
 			ctx.rect(bx * scale, by * scale, scale, scale);
 		}
 		ctx.fill();
-
-		// Stroke pass — 1 px border on every block
-		ctx.strokeStyle = stroke_color;
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		for (const [bx, by] of preview_blocks) {
-			ctx.rect(bx * scale + 0.5, by * scale + 0.5, scale - 1, scale - 1);
-		}
 
 		ctx.restore();
 	}
