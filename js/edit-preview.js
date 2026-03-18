@@ -373,7 +373,7 @@ class EditPreview extends HTMLElement {
 		const ctx = this.ctx;
 		ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		if (game?.mode !== 'edit') return;
+		if (window.game?.mode !== 'edit') return;
 		if (!game.camera?.followed_entity) return;
 
 		const info = this.getEntityInfo();

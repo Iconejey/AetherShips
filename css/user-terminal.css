@@ -1,0 +1,8 @@
+user-terminal {
+	display: block;
+	position: fixed;
+	left: 1rem;
+	top: 1rem;
+	color: var(--text);
+	z-index: 10000;
+}

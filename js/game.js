@@ -422,7 +422,7 @@ class Game extends HTMLElement {
 	async connectedCallback() {
 		await this.loadBlocks();
 
-		this.scale = 12;
+		this.scale = 8;
 		this.style.setProperty('--game-scale', this.scale);
 
 		// Initialize stars first (so they're behind other elements)
