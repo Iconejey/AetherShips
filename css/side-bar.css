@@ -31,6 +31,39 @@ side-bar {
 		&.hidden {
 			display: none;
 		}
+
+		& details {
+			& summary {
+				padding: 6px 8px;
+				cursor: pointer;
+				font-size: 0.7rem;
+				text-transform: uppercase;
+				letter-spacing: 0.08em;
+				color: #888;
+				border-top: 1px dashed var(--border);
+				user-select: none;
+				list-style: none;
+				display: flex;
+				align-items: center;
+				gap: 4px;
+
+				&::before {
+					content: 'expand_more';
+					font-family: 'Material Symbols Outlined';
+					font-size: 1rem;
+					transition: transform 0.15s;
+				}
+			}
+
+			&:not([open]) > summary::before {
+				transform: rotate(-90deg);
+			}
+
+			& multi-select {
+				display: flex;
+				flex-direction: column;
+			}
+		}
 	}
 
 	& #paint-panel {

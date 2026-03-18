@@ -42,7 +42,7 @@ class Game extends HTMLElement {
 	}
 
 	get selected_block() {
-		return $('side-bar multi-select#block-list').value;
+		return $('side-bar #block-list .active')?.getAttribute('data-value');
 	}
 
 	get selected_tool() {
@@ -390,10 +390,38 @@ class Game extends HTMLElement {
 		}
 	}
 
+	async loadBlocks() {
+		const data = await fetch('blocks.json').then(r => r.json());
+		block_categories = data;
+		for (const category in block_categories) {
+			for (const block of block_categories[category]) {
+				block.colors = block.colors.map(c => {
+					const raw = c.replace('#', '');
+					const r = parseInt(raw.slice(0, 2), 16);
+					const g = parseInt(raw.slice(2, 4), 16);
+					const b = parseInt(raw.slice(4, 6), 16);
+					const a = raw.length === 8 ? parseInt(raw.slice(6, 8), 16) : 0xff;
+					return (((r << 24) >>> 0) | (g << 16) | (b << 8) | a) >>> 0;
+				});
+				block.category = category;
+				blocks_by_type[block.type] = block;
+				blocks_by_name[block.name] = block;
+				block.init = (x, y) => ({
+					type: block.type,
+					health: block.health,
+					is_burning: 0,
+					color: oneOf(block.colors)
+				});
+			}
+		}
+	}
+
 	/**
 	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
 	 */
-	connectedCallback() {
+	async connectedCallback() {
+		await this.loadBlocks();
+
 		this.scale = 12;
 		this.style.setProperty('--game-scale', this.scale);
 
@@ -508,16 +536,16 @@ class Game extends HTMLElement {
 		const test_planet = document.createElement('entity-root');
 		this.appendChild(test_planet);
 
-		test_planet.fillEllipse(0, 0, 0, 64, 64, 'stone');
+		test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
 		test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
-		test_planet.fillEllipse(2, 0, 0, 32, 32, 'grass');
+		test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
 		test_planet.render();
 
 		// Test ship
 		const test_ship = document.createElement('entity-root');
 		this.appendChild(test_ship);
 
-		test_ship.fillRect(2, -8, -16, 16, 32, 'fuselage');
+		test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
 		test_ship.render();
 
 		// Follow ship with camera

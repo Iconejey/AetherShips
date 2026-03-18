@@ -40,7 +40,7 @@ class SideBar extends HTMLElement {
 	showEditTools() {
 		this.innerHTML = html`
 			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
-			<multi-select id="block-list" type="text left"></multi-select>
+			<div id="block-list"></div>
 			<div id="paint-panel" class="paint-panel">
 				<div class="paint-controls">
 					<input id="paint-color-picker" type="color" value="#ffffff" title="Pick color" />
@@ -67,12 +67,36 @@ class SideBar extends HTMLElement {
 		edit_layer_select.value = '1';
 
 		// Blocks
-		const block_list_select = this.$('#block-list');
-		for (const block_name in blocks) {
-			const label = block_name[0].toUpperCase() + block_name.slice(1);
-			block_list_select.add(block_name, label, `Select ${label} block`);
+		const block_list = this.$('#block-list');
+		for (const category in block_categories) {
+			const details = document.createElement('details');
+
+			const summary = document.createElement('summary');
+			const category_label = category.replace(/_/g, ' ');
+			summary.textContent = category_label[0].toUpperCase() + category_label.slice(1);
+			details.appendChild(summary);
+
+			const cat_select = document.createElement('multi-select');
+			cat_select.setAttribute('type', 'text left');
+			cat_select.onchange = () => {
+				block_list.$$('multi-select').forEach(ms => {
+					if (ms !== cat_select) ms.$$('.active').forEach(b => b.classList.remove('active'));
+				});
+			};
+
+			for (const block of block_categories[category]) {
+				const block_label = block.name.replace(/_/g, ' ');
+				const formatted_label = block_label[0].toUpperCase() + block_label.slice(1);
+				cat_select.add(block.name, formatted_label, `Select ${formatted_label} block`);
+			}
+
+			details.appendChild(cat_select);
+			block_list.appendChild(details);
 		}
-		block_list_select.value = 'dirt';
+
+		// Select first block by default
+		const first_button = block_list.$('button');
+		if (first_button) first_button.classList.add('active');
 
 		// Paint palette
 		const add_paint_color_button = this.$('#add-paint-color');

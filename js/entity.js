@@ -82,89 +82,9 @@ function oneOf(arr) {
 	return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/**
- * Creates a slight variation of an RGBA8888 color in lightness and saturation only.
- * @param {number} rgba8888 - An RGBA8888 color value (32-bit: 8 bits each for R, G, B, A).
- * @returns {number} A slightly varied color in the same RGBA8888 format.
- */
-function varyColor(rgba8888) {
-	// Extract RGBA channels (8 bits each)
-	let r = (rgba8888 >> 24) & 0xff;
-	let g = (rgba8888 >> 16) & 0xff;
-	let b = (rgba8888 >> 8) & 0xff;
-	const a = rgba8888 & 0xff;
-
-	const variation = Math.random() * 0.5 + 0.7; // Random variation between 0.7 and 1.2
-	r = Math.min(255, Math.max(0, Math.round(r * variation)));
-	g = Math.min(255, Math.max(0, Math.round(g * variation)));
-	b = Math.min(255, Math.max(0, Math.round(b * variation)));
-
-	// Reconstruct the color
-	const varied = (r << 24) | (g << 16) | (b << 8) | a;
-	const hex = varied.toString(16).padStart(8, '0');
-	console.log(`0x${hex}`);
-	return varied >>> 0; // Ensure unsigned interpretation
-}
-
-// Define block types and their default states, properties, and colors
-const blocks = {
-	// Minerals
-	dirt: {
-		init: (x, y) => ({
-			type: 1,
-			color: oneOf([0x79563aff, 0x916745ff, 0x815c3eff, 0x835d3fff]),
-			health: 2
-		}),
-		death: (arr, index) => (arr[index] = 0) // Empty block on death
-	},
-	stone: {
-		init: (x, y) => ({
-			type: 2,
-			color: oneOf([0x606060ff, 0x686868ff, 0x6f6f6fff]),
-			health: 4
-		}),
-		death: (arr, index) => (arr[index] = 0) // Empty block on death
-	},
-
-	// Vegetation
-	grass: {
-		init: (x, y) => ({
-			type: 3,
-			color: oneOf([0x858f4fff, 0x7a8547ff, 0x8a9a57ff, 0x80904eff]),
-			health: 1
-		}),
-		death: (arr, index) => (arr[index] = 0) // Empty block on death
-	},
-
-	// Structural
-	fuselage: {
-		init: (x, y) => ({
-			type: 16,
-			color: oneOf([0xa0a0a0ff, 0xa2a2a2ff, 0xa4a4a4ff]),
-			health: 10
-		}),
-		death: (arr, index) => (arr[index] = 0) // Empty block on death
-	},
-
-	// Decorative
-	lamp: {
-		init: (x, y) => ({
-			type: 32,
-			color: 0xffff88ff,
-			health: 2
-		}),
-		death: (arr, index) => (arr[index] = 0), // Empty block on death
-		can_be_painted: true,
-		glow: true
-	}
-};
-
+let block_categories = {};
 const blocks_by_type = {};
-for (const block_name in blocks) {
-	const block_type = blocks[block_name].init(0, 0).type;
-	if (blocks_by_type[block_type]) throw new Error(`Duplicate block type ${block_type} for block "${block_name}"`);
-	blocks_by_type[block_type] = blocks[block_name];
-}
+const blocks_by_name = {};
 
 /**
  * Represents a single layer within a chunk, containing blocks and rendering surfaces
@@ -346,11 +266,11 @@ class Layer {
 	 * Set block at (x, y) with the default state of the specified block name
 	 * @param {number} x - The x-coordinate of the block to initialize (0-31).
 	 * @param {number} y - The y-coordinate of the block to initialize (0-31).
-	 * @param {string} name - The name of the block type to initialize (e.g., "dirt").
+	 * @param {string} name - The name of the block type to initialize (e.g., "rock").
 	 */
 	setByName(x, y, name) {
-		const block = blocks[name];
-		if (!block) throw new Error(`Block type "${name}" does not exist`);
+		const block = blocks_by_name[name];
+		if (!block) throw new Error(`Block name "${name}" does not exist`);
 		this.setBlock(x, y, block.init(x, y));
 	}
 
@@ -361,9 +281,9 @@ class Layer {
 	 * @param {number} type - The numeric type of the block to initialize (e.g., 1 for dirt).
 	 */
 	setByType(x, y, type) {
-		const block_name = blocks_by_type[type];
-		if (!block_name) throw new Error(`Block type "${type}" does not exist`);
-		this.setByName(x, y, block_name);
+		const block = blocks_by_type[type];
+		if (!block) throw new Error(`Block type "${type}" does not exist`);
+		this.setBlock(x, y, block.init(x, y));
 	}
 
 	/**
@@ -375,9 +295,9 @@ class Layer {
 	getBlockInfo(x, y) {
 		const index = y * 32 + x;
 		const type = state_struct.type.get(this.blocks, index);
-		const is_empty = type === 0;
+		const is_empty = !type;
 		const block_def = blocks_by_type[type];
-		const can_be_painted = is_empty ? false : (block_def?.can_be_painted ?? true);
+		const can_be_painted = !is_empty && block_def?.can_be_painted;
 
 		return {
 			type,
