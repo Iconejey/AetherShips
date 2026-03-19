@@ -1,4 +1,4 @@
-# Thing
+# World Composition
 
 ## Galaxy and Sectors
 
