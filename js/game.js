@@ -139,13 +139,13 @@ class Game extends HTMLElement {
 	}
 
 	startMenu() {
-		// Test ship
-		const test_ship = document.createElement('entity-root');
-		this.appendChild(test_ship);
-		test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
-		test_ship.render();
-		// Follow ship with camera
-		this.camera.followed_entity = test_ship;
+		// Illustration ship
+		const illustration_ship = document.createElement('entity-root');
+		this.appendChild(illustration_ship);
+		illustration_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
+		illustration_ship.render();
+		this.camera.followed_entity = illustration_ship;
+		illustration_ship.classList.add('auto-thrust');
 	}
 
 	/**
@@ -374,8 +374,16 @@ class Game extends HTMLElement {
 		// Handle keyboard input for followed entity
 		this.handleKeyboardInput(delta_frames);
 
+		const auto_thrust_force = 0.02;
+
 		for (const entity of this.children) {
 			if (!(entity instanceof Entity)) continue;
+
+			if (entity.classList.contains('auto-thrust')) {
+				const angle = entity.position.r;
+				entity.velocity.vx += Math.sin(angle) * auto_thrust_force * delta_frames;
+				entity.velocity.vy -= Math.cos(angle) * auto_thrust_force * delta_frames;
+			}
 
 			entity.position.x += entity.velocity.vx * delta_frames;
 			entity.position.y += entity.velocity.vy * delta_frames;
