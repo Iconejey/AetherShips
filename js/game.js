@@ -26,6 +26,7 @@ class Game extends HTMLElement {
 		this.prev_mouse_y = 0;
 		this.last_space_keydown_at = 0;
 		this.space_double_press_window_ms = 300;
+		this.start_menu_camera_rotation_offset_radians = -Math.PI / 4;
 		this.scale = 1;
 	}
 
@@ -399,8 +400,15 @@ class Game extends HTMLElement {
 		}
 
 		// Update camera to follow entity if one is being followed
-		if (this.camera.followed_entity) {
-			this.camera.update(this.camera.followed_entity, this.scale, this.mode !== 'navigation');
+		const followed_entity = this.camera.followed_entity;
+		if (followed_entity) {
+			const is_start_menu_camera = document.body.classList.contains('start-menu') && followed_entity.classList.contains('auto-thrust');
+
+			if (is_start_menu_camera) {
+				this.camera.moveTo(followed_entity.position.x, followed_entity.position.y, followed_entity.position.r + this.start_menu_camera_rotation_offset_radians);
+			} else {
+				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation');
+			}
 		}
 	}
 
