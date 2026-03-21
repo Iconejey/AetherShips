@@ -9,6 +9,41 @@ class UserTerminal extends HTMLElement {
 		}, 250);
 	}
 
+	attachKeyboardNavigation() {
+		const buttons = this.$$('button');
+		buttons.forEach(button => {
+			button.addEventListener('keydown', e => {
+				if (!button.classList.contains('selected')) return;
+
+				let nextButton = null;
+
+				if ((e.key === 'Tab' && !e.shiftKey) || e.key === 'ArrowDown') {
+					e.preventDefault();
+					nextButton = button.nextElementSibling;
+					while (nextButton && (nextButton.disabled || nextButton.tagName !== 'BUTTON')) {
+						nextButton = nextButton.nextElementSibling;
+					}
+				} else if ((e.key === 'Tab' && e.shiftKey) || e.key === 'ArrowUp') {
+					e.preventDefault();
+					nextButton = button.previousElementSibling;
+					while (nextButton && (nextButton.disabled || nextButton.tagName !== 'BUTTON')) {
+						nextButton = nextButton.previousElementSibling;
+					}
+				} else if (e.key === 'Enter') {
+					e.preventDefault();
+					button.click();
+					return;
+				}
+
+				if (nextButton && nextButton.tagName === 'BUTTON') {
+					button.classList.remove('selected');
+					nextButton.classList.add('selected');
+					nextButton.focus();
+				}
+			});
+		});
+	}
+
 	set mode(mode) {
 		this.current_mode = mode;
 
@@ -18,7 +53,10 @@ class UserTerminal extends HTMLElement {
 				<div class="line">The void is yours, the rest is ours.</div>
 				<div class="line"></div>
 				<div class="line"></div>
-				<button class="line" data-info=" - 2026.03.21" autofocus>My game</button>
+				<button class="line" data-info=" - 2026.03.21">My game</button>
+				<button class="line" data-info=" - 2026.03.21">My game</button>
+				<button class="line" data-info=" - 2026.03.21">My game</button>
+				<button class="line" data-info=" - 2026.03.21">My game</button>
 				<button id="new-game" class="line">Start New Game</button>
 			`;
 
@@ -26,9 +64,11 @@ class UserTerminal extends HTMLElement {
 				this.$('#banner').textContent = text;
 			});
 
+			this.$$('button')[0].classList.add('selected');
+			this.attachKeyboardNavigation();
+
 			this.$('#new-game').onclick = e => {
 				this.$$('button').forEach(btn => (btn.disabled = true));
-				e.target.classList.add('selected');
 
 				this.innerHTML += html`
 					<div class="line"></div>
