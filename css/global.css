@@ -25,8 +25,7 @@ body {
 	--bg: #0f0f14cc;
 	--border: #ffffff1a;
 
-	--text: #ffffffb3;
-	--text-highlight: #ffffffff;
+	--text: hsl(0, 0%, 100%);
 	--hover-bg: #28283299;
 
 	width: 100vw;
@@ -35,6 +34,11 @@ body {
 	font-family: 'Console', 'Courier New', monospace;
 	background: linear-gradient(135deg, #18171e 0%, #1b1b21 100%);
 	position: relative;
+}
+
+::selection {
+	background: var(--text);
+	color: black;
 }
 
 .ui {
@@ -96,7 +100,6 @@ button {
 
 	&:hover {
 		background: var(--hover-bg);
-		color: var(--text-highlight);
 	}
 
 	&.active {

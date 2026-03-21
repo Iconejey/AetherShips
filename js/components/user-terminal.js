@@ -2,15 +2,26 @@ class UserTerminal extends HTMLElement {
 	async connectedCallback() {
 		const pkg = await fetch('package.json').then(r => r.json());
 		this.version = pkg.version;
+		this.mode = 'start_menu';
 		this.tick_interval_id = window.setInterval(() => {
-			if (game?.mode !== this.current_mode) this.mode = game?.mode;
+			if (this.current_mode !== 'start_menu' && game?.mode !== this.current_mode) this.mode = game?.mode;
 			this.tick?.();
 		}, 250);
 	}
 
 	set mode(mode) {
 		this.current_mode = mode;
-		this.classList.toggle('opaque', mode === 'start_menu');
+		this.classList.toggle('fullscreen', mode === 'start_menu');
+
+		if (mode === 'start_menu') {
+			this.innerHTML = html`
+				<pre id="banner"></pre>
+				<div class="line">The void is yours, the rest is ours.</div>
+			`;
+			window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
+				this.$('#banner').textContent = text;
+			});
+		}
 
 		if (mode === 'navigation') {
 			this.innerHTML = html`
@@ -33,8 +44,6 @@ class UserTerminal extends HTMLElement {
 				const sector_y = Math.floor(global_y / 256);
 				this.$('#sector').textContent = `${sector_x}, ${sector_y}`;
 			};
-
-			return;
 		}
 
 		if (mode === 'edit') {
@@ -62,8 +71,6 @@ class UserTerminal extends HTMLElement {
 				const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
 				this.$('#type').textContent = block_info.is_empty ? 'empty' : (blocks_by_type[block_info.type]?.name ?? `${block_info.type}`);
 			};
-
-			return;
 		}
 	}
 }

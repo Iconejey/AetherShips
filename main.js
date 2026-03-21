@@ -7,9 +7,12 @@ function createWindow() {
 	const win = new BrowserWindow({
 		width: 800,
 		height: 600,
+		fullscreen: true,
 		webPreferences: {
 			nodeIntegration: false,
-			contextIsolation: true
+			contextIsolation: true,
+			sandbox: false,
+			preload: path.join(__dirname, 'preload.js')
 		}
 	});
 
