@@ -90,11 +90,14 @@ class Game extends HTMLElement {
 			this.prev_mouse_y = event.clientY;
 		});
 
-		// Add resize listener to update entity positions
+		// Add resize listener to update entity positions and reset stars
+		let resize_timeout = null;
 		window.addEventListener('resize', () => {
 			this.viewport_center_x = window.innerWidth / 2;
 			this.viewport_center_y = window.innerHeight / 2;
 			this.updateEntityPositions();
+			clearTimeout(resize_timeout);
+			resize_timeout = setTimeout(() => this.resetStars(), 200);
 		});
 
 		// Add keyboard controls for ZQSD movement and A/E strafing
@@ -201,6 +204,16 @@ class Game extends HTMLElement {
 			this.fps_timer = 0;
 			this.fps_frame_count = 0;
 		}
+	}
+
+	/**
+	 * Removes existing stars and re-initializes them for the current viewport size
+	 */
+	resetStars() {
+		const existing_container = this.querySelector('.stars-container');
+		if (existing_container) existing_container.remove();
+		this.stars = [];
+		this.initializeStars();
 	}
 
 	/**
