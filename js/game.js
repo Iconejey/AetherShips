@@ -29,6 +29,111 @@ class Game extends HTMLElement {
 		this.scale = 1;
 	}
 
+	/**
+	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
+	 */
+	async connectedCallback() {
+		await this.loadBlocks();
+
+		this.scale = 8;
+		this.style.setProperty('--game-scale', this.scale);
+
+		// Initialize stars first (so they're behind other elements)
+		this.initializeStars();
+
+		if (!this.fps_counter) {
+			this.fps_counter = document.createElement('div');
+			this.fps_counter.className = 'fps_counter';
+			this.fps_counter.textContent = '0';
+			this.appendChild(this.fps_counter);
+		}
+
+		// Add wheel event for scale control
+		window.addEventListener(
+			'wheel',
+			event => {
+				if (this.isUiWheelEvent(event)) return;
+
+				const zoom_delta = event.deltaY * -0.01;
+
+				if (this.mode !== 'navigation') {
+					event.preventDefault();
+					return this.zoomInspectAtCursor(zoom_delta, event.clientX, event.clientY);
+				}
+
+				// Navigation mode: always zoom
+				this.zoom(zoom_delta);
+			},
+			{ passive: false }
+		);
+
+		// Add mouse move controls for inspect mode (active while Space is held)
+		window.addEventListener('mousemove', event => {
+			if (this.mode === 'navigation' || !this.isSpacePressed()) {
+				this.has_prev_mouse_position = false;
+				return;
+			}
+
+			if (!this.has_prev_mouse_position) {
+				this.prev_mouse_x = event.clientX;
+				this.prev_mouse_y = event.clientY;
+				this.has_prev_mouse_position = true;
+				return;
+			}
+
+			const delta_x = event.clientX - this.prev_mouse_x;
+			const delta_y = event.clientY - this.prev_mouse_y;
+			// Apply offset opposite to mouse movement
+			this.camera.inspect_offset_screen_x -= delta_x;
+			this.camera.inspect_offset_screen_y -= delta_y;
+			this.prev_mouse_x = event.clientX;
+			this.prev_mouse_y = event.clientY;
+		});
+
+		// Add resize listener to update entity positions
+		window.addEventListener('resize', () => {
+			this.viewport_center_x = window.innerWidth / 2;
+			this.viewport_center_y = window.innerHeight / 2;
+			this.updateEntityPositions();
+		});
+
+		// Add keyboard controls for ZQSD movement and A/E strafing
+		window.addEventListener('keydown', event => {
+			const is_reload_shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r';
+			if (is_reload_shortcut) {
+				event.preventDefault();
+				const should_reload = window.confirm('Reload the page? Unsaved changes may be lost.');
+				if (should_reload) window.location.reload();
+				return;
+			}
+
+			this.pressed_keys[event.key] = true;
+
+			if ((event.key === ' ' || event.code === 'Space') && !event.repeat) {
+				const now = performance.now();
+				const within_double_press_window = now - this.last_space_keydown_at <= this.space_double_press_window_ms;
+
+				if (this.mode !== 'navigation' && within_double_press_window) {
+					this.resetInspectOffset();
+					this.last_space_keydown_at = 0;
+				} else {
+					this.last_space_keydown_at = now;
+				}
+			}
+		});
+
+		window.addEventListener('keyup', event => {
+			this.pressed_keys[event.key] = false;
+			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
+		});
+
+		this.fps_timer = 0;
+		this.fps_frame_count = 0;
+		this.startGameLoop();
+
+		setTimeout(() => this.test(), 1);
+	}
+
 	get mode() {
 		return $('tool-bar multi-select').value;
 	}
@@ -417,139 +522,23 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
-	 */
-	async connectedCallback() {
-		await this.loadBlocks();
-
-		this.scale = 8;
-		this.style.setProperty('--game-scale', this.scale);
-
-		// Initialize stars first (so they're behind other elements)
-		this.initializeStars();
-
-		if (!this.fps_counter) {
-			this.fps_counter = document.createElement('div');
-			this.fps_counter.className = 'fps_counter';
-			this.fps_counter.textContent = '0';
-			this.appendChild(this.fps_counter);
-		}
-
-		// Add wheel event for scale control
-		window.addEventListener(
-			'wheel',
-			event => {
-				if (this.isUiWheelEvent(event)) return;
-
-				const zoom_delta = event.deltaY * -0.01;
-
-				if (this.mode !== 'navigation') {
-					event.preventDefault();
-					return this.zoomInspectAtCursor(zoom_delta, event.clientX, event.clientY);
-				}
-
-				// Navigation mode: always zoom
-				this.zoom(zoom_delta);
-			},
-			{ passive: false }
-		);
-
-		// Add mouse move controls for inspect mode (active while Space is held)
-		window.addEventListener('mousemove', event => {
-			if (this.mode === 'navigation' || !this.isSpacePressed()) {
-				this.has_prev_mouse_position = false;
-				return;
-			}
-
-			if (!this.has_prev_mouse_position) {
-				this.prev_mouse_x = event.clientX;
-				this.prev_mouse_y = event.clientY;
-				this.has_prev_mouse_position = true;
-				return;
-			}
-
-			const delta_x = event.clientX - this.prev_mouse_x;
-			const delta_y = event.clientY - this.prev_mouse_y;
-			// Apply offset opposite to mouse movement
-			this.camera.inspect_offset_screen_x -= delta_x;
-			this.camera.inspect_offset_screen_y -= delta_y;
-			this.prev_mouse_x = event.clientX;
-			this.prev_mouse_y = event.clientY;
-		});
-
-		// Add resize listener to update entity positions
-		window.addEventListener('resize', () => {
-			this.viewport_center_x = window.innerWidth / 2;
-			this.viewport_center_y = window.innerHeight / 2;
-			this.updateEntityPositions();
-		});
-
-		// Add keyboard controls for ZQSD movement and A/E strafing
-		window.addEventListener('keydown', event => {
-			const is_reload_shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'r';
-			if (is_reload_shortcut) {
-				event.preventDefault();
-				const should_reload = window.confirm('Reload the page? Unsaved changes may be lost.');
-				if (should_reload) window.location.reload();
-				return;
-			}
-
-			this.pressed_keys[event.key] = true;
-
-			if ((event.key === ' ' || event.code === 'Space') && !event.repeat) {
-				const now = performance.now();
-				const within_double_press_window = now - this.last_space_keydown_at <= this.space_double_press_window_ms;
-
-				if (this.mode !== 'navigation' && within_double_press_window) {
-					this.resetInspectOffset();
-					this.last_space_keydown_at = 0;
-				} else {
-					this.last_space_keydown_at = now;
-				}
-			}
-		});
-
-		window.addEventListener('keyup', event => {
-			this.pressed_keys[event.key] = false;
-			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
-		});
-
-		this.fps_timer = 0;
-		this.fps_frame_count = 0;
-		this.startGameLoop();
-
-		setTimeout(() => this.test(), 1);
-	}
-
-	/**
-	 * Called when the element is removed from the DOM. Stops the game loop.
-	 */
-	disconnectedCallback() {
-		this.stopGameLoop();
-	}
-
-	/**
 	 * Tests for dev purposes
 	 */
 	test() {
-		// Test planet
-		const test_planet = document.createElement('entity-root');
-		this.appendChild(test_planet);
-
-		test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
-		test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
-		test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
-		test_planet.render();
-
-		// Test ship
-		const test_ship = document.createElement('entity-root');
-		this.appendChild(test_ship);
-
-		test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
-		test_ship.render();
-
-		// Follow ship with camera
-		this.camera.followed_entity = test_ship;
+		// // Test planet
+		// const test_planet = document.createElement('entity-root');
+		// this.appendChild(test_planet);
+		// test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
+		// test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
+		// test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
+		// test_planet.render();
+		// // Test ship
+		// const test_ship = document.createElement('entity-root');
+		// this.appendChild(test_ship);
+		// test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
+		// test_ship.render();
+		// // Follow ship with camera
+		// this.camera.followed_entity = test_ship;
 	}
 }
 
