@@ -52,6 +52,10 @@ body {
 	scrollbar-width: thin;
 	scrollbar-color: var(--ui-scrollbar-thumb) var(--ui-scrollbar-track);
 
+	body.start-menu & {
+		display: none;
+	}
+
 	& * {
 		scrollbar-width: thin;
 		scrollbar-color: var(--ui-scrollbar-thumb) var(--ui-scrollbar-track);
@@ -92,10 +96,9 @@ button {
 	user-select: none;
 	font-family: inherit;
 
-	&:focus-visible {
+	&:not(.line):focus-visible {
 		outline: 2px solid var(--primary);
 		outline-offset: -2px;
-		box-shadow: 0 0 0 2px var(--primary-trans);
 	}
 
 	&:hover {

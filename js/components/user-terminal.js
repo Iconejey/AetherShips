@@ -11,16 +11,24 @@ class UserTerminal extends HTMLElement {
 
 	set mode(mode) {
 		this.current_mode = mode;
-		this.classList.toggle('fullscreen', mode === 'start_menu');
 
 		if (mode === 'start_menu') {
 			this.innerHTML = html`
 				<pre id="banner"></pre>
 				<div class="line">The void is yours, the rest is ours.</div>
+				<div class="line"></div>
+				<div class="line"></div>
+				<button class="line" data-info=" - 2026.03.21">My game</button>
+				<button class="line">Start New Game</button>
 			`;
+
 			window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
 				this.$('#banner').textContent = text;
 			});
+
+			this.$('button').focus();
+
+			this.tick = null;
 		}
 
 		if (mode === 'navigation') {

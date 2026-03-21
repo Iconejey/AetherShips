@@ -130,8 +130,39 @@ class Game extends HTMLElement {
 		this.fps_timer = 0;
 		this.fps_frame_count = 0;
 		this.startGameLoop();
+		this.startMenu();
 
 		setTimeout(() => this.test(), 1);
+	}
+
+	startMenu() {
+		// Test ship
+		const test_ship = document.createElement('entity-root');
+		this.appendChild(test_ship);
+		test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
+		test_ship.render();
+		// Follow ship with camera
+		this.camera.followed_entity = test_ship;
+	}
+
+	/**
+	 * Tests for dev purposes
+	 */
+	test() {
+		// // Test planet
+		// const test_planet = document.createElement('entity-root');
+		// this.appendChild(test_planet);
+		// test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
+		// test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
+		// test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
+		// test_planet.render();
+		// // Test ship
+		// const test_ship = document.createElement('entity-root');
+		// this.appendChild(test_ship);
+		// test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
+		// test_ship.render();
+		// // Follow ship with camera
+		// this.camera.followed_entity = test_ship;
 	}
 
 	get mode() {
@@ -519,26 +550,6 @@ class Game extends HTMLElement {
 				});
 			}
 		}
-	}
-
-	/**
-	 * Tests for dev purposes
-	 */
-	test() {
-		// // Test planet
-		// const test_planet = document.createElement('entity-root');
-		// this.appendChild(test_planet);
-		// test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
-		// test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
-		// test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
-		// test_planet.render();
-		// // Test ship
-		// const test_ship = document.createElement('entity-root');
-		// this.appendChild(test_ship);
-		// test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
-		// test_ship.render();
-		// // Follow ship with camera
-		// this.camera.followed_entity = test_ship;
 	}
 }
 

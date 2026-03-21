@@ -5,4 +5,36 @@ user-terminal {
 	top: 2rem;
 	color: var(--text);
 	z-index: 10000;
+
+	& #banner {
+		line-height: 1.1;
+	}
+
+	& div.line {
+		height: 1em;
+	}
+
+	& button {
+		font-size: 1rem;
+		padding: 0.2rem;
+		display: block;
+
+		&::before {
+			content: '> ';
+			opacity: 0;
+		}
+
+		&::after {
+			content: attr(data-info);
+			opacity: 0;
+		}
+
+		&:focus,
+		&:hover {
+			&::before,
+			&::after {
+				opacity: 0.5;
+			}
+		}
+	}
 }
