@@ -11,10 +11,8 @@
 		position: fixed;
 		width: 2px;
 		height: 2px;
-		background-color: white;
-		border-radius: 50%;
+		background-color: var(--text);
 		box-shadow: 0 0 6px rgba(255, 255, 255, 0.8);
-		transform: translate(-50%, -50%);
 		pointer-events: none;
 	}
 }
