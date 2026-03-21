@@ -18,15 +18,32 @@ class UserTerminal extends HTMLElement {
 				<div class="line">The void is yours, the rest is ours.</div>
 				<div class="line"></div>
 				<div class="line"></div>
-				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button class="line">Start New Game</button>
+				<button class="line" data-info=" - 2026.03.21" autofocus>My game</button>
+				<button id="new-game" class="line">Start New Game</button>
 			`;
 
 			window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
 				this.$('#banner').textContent = text;
 			});
 
-			this.$('button').focus();
+			this.$('#new-game').onclick = e => {
+				this.$$('button').forEach(btn => (btn.disabled = true));
+				e.target.classList.add('selected');
+
+				this.innerHTML += html`
+					<div class="line"></div>
+					<div class="line">Enter the name of this world...</div>
+					<div class="line">Name : <input id="name-input" /></div>
+				`;
+
+				const name_input = this.$('#name-input');
+				name_input.focus();
+				name_input.onkeydown = e => {
+					if (e.key === 'Enter') {
+						// For later
+					}
+				};
+			};
 
 			this.tick = null;
 		}

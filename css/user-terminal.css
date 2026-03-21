@@ -11,7 +11,8 @@ user-terminal {
 	}
 
 	& div.line {
-		height: 1em;
+		line-height: 1.5em;
+		height: 1.5em;
 	}
 
 	& button {
@@ -29,12 +30,34 @@ user-terminal {
 			opacity: 0;
 		}
 
-		&:focus,
-		&:hover {
+		&:not([disabled]) {
+			&:focus,
+			&:hover {
+				&::before,
+				&::after {
+					opacity: 0.5;
+				}
+			}
+		}
+
+		&.selected {
 			&::before,
 			&::after {
 				opacity: 0.5;
 			}
 		}
+
+		&[disabled]:not(.selected) {
+			opacity: 0.5;
+		}
+	}
+
+	& input {
+		font-size: 1rem;
+		padding: 0px;
+		background: transparent;
+		border: none;
+		outline: none;
+		color: var(--primary);
 	}
 }
