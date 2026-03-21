@@ -328,6 +328,7 @@ class Game extends HTMLElement {
 	handleKeyboardInput(delta_frames) {
 		if (!this.camera.followed_entity) return;
 		if (this.mode !== 'navigation') return;
+		if (document.body.classList.contains('start-menu')) return;
 
 		const thrust_force = 0.02;
 		const rotation_speed = 0.001;

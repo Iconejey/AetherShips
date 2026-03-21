@@ -28,6 +28,7 @@ class ToolBar extends HTMLElement {
 	}
 
 	handleShortcut(event) {
+		if (document.body.classList.contains('start-menu')) return;
 		if (event.metaKey || event.altKey) return;
 
 		const mode = this.$('multi-select').getValueForEvent(event);
