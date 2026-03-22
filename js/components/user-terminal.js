@@ -47,132 +47,134 @@ class UserTerminal extends HTMLElement {
 	set mode(mode) {
 		this.current_mode = mode;
 
-		if (mode === 'start_menu') {
-			(async () => {
-				// Get saves list
-				const saves = await window.saves.list();
+		if (mode === 'start_menu') return this.startMenu();
+		if (mode === 'navigation') return this.navigation();
+		if (mode === 'edit') return this.edit();
+	}
 
-				this.innerHTML = html`
-					<pre id="banner"></pre>
-					<div class="line">The void is yours, the rest is ours.</div>
-					<div class="line"></div>
-					<div class="line"></div>
-				`;
+	async startMenu() {
+		// Get saves list
+		const saves = await window.saves.list();
 
-				// Add save buttons
-				for (const save of saves) this.innerHTML += html`<button class="line save-btn" data-save="${save}">${save}</button>`;
+		this.innerHTML = html`
+			<pre id="banner"></pre>
+			<div class="line">The void is yours, the rest is ours.</div>
+			<div class="line"></div>
+			<div class="line"></div>
+		`;
 
-				// Add new game button
-				this.innerHTML += html`<button id="new-game" class="line">Start New Galaxy</button>`;
+		// Add save buttons
+		for (const save of saves) this.innerHTML += html`<button class="line save-btn" data-save="${save}">${save}</button>`;
 
-				// Render banner
-				window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
-					this.$('#banner').textContent = text;
-				});
+		// Add new game button
+		this.innerHTML += html`<button id="new-game" class="line">Start New Galaxy</button>`;
 
-				// Select first button (save or new)
-				const first_btn = this.$('button');
-				first_btn?.classList.add('selected');
-				first_btn?.focus();
-				this.attachKeyboardNavigation();
+		// Render banner
+		window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
+			this.$('#banner').textContent = text;
+		});
 
-				// Save button click handler (implement loading logic as needed)
-				this.$$('.save-btn').forEach(btn => {
-					btn.onclick = () => {
-						// TODO: Implement save loading logic here
-						this.innerHTML += html`<div class="line">Loading galaxy: ${btn.dataset.save}</div>`;
-					};
-				});
+		// Select first button (save or new)
+		const first_btn = this.$('button');
+		first_btn?.classList.add('selected');
+		first_btn?.focus();
+		this.attachKeyboardNavigation();
 
-				// New game button click handler
-				this.$('#new-game').onclick = e => {
-					this.$$('button').forEach(btn => (btn.disabled = true));
+		// Save button click handler (implement loading logic as needed)
+		this.$$('.save-btn').forEach(btn => {
+			btn.onclick = () => {
+				// TODO: Implement save loading logic here
+				this.innerHTML += html`<div class="line">Loading galaxy: ${btn.dataset.save}</div>`;
+			};
+		});
 
-					this.innerHTML += html`
-						<div class="line"></div>
-						<div class="line">Enter the name of this Galaxy...</div>
-						<div class="line">Name : <input id="name-input" /></div>
-					`;
+		// New game button click handler
+		this.$('#new-game').onclick = e => {
+			this.$$('button').forEach(btn => (btn.disabled = true));
 
-					const name_input = this.$('#name-input');
-					name_input.setAttribute('maxlength', '32');
-					name_input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
-					name_input.setAttribute('title', 'No special characters: <>:"/\|?*');
-					name_input.focus();
-					name_input.onkeydown = async e => {
-						if (e.key === 'Enter') {
-							const name = name_input.value.trim();
-							const invalid = /[<>:"/\\|?*]/g;
-							if (!name || invalid.test(name)) {
-								name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
-								name_input.reportValidity();
-								return;
-							}
-							name_input.disabled = true;
-							try {
-								await window.saves.create(name);
-								this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
-							} catch (err) {
-								name_input.disabled = false;
-								this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
-							}
-						}
-					};
-				};
-
-				this.tick = null;
-			})();
-		}
-
-		if (mode === 'navigation') {
-			this.innerHTML = html`
-				<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
-				<div class="line">Sector [<span id="sector"></span>] position (<span id="coords"></span>)</div>
+			this.innerHTML += html`
+				<div class="line"></div>
+				<div class="line">Enter the name of this Galaxy...</div>
+				<div class="line">Name : <input id="name-input" /></div>
 			`;
 
-			this.tick = () => {
-				const followed = window.game?.camera?.followed_entity;
-				if (!followed) return;
-
-				const global_x = followed.position.x / 32;
-				const global_y = followed.position.y / 32;
-
-				const chunk_x = Math.floor(global_x % 256);
-				const chunk_y = Math.floor(global_y % 256);
-				this.$('#coords').textContent = `${chunk_x}, ${chunk_y}`;
-
-				const sector_x = Math.floor(global_x / 256);
-				const sector_y = Math.floor(global_y / 256);
-				this.$('#sector').textContent = `${sector_x}, ${sector_y}`;
-			};
-		}
-
-		if (mode === 'edit') {
-			this.innerHTML = html`
-				<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
-				<div class="line">Type : <span id="type"></span></div>
-			`;
-
-			this.tick = () => {
-				if (game?.mode !== this.current_mode) return (this.mode = game?.mode ?? 'navigation');
-
-				const followed_entity = game?.camera?.followed_entity;
-				const edit_preview = $('edit-preview');
-				if (!followed_entity || !edit_preview) {
-					this.$('#type').textContent = '-';
-					return;
+			const name_input = this.$('#name-input');
+			name_input.setAttribute('maxlength', '32');
+			name_input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
+			name_input.setAttribute('title', 'No special characters: <>:"/\|?*');
+			name_input.focus();
+			name_input.onkeydown = async e => {
+				if (e.key === 'Enter') {
+					const name = name_input.value.trim();
+					const invalid = /[<>:"/\\|?*]/g;
+					if (!name || invalid.test(name)) {
+						name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+						name_input.reportValidity();
+						return;
+					}
+					name_input.disabled = true;
+					try {
+						await window.saves.create(name);
+						this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
+					} catch (err) {
+						name_input.disabled = false;
+						this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
+					}
 				}
-
-				const hovered_block = edit_preview.screenToBlock(edit_preview.mouse_x, edit_preview.mouse_y);
-				if (!hovered_block) {
-					this.$('#type').textContent = '-';
-					return;
-				}
-
-				const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
-				this.$('#type').textContent = block_info.is_empty ? 'empty' : (blocks_by_type[block_info.type]?.name ?? `${block_info.type}`);
 			};
-		}
+		};
+
+		this.tick = null;
+	}
+
+	navigation() {
+		this.innerHTML = html`
+			<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
+			<div class="line">Sector [<span id="sector"></span>] position (<span id="coords"></span>)</div>
+		`;
+
+		this.tick = () => {
+			const followed = window.game?.camera?.followed_entity;
+			if (!followed) return;
+
+			const global_x = followed.position.x / 32;
+			const global_y = followed.position.y / 32;
+
+			const chunk_x = Math.floor(global_x % 256);
+			const chunk_y = Math.floor(global_y % 256);
+			this.$('#coords').textContent = `${chunk_x}, ${chunk_y}`;
+
+			const sector_x = Math.floor(global_x / 256);
+			const sector_y = Math.floor(global_y / 256);
+			this.$('#sector').textContent = `${sector_x}, ${sector_y}`;
+		};
+	}
+
+	edit() {
+		this.innerHTML = html`
+			<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
+			<div class="line">Type : <span id="type"></span></div>
+		`;
+
+		this.tick = () => {
+			if (game?.mode !== this.current_mode) return (this.mode = game?.mode ?? 'navigation');
+
+			const followed_entity = game?.camera?.followed_entity;
+			const edit_preview = $('edit-preview');
+			if (!followed_entity || !edit_preview) {
+				this.$('#type').textContent = '-';
+				return;
+			}
+
+			const hovered_block = edit_preview.screenToBlock(edit_preview.mouse_x, edit_preview.mouse_y);
+			if (!hovered_block) {
+				this.$('#type').textContent = '-';
+				return;
+			}
+
+			const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
+			this.$('#type').textContent = block_info.is_empty ? 'empty' : (blocks_by_type[block_info.type]?.name ?? `${block_info.type}`);
+		};
 	}
 }
 
