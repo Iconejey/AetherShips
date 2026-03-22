@@ -53,6 +53,9 @@ class UserTerminal extends HTMLElement {
 	}
 
 	async startMenu() {
+		// Remove focus handlers in case we are returning from another menu to prevent duplicates
+		this._removeStartMenuFocusHandler?.();
+
 		// Get saves list
 		const saves = await window.saves.list();
 
@@ -86,6 +89,31 @@ class UserTerminal extends HTMLElement {
 		first_btn?.classList.add('selected');
 		first_btn?.focus();
 		this.attachKeyboardNavigation();
+
+		// Prevent focus loss on mousedown, restore on mouseup
+		const preventBlurHandler = e => {
+			const tag = e.target.tagName;
+			if (['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.target.isContentEditable) return;
+			e.preventDefault();
+		};
+
+		const restoreFocusHandler = e => {
+			const tag = e.target.tagName;
+			if (['BUTTON', 'INPUT', 'TEXTAREA', 'SELECT'].includes(tag) || e.target.isContentEditable) return;
+			// Try to focus input or selected button, if any
+			const input = this.$('input:not([disabled])');
+			const selected = this.$('button.selected:not([disabled])');
+			(input || selected)?.focus();
+		};
+
+		window.addEventListener('mousedown', preventBlurHandler, true);
+		window.addEventListener('mouseup', restoreFocusHandler, false);
+
+		// Remove handlers when leaving start menu
+		this._removeStartMenuFocusHandler = () => {
+			window.removeEventListener('mousedown', preventBlurHandler, true);
+			window.removeEventListener('mouseup', restoreFocusHandler, false);
+		};
 
 		// Save button click handler (implement loading logic as needed)
 		this.$$('.save-btn').forEach(btn => {
