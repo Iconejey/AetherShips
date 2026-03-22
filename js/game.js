@@ -149,6 +149,18 @@ class Game extends HTMLElement {
 		illustration_ship.classList.add('auto-thrust');
 	}
 
+	async loadGalaxy(name) {
+		$$('entity-root').forEach(e => e.remove());
+		document.body.classList.remove('start-menu');
+
+		this.galaxy = await window.saves.load(name);
+
+		const entity = Entity.create(this.galaxy.player.position, true);
+		entity.fillRect(0, -8, -16, 16, 32, 'iron_hull_tier_1');
+		entity.render();
+		this.camera.followed_entity = entity;
+	}
+
 	/**
 	 * Tests for dev purposes
 	 */

@@ -390,6 +390,13 @@ customElements.define('entity-layer', EntityLayer);
  * Custom HTMLElement representing an entity (ship, asteroid, planet, etc.)
  */
 class Entity extends HTMLElement {
+	static create(position, add_to_dom = false) {
+		const entity = document.createElement('entity-root');
+		entity.position = { ...position };
+		if (add_to_dom) entity.addToDOM();
+		return entity;
+	}
+
 	toLocalCoord(value) {
 		return ((value % 32) + 32) % 32;
 	}
@@ -641,6 +648,13 @@ class Entity extends HTMLElement {
 		console.log(`Rendering ${this.dirty_layers.length} dirty layers`);
 		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();
 		this.dirty_layers.length = 0;
+	}
+
+	/**
+	 * Adds entity to the DOM
+	 */
+	addToDOM() {
+		window.game.appendChild(this);
 	}
 }
 

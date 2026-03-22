@@ -154,12 +154,13 @@ class UserTerminal extends HTMLElement {
 			const dd = String(date.getDate()).padStart(2, '0');
 			const date_str = `${yyyy}.${mm}.${dd}`;
 
-			this.button(
-				name,
-				date_str,
-				() => this.loadGalaxy(name),
-				() => this.deleteGalaxy(name)
-			);
+			const start = () => {
+				window.game.loadGalaxy(name);
+				this.clear();
+				this.mode = 'navigation';
+			};
+
+			this.button(name, date_str, start, () => this.deleteGalaxy(name));
 		}
 
 		// Add new game button
@@ -219,21 +220,6 @@ class UserTerminal extends HTMLElement {
 			this.startMenu(() => this.success(`Galaxy "${name}" created !`));
 		} catch (err) {
 			this.startMenu(() => this.error(`Failed to create Galaxy: ${err.message}`));
-		}
-	}
-
-	async loadGalaxy(name) {
-		this.line();
-		this.line(`Loading galaxy: ${name}...`);
-		try {
-			const data = await window.saves.load(name);
-			// You may want to reset the game state here
-			// For now, just show a success message and log the data
-			this.success(`Galaxy "${name}" loaded!`);
-			console.log('Loaded galaxy data:', data);
-			// TODO: Actually initialize the game state with loaded data
-		} catch (err) {
-			this.error(`Failed to load galaxy: ${err.message}`);
 		}
 	}
 

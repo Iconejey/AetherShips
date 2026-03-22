@@ -31,7 +31,11 @@ ipcMain.handle('galaxy-save-create', async (event, name) => {
 
 		fs.mkdirSync(save_path);
 
-		const data = { player: { position: { x: 0, y: 0 } } };
+		const data = {
+			name,
+			seed: Math.floor(Math.random() * 1e9),
+			player: { position: { x: 0, y: 0, r: 0 } }
+		};
 
 		fs.writeFileSync(path.join(save_path, 'galaxy.json'), JSON.stringify(data, null, 2));
 		return true;
