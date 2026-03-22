@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, ipcRenderer } = require('electron');
 const path = require('path');
 const figlet = require('figlet');
 
@@ -11,4 +11,8 @@ contextBridge.exposeInMainWorld('figlet', (text, options) => {
 			else resolve(data);
 		});
 	});
+});
+
+contextBridge.exposeInMainWorld('saves', {
+	create: name => ipcRenderer.invoke('galaxy-save-create', name)
 });

@@ -57,7 +57,7 @@ class UserTerminal extends HTMLElement {
 				<button class="line" data-info=" - 2026.03.21">My game</button>
 				<button class="line" data-info=" - 2026.03.21">My game</button>
 				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button id="new-game" class="line">Start New Game</button>
+				<button id="new-game" class="line">Start New Galaxy</button>
 			`;
 
 			window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
@@ -72,15 +72,32 @@ class UserTerminal extends HTMLElement {
 
 				this.innerHTML += html`
 					<div class="line"></div>
-					<div class="line">Enter the name of this world...</div>
+					<div class="line">Enter the name of this Galaxy...</div>
 					<div class="line">Name : <input id="name-input" /></div>
 				`;
 
 				const name_input = this.$('#name-input');
+				name_input.setAttribute('maxlength', '32');
+				name_input.setAttribute('pattern', '[^<>:"/\\\\|?*]+$');
+				name_input.setAttribute('title', 'No special characters: <>:"/\\|?*');
 				name_input.focus();
-				name_input.onkeydown = e => {
+				name_input.onkeydown = async e => {
 					if (e.key === 'Enter') {
-						// For later
+						const name = name_input.value.trim();
+						const invalid = /[<>:"/\\|?*]/g;
+						if (!name || invalid.test(name)) {
+							name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+							name_input.reportValidity();
+							return;
+						}
+						name_input.disabled = true;
+						try {
+							await window.saves.create(name);
+							this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
+						} catch (err) {
+							name_input.disabled = false;
+							this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
+						}
 					}
 				};
 			};
