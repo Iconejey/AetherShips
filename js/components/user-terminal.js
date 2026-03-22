@@ -44,27 +44,107 @@ class UserTerminal extends HTMLElement {
 		});
 	}
 
+	clear() {
+		this.innerHTML = '';
+	}
+
+	async banner() {
+		const banner = document.createElement('pre');
+		banner.id = 'banner';
+		banner.textContent = await window.figlet('AetherShips', { font: 'ANSI Shadow' });
+		this.appendChild(banner);
+		return banner;
+	}
+
+	line(content = '') {
+		const div = document.createElement('div');
+		div.className = 'line';
+		div.innerHTML = content;
+		this.appendChild(div);
+		return div;
+	}
+
+	error(content) {
+		const line = this.line(content);
+		line.classList.add('error');
+		return line;
+	}
+
+	success(content) {
+		const line = this.line(content);
+		line.classList.add('success');
+		return line;
+	}
+
+	input(label) {
+		return new Promise(resolve => {
+			const line = this.line();
+			line.innerHTML = html`${label} : <input type="text" maxlength="32" />`;
+			const input = line.querySelector('input');
+			input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
+			input.setAttribute('title', 'No special characters: <>:"/\\|?*');
+			input.focus();
+			input.onkeydown = e => {
+				if (e.key === 'Enter') {
+					const value = input.value.trim();
+					const invalid = /[<>:"/\\|?*]/g;
+					if (!value || invalid.test(value)) {
+						input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+						input.reportValidity();
+						return;
+					}
+					input.disabled = true;
+					resolve(value);
+				}
+			};
+		});
+	}
+
+	button(label, info, onClick, onDelete) {
+		const btn = document.createElement('button');
+		btn.className = 'line';
+		btn.textContent = label;
+		if (info) btn.setAttribute('data-info', ` - ${info}`);
+
+		btn.onclick = e => {
+			this.$$('button').forEach(btn => (btn.disabled = true));
+			btn.classList.add('selected');
+			onClick?.();
+		};
+
+		btn.addEventListener('keydown', e => {
+			if ((e.key === 'Delete' || e.key === 'Backspace') && btn.classList.contains('selected')) onDelete?.();
+		});
+
+		this.appendChild(btn);
+		return btn;
+	}
+
 	set mode(mode) {
 		this.current_mode = mode;
-
 		if (mode === 'start_menu') return this.startMenu();
 		if (mode === 'navigation') return this.navigation();
 		if (mode === 'edit') return this.edit();
 	}
 
-	async startMenu() {
+	async startMenu(message_callback) {
 		// Remove focus handlers in case we are returning from another menu to prevent duplicates
 		this._removeStartMenuFocusHandler?.();
 
+		// Clear terminal
+		this.clear();
+
+		// Add banner
+		await this.banner();
+		this.line('The void is yours, the rest is ours.');
+		this.line();
+
+		// Show message if provided
+		if (message_callback) await message_callback?.();
+		this.line();
+
 		// Get saves list
 		const saves = await window.saves.list();
-
-		this.innerHTML = html`
-			<pre id="banner"></pre>
-			<div class="line">The void is yours, the rest is ours.</div>
-			<div class="line"></div>
-			<div class="line"></div>
-		`;
 
 		// Add save buttons with creation date
 		for (const { name, created } of saves) {
@@ -72,17 +152,18 @@ class UserTerminal extends HTMLElement {
 			const yyyy = date.getFullYear();
 			const mm = String(date.getMonth() + 1).padStart(2, '0');
 			const dd = String(date.getDate()).padStart(2, '0');
-			const dateStr = `${yyyy}.${mm}.${dd}`;
-			this.innerHTML += html`<button class="line save-btn" data-save="${name}" data-info=" - ${dateStr}">${name}</button>`;
+			const date_str = `${yyyy}.${mm}.${dd}`;
+
+			this.button(
+				name,
+				date_str,
+				() => this.loadGalaxy(name),
+				() => this.deleteGalaxy(name)
+			);
 		}
 
 		// Add new game button
-		this.innerHTML += html`<button id="new-game" class="line">Start New Galaxy</button>`;
-
-		// Render banner
-		window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
-			this.$('#banner').textContent = text;
-		});
+		this.button('Create New Galaxy', '', () => this.createNewGalaxy());
 
 		// Select first button (save or new)
 		const first_btn = this.$('button');
@@ -115,73 +196,40 @@ class UserTerminal extends HTMLElement {
 			window.removeEventListener('mouseup', restoreFocusHandler, false);
 		};
 
-		// Save button click handler (implement loading logic as needed)
-		this.$$('.save-btn').forEach(btn => {
-			btn.onclick = () => {
-				// TODO: Implement save loading logic here
-				this.innerHTML += html`<div class="line">Loading galaxy: ${btn.dataset.save}</div>`;
-			};
-
-			// Allow save deletion on 'Delete' or 'Backspace' key
-			btn.addEventListener('keydown', async e => {
-				if ((e.key === 'Delete' || e.key === 'Backspace') && btn.classList.contains('selected')) {
-					const save_name = btn.dataset.save;
-					if (confirm(`Delete Galaxy "${save_name}" ? This cannot be undone.`)) {
-						try {
-							await window.saves.delete(save_name);
-							this.startMenu(); // Refresh the menu to update the saves list
-						} catch (err) {
-							this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
-						}
-					}
-				}
-			});
-		});
-
-		// New game button click handler
-		this.$('#new-game').onclick = e => {
-			this.$$('button').forEach(btn => (btn.disabled = true));
-
-			this.innerHTML += html`
-				<div class="line"></div>
-				<div class="line">Enter the name of this Galaxy...</div>
-				<div class="line">Name : <input id="name-input" /></div>
-			`;
-
-			const name_input = this.$('#name-input');
-			name_input.setAttribute('maxlength', '32');
-			name_input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
-			name_input.setAttribute('title', 'No special characters: <>:"/\|?*');
-			name_input.focus();
-			name_input.onkeydown = async e => {
-				if (e.key === 'Enter') {
-					const name = name_input.value.trim();
-					const invalid = /[<>:"/\\|?*]/g;
-					if (!name || invalid.test(name)) {
-						name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
-						name_input.reportValidity();
-						return;
-					}
-					name_input.disabled = true;
-					try {
-						await window.saves.create(name);
-						this.startMenu(); // Refresh the menu to show the new save
-					} catch (err) {
-						name_input.disabled = false;
-						this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
-					}
-				}
-			};
-		};
-
 		this.tick = null;
 	}
 
+	async deleteGalaxy(name) {
+		if (confirm(`Delete Galaxy "${name}" ? This cannot be undone.`)) {
+			try {
+				await window.saves.delete(name);
+				this.startMenu(() => this.success(`Galaxy "${name}" deleted.`));
+			} catch (err) {
+				this.error(`Failed to delete save: ${err.message}`);
+			}
+		}
+	}
+
+	async createNewGalaxy() {
+		this.line();
+		this.line('Enter the name of this Galaxy...');
+		const name = await this.input('Galaxy name');
+		try {
+			await window.saves.create(name);
+			this.startMenu(() => this.success(`Galaxy "${name}" created !`));
+		} catch (err) {
+			this.startMenu(() => this.error(`Failed to create Galaxy: ${err.message}`));
+		}
+	}
+
+	async loadGalaxy(name) {
+		// TODO: Implement save loading logic here
+		this.line(`Loading galaxy: ${name}...`);
+	}
+
 	navigation() {
-		this.innerHTML = html`
-			<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
-			<div class="line">Sector [<span id="sector"></span>] position (<span id="coords"></span>)</div>
-		`;
+		this.line(`U.R.A. OS version ${this.version} - Day 1`);
+		this.line(html`Sector [<span id="sector"></span>] position (<span id="coords"></span>)`);
 
 		this.tick = () => {
 			const followed = window.game?.camera?.followed_entity;
@@ -201,10 +249,8 @@ class UserTerminal extends HTMLElement {
 	}
 
 	edit() {
-		this.innerHTML = html`
-			<div class="line">U.R.A. OS version ${this.version} - Day 1</div>
-			<div class="line">Type : <span id="type"></span></div>
-		`;
+		this.line(`U.R.A. OS version ${this.version} - Day 1`);
+		this.line(html`Type : <span id="type">-</span>`);
 
 		this.tick = () => {
 			if (game?.mode !== this.current_mode) return (this.mode = game?.mode ?? 'navigation');

@@ -13,6 +13,13 @@ user-terminal {
 	& div.line {
 		line-height: 1.5em;
 		height: 1.5em;
+
+		&.error {
+			color: #ff4d4d;
+		}
+		&.success {
+			color: #7cfc7c;
+		}
 	}
 
 	& button {
