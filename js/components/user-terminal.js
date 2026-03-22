@@ -86,6 +86,21 @@ class UserTerminal extends HTMLElement {
 				// TODO: Implement save loading logic here
 				this.innerHTML += html`<div class="line">Loading galaxy: ${btn.dataset.save}</div>`;
 			};
+
+			// Allow save deletion on 'Delete' or 'Backspace' key
+			btn.addEventListener('keydown', async e => {
+				if ((e.key === 'Delete' || e.key === 'Backspace') && btn.classList.contains('selected')) {
+					const save_name = btn.dataset.save;
+					if (confirm(`Delete Galaxy "${save_name}" ? This cannot be undone.`)) {
+						try {
+							await window.saves.delete(save_name);
+							this.startMenu(); // Refresh the menu to update the saves list
+						} catch (err) {
+							this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
+						}
+					}
+				}
+			});
 		});
 
 		// New game button click handler
@@ -115,7 +130,7 @@ class UserTerminal extends HTMLElement {
 					name_input.disabled = true;
 					try {
 						await window.saves.create(name);
-						this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
+						this.startMenu(); // Refresh the menu to show the new save
 					} catch (err) {
 						name_input.disabled = false;
 						this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;

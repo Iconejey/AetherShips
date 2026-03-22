@@ -13,7 +13,9 @@ ipcMain.handle('galaxy-save-create', async (event, name) => {
 		if (fs.existsSync(save_path)) throw new Error('Save already exists');
 
 		fs.mkdirSync(save_path);
+
 		const data = { player: { position: { x: 0, y: 0 } } };
+
 		fs.writeFileSync(path.join(save_path, 'galaxy.json'), JSON.stringify(data, null, 2));
 		return true;
 	} catch (err) {
@@ -31,6 +33,25 @@ ipcMain.handle('galaxy-save-list', async () => {
 			const savePath = path.join(saves_dir, name);
 			return fs.statSync(savePath).isDirectory();
 		});
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+// Delete a save folder and its contents
+ipcMain.handle('galaxy-save-delete', async (event, name) => {
+	const invalid = /[<>:"/\\|?*]/g;
+	if (!name || invalid.test(name)) throw new Error('Invalid name');
+
+	const user_data = app.getPath('userData');
+	const saves_dir = path.join(user_data, 'saves');
+	const save_path = path.join(saves_dir, name);
+	try {
+		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
+
+		// Recursively delete the save directory
+		fs.rmSync(save_path, { recursive: true, force: true });
+		return true;
 	} catch (err) {
 		throw new Error(err.message);
 	}
