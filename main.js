@@ -1,26 +1,41 @@
 const { ipcMain } = require('electron');
 const fs = require('fs');
+const path = require('path');
 ipcMain.handle('galaxy-save-create', async (event, name) => {
 	const invalid = /[<>:"/\\|?*]/g;
 	if (!name || invalid.test(name)) throw new Error('Invalid name');
 
-	const userData = app.getPath('userData');
-	const savesDir = path.join(userData, 'saves');
-	const savePath = path.join(savesDir, name);
+	const user_data = app.getPath('userData');
+	const saves_dir = path.join(user_data, 'saves');
+	const save_path = path.join(saves_dir, name);
 	try {
-		if (!fs.existsSync(savesDir)) fs.mkdirSync(savesDir);
-		if (fs.existsSync(savePath)) throw new Error('Save already exists');
+		if (!fs.existsSync(saves_dir)) fs.mkdirSync(saves_dir);
+		if (fs.existsSync(save_path)) throw new Error('Save already exists');
 
-		fs.mkdirSync(savePath);
+		fs.mkdirSync(save_path);
 		const data = { player: { position: { x: 0, y: 0 } } };
-		fs.writeFileSync(path.join(savePath, 'galaxy.json'), JSON.stringify(data, null, 2));
+		fs.writeFileSync(path.join(save_path, 'galaxy.json'), JSON.stringify(data, null, 2));
 		return true;
 	} catch (err) {
 		throw new Error(err.message);
 	}
 });
+
+// List save folders
+ipcMain.handle('galaxy-save-list', async () => {
+	const user_data = app.getPath('userData');
+	const saves_dir = path.join(user_data, 'saves');
+	try {
+		if (!fs.existsSync(saves_dir)) return [];
+		return fs.readdirSync(saves_dir).filter(name => {
+			const savePath = path.join(saves_dir, name);
+			return fs.statSync(savePath).isDirectory();
+		});
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
 const { app, BrowserWindow } = require('electron');
-const path = require('path');
 
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 

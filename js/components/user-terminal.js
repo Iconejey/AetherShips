@@ -48,61 +48,80 @@ class UserTerminal extends HTMLElement {
 		this.current_mode = mode;
 
 		if (mode === 'start_menu') {
-			this.innerHTML = html`
-				<pre id="banner"></pre>
-				<div class="line">The void is yours, the rest is ours.</div>
-				<div class="line"></div>
-				<div class="line"></div>
-				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button class="line" data-info=" - 2026.03.21">My game</button>
-				<button id="new-game" class="line">Start New Galaxy</button>
-			`;
+			(async () => {
+				// Get saves list
+				const saves = await window.saves.list();
 
-			window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
-				this.$('#banner').textContent = text;
-			});
-
-			this.$$('button')[0].classList.add('selected');
-			this.attachKeyboardNavigation();
-
-			this.$('#new-game').onclick = e => {
-				this.$$('button').forEach(btn => (btn.disabled = true));
-
-				this.innerHTML += html`
+				this.innerHTML = html`
+					<pre id="banner"></pre>
+					<div class="line">The void is yours, the rest is ours.</div>
 					<div class="line"></div>
-					<div class="line">Enter the name of this Galaxy...</div>
-					<div class="line">Name : <input id="name-input" /></div>
+					<div class="line"></div>
 				`;
 
-				const name_input = this.$('#name-input');
-				name_input.setAttribute('maxlength', '32');
-				name_input.setAttribute('pattern', '[^<>:"/\\\\|?*]+$');
-				name_input.setAttribute('title', 'No special characters: <>:"/\\|?*');
-				name_input.focus();
-				name_input.onkeydown = async e => {
-					if (e.key === 'Enter') {
-						const name = name_input.value.trim();
-						const invalid = /[<>:"/\\|?*]/g;
-						if (!name || invalid.test(name)) {
-							name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
-							name_input.reportValidity();
-							return;
-						}
-						name_input.disabled = true;
-						try {
-							await window.saves.create(name);
-							this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
-						} catch (err) {
-							name_input.disabled = false;
-							this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
-						}
-					}
-				};
-			};
+				// Add save buttons
+				for (const save of saves) this.innerHTML += html`<button class="line save-btn" data-save="${save}">${save}</button>`;
 
-			this.tick = null;
+				// Add new game button
+				this.innerHTML += html`<button id="new-game" class="line">Start New Galaxy</button>`;
+
+				// Render banner
+				window.figlet('AetherShips', { font: 'ANSI Shadow' }).then(text => {
+					this.$('#banner').textContent = text;
+				});
+
+				// Select first button (save or new)
+				const first_btn = this.$('button');
+				first_btn?.classList.add('selected');
+				first_btn?.focus();
+				this.attachKeyboardNavigation();
+
+				// Save button click handler (implement loading logic as needed)
+				this.$$('.save-btn').forEach(btn => {
+					btn.onclick = () => {
+						// TODO: Implement save loading logic here
+						this.innerHTML += html`<div class="line">Loading galaxy: ${btn.dataset.save}</div>`;
+					};
+				});
+
+				// New game button click handler
+				this.$('#new-game').onclick = e => {
+					this.$$('button').forEach(btn => (btn.disabled = true));
+
+					this.innerHTML += html`
+						<div class="line"></div>
+						<div class="line">Enter the name of this Galaxy...</div>
+						<div class="line">Name : <input id="name-input" /></div>
+					`;
+
+					const name_input = this.$('#name-input');
+					name_input.setAttribute('maxlength', '32');
+					name_input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
+					name_input.setAttribute('title', 'No special characters: <>:"/\|?*');
+					name_input.focus();
+					name_input.onkeydown = async e => {
+						if (e.key === 'Enter') {
+							const name = name_input.value.trim();
+							const invalid = /[<>:"/\\|?*]/g;
+							if (!name || invalid.test(name)) {
+								name_input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+								name_input.reportValidity();
+								return;
+							}
+							name_input.disabled = true;
+							try {
+								await window.saves.create(name);
+								this.innerHTML += html`<div class="line">Galaxy created: ${name}</div>`;
+							} catch (err) {
+								name_input.disabled = false;
+								this.innerHTML += html`<div class="line" style="color:red">${err}</div>`;
+							}
+						}
+					};
+				};
+
+				this.tick = null;
+			})();
 		}
 
 		if (mode === 'navigation') {
