@@ -29,10 +29,19 @@ ipcMain.handle('galaxy-save-list', async () => {
 	const saves_dir = path.join(user_data, 'saves');
 	try {
 		if (!fs.existsSync(saves_dir)) return [];
-		return fs.readdirSync(saves_dir).filter(name => {
-			const savePath = path.join(saves_dir, name);
-			return fs.statSync(savePath).isDirectory();
-		});
+		return fs
+			.readdirSync(saves_dir)
+			.filter(name => {
+				const savePath = path.join(saves_dir, name);
+				return fs.statSync(savePath).isDirectory();
+			})
+			.map(name => {
+				const savePath = path.join(saves_dir, name);
+				const stats = fs.statSync(savePath);
+				// Use birthtime for creation date (ctime fallback for Linux)
+				const created = stats.birthtime || stats.ctime;
+				return { name, created };
+			});
 	} catch (err) {
 		throw new Error(err.message);
 	}

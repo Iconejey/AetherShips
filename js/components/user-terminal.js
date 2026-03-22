@@ -63,8 +63,15 @@ class UserTerminal extends HTMLElement {
 			<div class="line"></div>
 		`;
 
-		// Add save buttons
-		for (const save of saves) this.innerHTML += html`<button class="line save-btn" data-save="${save}">${save}</button>`;
+		// Add save buttons with creation date
+		for (const { name, created } of saves) {
+			const date = new Date(created);
+			const yyyy = date.getFullYear();
+			const mm = String(date.getMonth() + 1).padStart(2, '0');
+			const dd = String(date.getDate()).padStart(2, '0');
+			const dateStr = `${yyyy}.${mm}.${dd}`;
+			this.innerHTML += html`<button class="line save-btn" data-save="${name}" data-info=" - ${dateStr}">${name}</button>`;
+		}
 
 		// Add new game button
 		this.innerHTML += html`<button id="new-game" class="line">Start New Galaxy</button>`;

@@ -15,6 +15,9 @@ contextBridge.exposeInMainWorld('figlet', (text, options) => {
 
 contextBridge.exposeInMainWorld('saves', {
 	create: name => ipcRenderer.invoke('galaxy-save-create', name),
+	/**
+	 * Returns [{ name, created }] for each save
+	 */
 	list: () => ipcRenderer.invoke('galaxy-save-list'),
 	delete: name => ipcRenderer.invoke('galaxy-save-delete', name)
 });
