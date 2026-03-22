@@ -19,5 +19,6 @@ contextBridge.exposeInMainWorld('saves', {
 	 * Returns [{ name, created }] for each save
 	 */
 	list: () => ipcRenderer.invoke('galaxy-save-list'),
-	delete: name => ipcRenderer.invoke('galaxy-save-delete', name)
+	delete: name => ipcRenderer.invoke('galaxy-save-delete', name),
+	load: name => ipcRenderer.invoke('galaxy-save-load', name)
 });

@@ -1,6 +1,23 @@
-const { ipcMain } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
+
+// Load a save's galaxy.json
+ipcMain.handle('galaxy-save-load', async (event, name) => {
+	const invalid = /[<>:"/\\|?*]/g;
+	if (!name || invalid.test(name)) throw new Error('Invalid name');
+
+	const user_data = app.getPath('userData');
+	const saves_dir = path.join(user_data, 'saves');
+	const save_path = path.join(saves_dir, name, 'galaxy.json');
+	try {
+		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
+		const data = fs.readFileSync(save_path, 'utf-8');
+		return JSON.parse(data);
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
 ipcMain.handle('galaxy-save-create', async (event, name) => {
 	const invalid = /[<>:"/\\|?*]/g;
 	if (!name || invalid.test(name)) throw new Error('Invalid name');
@@ -65,7 +82,6 @@ ipcMain.handle('galaxy-save-delete', async (event, name) => {
 		throw new Error(err.message);
 	}
 });
-const { app, BrowserWindow } = require('electron');
 
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 

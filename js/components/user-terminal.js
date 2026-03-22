@@ -223,8 +223,18 @@ class UserTerminal extends HTMLElement {
 	}
 
 	async loadGalaxy(name) {
-		// TODO: Implement save loading logic here
+		this.line();
 		this.line(`Loading galaxy: ${name}...`);
+		try {
+			const data = await window.saves.load(name);
+			// You may want to reset the game state here
+			// For now, just show a success message and log the data
+			this.success(`Galaxy "${name}" loaded!`);
+			console.log('Loaded galaxy data:', data);
+			// TODO: Actually initialize the game state with loaded data
+		} catch (err) {
+			this.error(`Failed to load galaxy: ${err.message}`);
+		}
 	}
 
 	navigation() {
