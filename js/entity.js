@@ -259,6 +259,8 @@ class Layer {
 		if (!this.dirty) {
 			this.dirty = true;
 			this.entity.dirty_layers.push(this);
+			// Flag entity for saving
+			this.entity.needs_save = true;
 		}
 	}
 
