@@ -154,6 +154,7 @@ class Game extends HTMLElement {
 		document.body.classList.remove('start-menu');
 
 		this.galaxy = await window.saves.load(name);
+		this.resetStars();
 
 		const entity = Entity.create(this.galaxy.player.position, true);
 		entity.fillRect(0, -8, -16, 16, 32, 'iron_hull_tier_1');
