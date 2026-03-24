@@ -31,6 +31,30 @@ class Game extends HTMLElement {
 	}
 
 	/**
+	 * Debounced save planner. Schedules a save after a short delay, batching rapid edits.
+	 */
+	planSave(delay = 500) {
+		clearTimeout(this._save_timeout);
+		this._save_timeout = setTimeout(() => this.save(), delay); // Debounce
+	}
+
+	/**
+	 * Saves the current galaxy state to disk.
+	 */
+	async save() {
+		if (!this.galaxy) throw new Error('No galaxy loaded');
+
+		// Save galaxy data
+		await window.saves.writeGalaxy(this.galaxy);
+
+		// Save each entity
+		for (const Entity of this.$$('entity-root')) {
+			const entity_data = Entity.serialize();
+			await window.saves.writeEntity(this.galaxy.name, entity_data);
+		}
+	}
+
+	/**
 	 * Called when the element is inserted into the DOM. Initializes the game and starts the game loop.
 	 */
 	async connectedCallback() {
@@ -143,7 +167,7 @@ class Game extends HTMLElement {
 		// Illustration ship
 		const illustration_ship = document.createElement('entity-root');
 		this.appendChild(illustration_ship);
-		illustration_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
+		illustration_ship.fillRect(1, -8, -16, 16, 32, 'iron_hull_tier_1');
 		illustration_ship.render();
 		this.camera.followed_entity = illustration_ship;
 		illustration_ship.classList.add('auto-thrust');
@@ -153,12 +177,10 @@ class Game extends HTMLElement {
 		$$('entity-root').forEach(e => e.remove());
 		document.body.classList.remove('start-menu');
 
-		this.galaxy = await window.saves.load(name);
+		this.galaxy = await window.saves.loadGalaxy(name);
 		this.resetStars();
 
 		const entity = Entity.create(this.galaxy.player.position, true);
-		entity.fillRect(0, -8, -16, 16, 32, 'iron_hull_tier_1');
-		entity.render();
 		this.camera.followed_entity = entity;
 	}
 

@@ -9,6 +9,18 @@ class UserTerminal extends HTMLElement {
 		}, 250);
 	}
 
+	/**
+	 * Display a temporary notification line in the terminal.
+	 * @param {string} content - The notification message.
+	 * @param {number} duration - Duration in ms before the notification disappears (default: 2000ms)
+	 */
+	notify(content, duration = 2000) {
+		const line = this.line(content);
+		line.classList.add('notify');
+		setTimeout(() => line?.remove(), duration);
+		return line;
+	}
+
 	attachKeyboardNavigation() {
 		const buttons = this.$$('button');
 		buttons.forEach(button => {
@@ -144,7 +156,7 @@ class UserTerminal extends HTMLElement {
 		this.line();
 
 		// Get saves list
-		const saves = await window.saves.list();
+		const saves = await window.saves.listGalaxies();
 
 		// Add save buttons with creation date
 		for (const { name, created } of saves) {
@@ -203,7 +215,7 @@ class UserTerminal extends HTMLElement {
 	async deleteGalaxy(name) {
 		if (confirm(`Delete Galaxy "${name}" ? This cannot be undone.`)) {
 			try {
-				await window.saves.delete(name);
+				await window.saves.deleteGalaxy(name);
 				this.startMenu(() => this.success(`Galaxy "${name}" deleted.`));
 			} catch (err) {
 				this.error(`Failed to delete save: ${err.message}`);
@@ -216,7 +228,7 @@ class UserTerminal extends HTMLElement {
 		this.line('Enter the name of this Galaxy...');
 		const name = await this.input('Galaxy name');
 		try {
-			await window.saves.create(name);
+			await window.saves.createGalaxy(name);
 			this.startMenu(() => this.success(`Galaxy "${name}" created !`));
 		} catch (err) {
 			this.startMenu(() => this.error(`Failed to create Galaxy: ${err.message}`));
@@ -225,28 +237,20 @@ class UserTerminal extends HTMLElement {
 
 	navigation() {
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
-		this.line(html`Sector [<span id="sector"></span>] position (<span id="coords"></span>)`);
+		const position_line = this.line();
 
 		this.tick = () => {
 			const followed = window.game?.camera?.followed_entity;
 			if (!followed) return;
 
-			const global_x = followed.position.x / 32;
-			const global_y = followed.position.y / 32;
-
-			const chunk_x = Math.floor(global_x % 256);
-			const chunk_y = Math.floor(global_y % 256);
-			this.$('#coords').textContent = `${chunk_x}, ${chunk_y}`;
-
-			const sector_x = Math.floor(global_x / 256);
-			const sector_y = Math.floor(global_y / 256);
-			this.$('#sector').textContent = `${sector_x}, ${sector_y}`;
+			const { sector, chunk } = followed.global_position;
+			if (position_line) position_line.innerHTML = html`Sector [${sector.sx},${sector.sy}] position (${chunk.cx},${chunk.cy})`;
 		};
 	}
 
 	edit() {
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
-		this.line(html`Type : <span id="type">-</span>`);
+		const block_type_line = this.line(html`Block : <span id="type">-</span>`);
 
 		this.tick = () => {
 			if (game?.mode !== this.current_mode) return (this.mode = game?.mode ?? 'navigation');
@@ -254,18 +258,18 @@ class UserTerminal extends HTMLElement {
 			const followed_entity = game?.camera?.followed_entity;
 			const edit_preview = $('edit-preview');
 			if (!followed_entity || !edit_preview) {
-				this.$('#type').textContent = '-';
+				block_type_line.textContent = 'Block : -';
 				return;
 			}
 
 			const hovered_block = edit_preview.screenToBlock(edit_preview.mouse_x, edit_preview.mouse_y);
 			if (!hovered_block) {
-				this.$('#type').textContent = '-';
+				block_type_line.textContent = 'Block : -';
 				return;
 			}
 
 			const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
-			this.$('#type').textContent = block_info.is_empty ? 'empty' : (blocks_by_type[block_info.type]?.name ?? `${block_info.type}`);
+			block_type_line.textContent = block_info.is_empty ? 'empty' : blocks_by_type[block_info.type]?.name;
 		};
 	}
 }

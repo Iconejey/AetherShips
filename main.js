@@ -2,86 +2,158 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
-// Load a save's galaxy.json
-ipcMain.handle('galaxy-save-load', async (event, name) => {
-	const invalid = /[<>:"/\\|?*]/g;
-	if (!name || invalid.test(name)) throw new Error('Invalid name');
+function isValidName(name) {
+	return !name || /[<>:"/\\|?*]/g.test(name);
+}
 
+function getSavePaths(galaxy_name, entity) {
+	const paths = {};
+
+	// Saves dir
 	const user_data = app.getPath('userData');
-	const saves_dir = path.join(user_data, 'saves');
-	const save_path = path.join(saves_dir, name, 'galaxy.json');
+	paths.saves_dir = path.join(user_data, 'saves');
+
+	// If galaxy name provided, add save and galaxy data paths
+	if (!galaxy_name) return paths;
+	paths.save_path = path.join(paths.saves_dir, galaxy_name);
+	paths.galaxy_data_path = path.join(paths.save_path, 'galaxy.json');
+
+	// If entity provided, add sector and entity paths
+	if (!entity) return paths;
+	const { x, y } = entity.position;
+
+	const sx = Math.floor(x / (32 * 256));
+	const sy = Math.floor(y / (32 * 256));
+	paths.sector_path = path.join(paths.save_path, `sector_${sx}_${sy}`);
+	paths.entity_path = path.join(paths.sector_path, `entity_${entity.id}`);
+	paths.entity_data_path = path.join(paths.entity_path, 'entity.json');
+
+	return paths;
+}
+
+// List save folders
+ipcMain.handle('save-list-galaxies', async () => {
+	const { saves_dir } = getSavePaths();
+
 	try {
-		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
-		const data = fs.readFileSync(save_path, 'utf-8');
-		return JSON.parse(data);
+		const list = [];
+		if (!fs.existsSync(saves_dir)) return list;
+
+		for (const name of fs.readdirSync(saves_dir)) {
+			const save_path = path.join(saves_dir, name);
+			const stats = fs.statSync(save_path);
+			if (stats.isDirectory()) {
+				// Use birthtime for creation date (ctime fallback for Linux)
+				const created = stats.birthtime || stats.ctime;
+				list.push({ name, created });
+			}
+		}
+
+		return list;
 	} catch (err) {
 		throw new Error(err.message);
 	}
 });
-ipcMain.handle('galaxy-save-create', async (event, name) => {
-	const invalid = /[<>:"/\\|?*]/g;
-	if (!name || invalid.test(name)) throw new Error('Invalid name');
 
-	const user_data = app.getPath('userData');
-	const saves_dir = path.join(user_data, 'saves');
-	const save_path = path.join(saves_dir, name);
+// Create new Galaxy
+ipcMain.handle('save-create-galaxy', async (event, name) => {
+	if (!isValidName(name)) throw new Error('Invalid name');
+
+	// Get paths for the new galaxy
+	const { saves_dir, save_path, galaxy_data_path } = getSavePaths(name);
+
 	try {
+		// Ensure saves directory exists
 		if (!fs.existsSync(saves_dir)) fs.mkdirSync(saves_dir);
+
+		// Check if save already exists
 		if (fs.existsSync(save_path)) throw new Error('Save already exists');
 
+		// Create save directory
 		fs.mkdirSync(save_path);
 
+		// Initialize galaxy data
 		const data = {
 			name,
 			seed: Math.floor(Math.random() * 1e9),
 			player: { position: { x: 0, y: 0, r: 0 } }
 		};
 
-		fs.writeFileSync(path.join(save_path, 'galaxy.json'), JSON.stringify(data, null, 2));
+		fs.writeFileSync(galaxy_data_path, JSON.stringify(data, null, 2));
 		return true;
-	} catch (err) {
-		throw new Error(err.message);
-	}
-});
-
-// List save folders
-ipcMain.handle('galaxy-save-list', async () => {
-	const user_data = app.getPath('userData');
-	const saves_dir = path.join(user_data, 'saves');
-	try {
-		if (!fs.existsSync(saves_dir)) return [];
-		return fs
-			.readdirSync(saves_dir)
-			.filter(name => {
-				const savePath = path.join(saves_dir, name);
-				return fs.statSync(savePath).isDirectory();
-			})
-			.map(name => {
-				const savePath = path.join(saves_dir, name);
-				const stats = fs.statSync(savePath);
-				// Use birthtime for creation date (ctime fallback for Linux)
-				const created = stats.birthtime || stats.ctime;
-				return { name, created };
-			});
 	} catch (err) {
 		throw new Error(err.message);
 	}
 });
 
 // Delete a save folder and its contents
-ipcMain.handle('galaxy-save-delete', async (event, name) => {
-	const invalid = /[<>:"/\\|?*]/g;
-	if (!name || invalid.test(name)) throw new Error('Invalid name');
+ipcMain.handle('save-delete-galaxy', async (event, name) => {
+	// Get path for the save to delete
+	const { save_path } = getSavePaths(name);
 
-	const user_data = app.getPath('userData');
-	const saves_dir = path.join(user_data, 'saves');
-	const save_path = path.join(saves_dir, name);
 	try {
 		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
 
 		// Recursively delete the save directory
 		fs.rmSync(save_path, { recursive: true, force: true });
 		return true;
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+// Write galaxy.json
+ipcMain.handle('save-write-galaxy', async (event, galaxy) => {
+	const { galaxy_data_path } = getSavePaths(galaxy.name);
+
+	try {
+		const dir = path.dirname(galaxy_data_path);
+		if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+		fs.writeFileSync(galaxy_data_path, JSON.stringify(galaxy, null, 2));
+		return true;
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+// Load galaxy.json
+ipcMain.handle('save-load-galaxy', async (event, name) => {
+	const { galaxy_data_path } = getSavePaths(name);
+
+	try {
+		if (!fs.existsSync(galaxy_data_path)) throw new Error('Save does not exist');
+		const data = fs.readFileSync(galaxy_data_path, 'utf-8');
+		return JSON.parse(data);
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+// Write entity.json
+ipcMain.handle('save-write-entity', async (event, name, serialized_entity) => {
+	const { entity_data_path } = getSavePaths(name, serialized_entity);
+
+	try {
+		// Ensure parent directory exists
+		const parentDir = path.dirname(entity_data_path);
+		if (!fs.existsSync(parentDir)) {
+			fs.mkdirSync(parentDir, { recursive: true });
+		}
+		fs.writeFileSync(entity_data_path, JSON.stringify(serialized_entity, null, 2));
+		return true;
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+// Load entity.json
+ipcMain.handle('save-load-entity', async (event, name, serialized_entity) => {
+	const { entity_data_path } = getSavePaths(name, serialized_entity);
+
+	try {
+		if (!fs.existsSync(entity_data_path)) throw new Error('Entity does not exist');
+		const data = fs.readFileSync(entity_data_path, 'utf-8');
+		return JSON.parse(data);
 	} catch (err) {
 		throw new Error(err.message);
 	}

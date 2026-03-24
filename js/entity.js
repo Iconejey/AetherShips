@@ -170,9 +170,8 @@ class Layer {
 		if (had_glow && !has_glow) this.glow_count--;
 
 		// Store color separately
-		if (fields.color !== undefined) {
-			this.block_colors[index] = fields.color;
-		}
+		if (fields.color !== undefined) this.block_colors[index] = fields.color;
+
 		this.drawPixel(x, y);
 	}
 
@@ -259,8 +258,6 @@ class Layer {
 		if (!this.dirty) {
 			this.dirty = true;
 			this.entity.dirty_layers.push(this);
-			// Flag entity for saving
-			this.entity.needs_save = true;
 		}
 	}
 
@@ -329,18 +326,6 @@ class Layer {
 }
 
 /**
- * Represents a chunk location within an entity layer
- * Stores references to Layer data at this chunk position
- */
-class ChunkLayer {
-	constructor(chunk_x, chunk_y) {
-		this.chunk_x = chunk_x;
-		this.chunk_y = chunk_y;
-		this.layer = null; // Will be set to the Layer instance
-	}
-}
-
-/**
  * Custom HTMLElement representing a single layer (0, 1, or 2) within an entity
  * Contains all canvases for blocks at this depth
  */
@@ -355,14 +340,14 @@ class EntityLayer extends HTMLElement {
 	 * @param {number} cx - The chunk x coordinate
 	 * @param {number} cy - The chunk y coordinate
 	 * @param {boolean} create - Whether to create if it doesn't exist
-	 * @returns {ChunkLayer|null}
+	 * @returns {{chunk_x: number, chunk_y: number, layer: any}|null}
 	 */
 	getChunkLayer(cx, cy, create = false) {
 		const key = `${cx},${cy}`;
 		let chunk_layer = this.chunk_layers.get(key);
 
 		if (!chunk_layer && create) {
-			chunk_layer = new ChunkLayer(cx, cy);
+			chunk_layer = { chunk_x: cx, chunk_y: cy, layer: null };
 			this.chunk_layers.set(key, chunk_layer);
 		}
 
@@ -394,13 +379,44 @@ customElements.define('entity-layer', EntityLayer);
 class Entity extends HTMLElement {
 	static create(position, add_to_dom = false) {
 		const entity = document.createElement('entity-root');
-		entity.position = { ...position };
+		// Generate unique id: current time in ms (base 36) + '-' + Math.random (base 36, remove leading '0.')
+		entity.id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
 		if (add_to_dom) entity.addToDOM();
+		entity.position = { ...position };
+		entity.fillRect(1, -1, -1, 2, 2, 'iron_hull_tier_1');
+		entity.render();
 		return entity;
+	}
+
+	static fromSerialized(data) {
+		const entity = document.createElement('entity-root');
+		for (const key in data) entity[key] = data[key];
+		entity.addToDOM();
+		return entity;
+	}
+
+	static blockToChunkCoord(x, y) {
+		return {
+			cx: Math.floor(x / 32),
+			cy: Math.floor(y / 32)
+		};
 	}
 
 	toLocalCoord(value) {
 		return ((value % 32) + 32) % 32;
+	}
+
+	get global_position() {
+		return {
+			chunk: {
+				cx: Math.floor((this.position.x / 32) % 256),
+				cy: Math.floor((this.position.y / 32) % 256)
+			},
+			sector: {
+				sx: Math.floor(this.position.x / (32 * 256)),
+				sy: Math.floor(this.position.y / (32 * 256))
+			}
+		};
 	}
 
 	constructor() {
@@ -491,12 +507,12 @@ class Entity extends HTMLElement {
 	 * @param {Object} fields - An object containing the fields to set for the block, where keys correspond to the struct's field names.
 	 */
 	setBlock(l, x, y, fields) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.setBlock(local_x, local_y, fields);
+		console.log('Set block at', { layer: l, x, y, fields });
 	}
 
 	/**
@@ -507,8 +523,7 @@ class Entity extends HTMLElement {
 	 * @param {string} name - The name of the block type to initialize (e.g., "dirt").
 	 */
 	setByName(l, x, y, name) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
@@ -523,8 +538,7 @@ class Entity extends HTMLElement {
 	 * @param {number} type - The numeric type of the block to initialize (e.g., 1 for dirt).
 	 */
 	setByType(l, x, y, type) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
@@ -538,8 +552,7 @@ class Entity extends HTMLElement {
 	 * @param {number} y - The y-coordinate of the block to delete.
 	 */
 	deleteBlock(l, x, y) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) return;
@@ -563,8 +576,7 @@ class Entity extends HTMLElement {
 	 * @returns {{ type: number, color: number, is_empty: boolean, can_be_painted: boolean }}
 	 */
 	getBlockInfo(l, x, y) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) {
@@ -585,8 +597,7 @@ class Entity extends HTMLElement {
 	 * @returns {boolean} True when color was applied
 	 */
 	paintBlock(l, x, y, color) {
-		const cx = Math.floor(x / 32);
-		const cy = Math.floor(y / 32);
+		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) return false;
@@ -657,6 +668,16 @@ class Entity extends HTMLElement {
 	 */
 	addToDOM() {
 		window.game.appendChild(this);
+	}
+
+	/**
+	 * Serializes the entity's data into a JSON string for saving
+	 */
+	serialize() {
+		const obj = {};
+		const keys = ['id', 'position', 'velocity', 'mass'];
+		for (const key of keys) obj[key] = this[key];
+		return obj;
 	}
 }
 
