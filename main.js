@@ -6,7 +6,7 @@ function isValidName(name) {
 	return !name || /[<>:"/\\|?*]/g.test(name);
 }
 
-function getSavePaths(galaxy_name, entity, layer_index, chunk_x, chunk_y, data_type) {
+function getSavePaths(temp, galaxy_name, entity, layer_index, chunk_x, chunk_y, data_type) {
 	const paths = {};
 
 	// Saves dir
@@ -15,7 +15,7 @@ function getSavePaths(galaxy_name, entity, layer_index, chunk_x, chunk_y, data_t
 
 	// If galaxy name provided, add save and galaxy data paths
 	if (!galaxy_name) return paths;
-	paths.save_path = path.join(paths.saves_dir, galaxy_name);
+	paths.save_path = path.join(paths.saves_dir, galaxy_name + (temp ? ' temp' : ''));
 	paths.galaxy_data_path = path.join(paths.save_path, 'galaxy.json');
 
 	// If entity provided, add sector and entity paths
@@ -42,7 +42,7 @@ function getSavePaths(galaxy_name, entity, layer_index, chunk_x, chunk_y, data_t
 
 // List save folders
 ipcMain.handle('save-list-galaxies', async () => {
-	const { saves_dir } = getSavePaths();
+	const { saves_dir } = getSavePaths(false);
 
 	try {
 		const list = [];
@@ -69,7 +69,7 @@ ipcMain.handle('save-create-galaxy', async (event, name) => {
 	if (!isValidName(name)) throw new Error('Invalid name');
 
 	// Get paths for the new galaxy
-	const { saves_dir, save_path, galaxy_data_path } = getSavePaths(name);
+	const { saves_dir, save_path, galaxy_data_path } = getSavePaths(false, name);
 
 	try {
 		// Ensure saves directory exists
@@ -98,7 +98,7 @@ ipcMain.handle('save-create-galaxy', async (event, name) => {
 // Delete a save folder and its contents
 ipcMain.handle('save-delete-galaxy', async (event, name) => {
 	// Get path for the save to delete
-	const { save_path } = getSavePaths(name);
+	const { save_path } = getSavePaths(false, name);
 
 	try {
 		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
@@ -113,7 +113,7 @@ ipcMain.handle('save-delete-galaxy', async (event, name) => {
 
 // Write galaxy.json
 ipcMain.handle('save-write-galaxy', async (event, galaxy) => {
-	const { galaxy_data_path } = getSavePaths(galaxy.name);
+	const { galaxy_data_path } = getSavePaths(true, galaxy.name);
 
 	try {
 		const dir = path.dirname(galaxy_data_path);
@@ -127,7 +127,7 @@ ipcMain.handle('save-write-galaxy', async (event, galaxy) => {
 
 // Load galaxy.json
 ipcMain.handle('save-load-galaxy', async (event, name) => {
-	const { galaxy_data_path } = getSavePaths(name);
+	const { galaxy_data_path } = getSavePaths(false, name);
 
 	try {
 		if (!fs.existsSync(galaxy_data_path)) throw new Error('Save does not exist');
@@ -140,7 +140,7 @@ ipcMain.handle('save-load-galaxy', async (event, name) => {
 
 // Write entity.json
 ipcMain.handle('save-write-entity', async (event, name, serialized_entity) => {
-	const { entity_data_path } = getSavePaths(name, serialized_entity);
+	const { entity_data_path } = getSavePaths(true, name, serialized_entity);
 
 	try {
 		// Ensure parent directory exists
@@ -157,7 +157,7 @@ ipcMain.handle('save-write-entity', async (event, name, serialized_entity) => {
 
 // Load entity.json
 ipcMain.handle('save-load-entity', async (event, name, serialized_entity) => {
-	const { entity_data_path } = getSavePaths(name, serialized_entity);
+	const { entity_data_path } = getSavePaths(false, name, serialized_entity);
 
 	try {
 		if (!fs.existsSync(entity_data_path)) throw new Error('Entity does not exist');
@@ -169,10 +169,34 @@ ipcMain.handle('save-load-entity', async (event, name, serialized_entity) => {
 });
 
 // Write layer chunk binary data (states/colors)
-ipcMain.handle('save-write-layer-chunk', async (event, galaxyName, serialized_entity, layerIndex, chunkX, chunkY, type, buffer) => {
-	const { dat_path, layer_path } = getSavePaths(galaxyName, serialized_entity, layerIndex, chunkX, chunkY, type);
+ipcMain.handle('save-write-layer-chunk', async (event, galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, buffer) => {
+	const { dat_path, layer_path } = getSavePaths(true, galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type);
 	if (!fs.existsSync(layer_path)) fs.mkdirSync(layer_path, { recursive: true });
 	fs.writeFileSync(dat_path, buffer);
+	return true;
+});
+
+// Remove temporary save folder on game save start (in case of crash during save)
+ipcMain.handle('save-clean', async (event, galaxy_name) => {
+	const temp_path = getSavePaths(true, galaxy_name).save_path;
+	if (fs.existsSync(temp_path)) fs.rmSync(temp_path, { recursive: true, force: true });
+	return true;
+});
+
+// Finalize save: delete old save folder and rename temp to real
+ipcMain.handle('save-finalize', async (event, galaxy_name) => {
+	const temp_path = getSavePaths(true, galaxy_name).save_path;
+	const final_path = getSavePaths(false, galaxy_name).save_path;
+
+	// If temp folder doesn't exist, something went wrong during save
+	if (!fs.existsSync(temp_path)) throw new Error('Temporary save folder does not exist');
+
+	// Remove old save folder if it exists
+	if (fs.existsSync(final_path)) fs.rmSync(final_path, { recursive: true, force: true });
+
+	// Rename temp folder to real save folder
+	fs.renameSync(temp_path, final_path);
+
 	return true;
 });
 

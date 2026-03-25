@@ -13,7 +13,9 @@ contextBridge.exposeInMainWorld('saves', {
 	writeEntity: (galaxy_name, serialized_entity) => ipcRenderer.invoke('save-write-entity', galaxy_name, serialized_entity),
 	loadEntity: (galaxy_name, serialized_entity) => ipcRenderer.invoke('save-load-entity', galaxy_name, serialized_entity),
 	writeLayerChunk: (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, uint32_array) =>
-		ipcRenderer.invoke('save-write-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, Buffer.from(uint32_array))
+		ipcRenderer.invoke('save-write-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, Buffer.from(uint32_array)),
+	clean: galaxy_name => ipcRenderer.invoke('save-clean', galaxy_name),
+	finalize: galaxy_name => ipcRenderer.invoke('save-finalize', galaxy_name)
 });
 
 contextBridge.exposeInMainWorld('figlet', (text, options) => {

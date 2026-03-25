@@ -44,13 +44,25 @@ class Game extends HTMLElement {
 	async save() {
 		if (!this.galaxy) throw new Error('No galaxy loaded');
 
+		// Prevent concurrent saves
+		if (this.saving) return console.warn('Save already in progress, skipping');
+		this.saving = true;
+
+		$('user-terminal').notify('Saving galaxy...');
+
+		// Clean up temp save folder before writing new data
+		await window.saves.clean(this.galaxy.name);
+
 		// Save galaxy data
 		await window.saves.writeGalaxy(this.galaxy);
 
 		// Save each entity
-		for (const Entity of this.$$('entity-root')) {
-			await Entity.save(this.galaxy.name);
-		}
+		for (const Entity of this.$$('entity-root')) await Entity.save(this.galaxy.name);
+
+		// Finalize save by replacing old save with new temp save
+		await window.saves.finalize(this.galaxy.name);
+		$('user-terminal').notify('Save complete.');
+		this.saving = false;
 	}
 
 	/**
