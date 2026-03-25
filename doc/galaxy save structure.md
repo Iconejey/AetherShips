@@ -12,5 +12,5 @@ Entity folder (id)
     ↓
 Layer folder (layer_0, layer_1, layer_2)
     ↓
-Chunks (blocks_cx_cy.dat, glow_cx_cy.dat)
+Chunks (states_cx_cy.dat, colors_cx_cy.dat)
 ```
