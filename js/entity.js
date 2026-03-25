@@ -679,6 +679,16 @@ class Entity extends HTMLElement {
 		for (const key of keys) obj[key] = this[key];
 		return obj;
 	}
+
+	/**
+	 * Serializes and saves this entity using window.saves.writeEntity
+	 * @param {string} galaxyName - The name of the galaxy (save root)
+	 * @returns {Promise<void>}
+	 */
+	async save(galaxyName) {
+		const entity_data = this.serialize();
+		await window.saves.writeEntity(galaxyName, entity_data);
+	}
 }
 
 customElements.define('entity-root', Entity);

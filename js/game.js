@@ -49,8 +49,7 @@ class Game extends HTMLElement {
 
 		// Save each entity
 		for (const Entity of this.$$('entity-root')) {
-			const entity_data = Entity.serialize();
-			await window.saves.writeEntity(this.galaxy.name, entity_data);
+			await Entity.save(this.galaxy.name);
 		}
 	}
 
