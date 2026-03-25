@@ -98,7 +98,7 @@ class Layer {
 		this.chunk_layer = chunk_layer;
 		this.entity_layer = entity_layer;
 		this.layer_index = layer_index;
-		this.blocks = new Uint32Array(1024); // 32x32 blocks (type, health, is_burning)
+		this.block_states = new Uint32Array(1024); // 32x32 blocks (type, health, is_burning)
 		this.block_colors = new Uint32Array(1024); // 32x32 colors (32-bit RGBA8888)
 		this.block_count = 0;
 		this.glow_count = 0;
@@ -152,7 +152,7 @@ class Layer {
 	 */
 	setBlock(x, y, fields) {
 		if (fields.type === 0) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
-		const layer_blocks = this.blocks;
+		const layer_blocks = this.block_states;
 		const index = y * 32 + x;
 
 		const old_type = state_struct.type.get(layer_blocks, index);
@@ -182,11 +182,11 @@ class Layer {
 	 */
 	deleteBlock(x, y) {
 		const index = y * 32 + x;
-		const old_type = state_struct.type.get(this.blocks, index);
+		const old_type = state_struct.type.get(this.block_states, index);
 		const empty = old_type === 0;
 		if (empty) return;
 
-		this.blocks[index] = 0; // Set to empty state
+		this.block_states[index] = 0; // Set to empty state
 		this.block_colors[index] = 0; // Clear color
 
 		const had_glow = blocks_by_type[old_type]?.glow ?? false;
@@ -225,7 +225,7 @@ class Layer {
 	drawPixel(x, y) {
 		const main_buf = this.main.buf;
 		const block_index = y * 32 + x;
-		const block_type = state_struct.type.get(this.blocks, block_index);
+		const block_type = state_struct.type.get(this.block_states, block_index);
 		const has_glow = blocks_by_type[block_type]?.glow ?? false;
 
 		// Get the 32-bit RGBA8888 color
@@ -293,7 +293,7 @@ class Layer {
 	 */
 	getBlockInfo(x, y) {
 		const index = y * 32 + x;
-		const type = state_struct.type.get(this.blocks, index);
+		const type = state_struct.type.get(this.block_states, index);
 		const is_empty = !type;
 		const block_def = blocks_by_type[type];
 		const can_be_painted = !is_empty && block_def?.can_be_painted;
