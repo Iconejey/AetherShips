@@ -6,7 +6,7 @@ function isValidName(name) {
 	return !name || /[<>:"/\\|?*]/g.test(name);
 }
 
-function getSavePaths(galaxy_name, entity) {
+function getSavePaths(galaxy_name, entity, layer_index, chunk_x, chunk_y, data_type) {
 	const paths = {};
 
 	// Saves dir
@@ -27,6 +27,15 @@ function getSavePaths(galaxy_name, entity) {
 	paths.sector_path = path.join(paths.save_path, `sector_${sx}_${sy}`);
 	paths.entity_path = path.join(paths.sector_path, `entity_${entity.id}`);
 	paths.entity_data_path = path.join(paths.entity_path, 'entity.json');
+
+	// If layer index provided, add layer path
+	if (layer_index === undefined) return paths;
+	paths.layer_path = path.join(paths.entity_path, `layer_${layer_index}`);
+
+	// If chunk coords, and data type, add .dat path
+	if (chunk_x === undefined || chunk_y === undefined || !data_type) return paths;
+	const file_name = `${data_type}_${chunk_x}_${chunk_y}.dat`;
+	paths.dat_path = path.join(paths.layer_path, file_name);
 
 	return paths;
 }
@@ -157,6 +166,14 @@ ipcMain.handle('save-load-entity', async (event, name, serialized_entity) => {
 	} catch (err) {
 		throw new Error(err.message);
 	}
+});
+
+// Write layer chunk binary data (states/colors)
+ipcMain.handle('save-write-layer-chunk', async (event, galaxyName, serialized_entity, layerIndex, chunkX, chunkY, type, buffer) => {
+	const { dat_path, layer_path } = getSavePaths(galaxyName, serialized_entity, layerIndex, chunkX, chunkY, type);
+	if (!fs.existsSync(layer_path)) fs.mkdirSync(layer_path, { recursive: true });
+	fs.writeFileSync(dat_path, buffer);
+	return true;
 });
 
 app.commandLine.appendSwitch('force-color-profile', 'srgb');

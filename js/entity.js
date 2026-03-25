@@ -323,6 +323,23 @@ class Layer {
 		this.drawPixel(x, y);
 		return true;
 	}
+
+	/**
+	 * Saves the block state and color data for this chunk layer
+	 * @returns {Promise<void>}
+	 */
+	async save(galaxy_name) {
+		const serialized_entity = this.entity.serialize();
+		const layer_index = this.layer_index;
+		const chunk_x = this.chunk_layer.chunk_x;
+		const chunk_y = this.chunk_layer.chunk_y;
+
+		// Save block states
+		await window.saves.writeLayerChunk(galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, 'states', this.block_states);
+
+		// Save block colors
+		await window.saves.writeLayerChunk(galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, 'colors', this.block_colors);
+	}
 }
 
 /**
@@ -688,6 +705,13 @@ class Entity extends HTMLElement {
 	async save(galaxyName) {
 		const entity_data = this.serialize();
 		await window.saves.writeEntity(galaxyName, entity_data);
+
+		// Save all blocks data
+		for (const chunk_layer of this.getAllChunkLayers()) {
+			if (chunk_layer.layer && typeof chunk_layer.layer.save === 'function') {
+				await chunk_layer.layer.save(galaxyName);
+			}
+		}
 	}
 }
 
