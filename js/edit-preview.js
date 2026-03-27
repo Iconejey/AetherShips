@@ -61,7 +61,7 @@ class EditPreview extends HTMLElement {
 
 		if (this.pen_is_down) {
 			if (this.isUiPointerEvent(e)) return;
-			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+			const edit_mode = game.edit_mode;
 			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
 	}
@@ -70,7 +70,7 @@ class EditPreview extends HTMLElement {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
 		if (this.isUiPointerEvent(e)) return;
-		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+		const edit_mode = game.edit_mode;
 
 		const is_pick_action = [1, 2, 3, 4].includes(e.button) || (e.button === 0 && e.ctrlKey);
 		if (edit_mode === 'paint' && is_pick_action) {
@@ -99,7 +99,7 @@ class EditPreview extends HTMLElement {
 
 	onMouseUp() {
 		if (this.is_dragging) {
-			const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+			const edit_mode = game.edit_mode;
 			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
 		this.cancelDrag();
