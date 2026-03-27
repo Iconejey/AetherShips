@@ -328,9 +328,8 @@ class Layer {
 		if (info.is_empty || !info.can_be_painted) return false;
 		if (info.color === color) return false;
 
-		const index = y * 32 + x;
-		this.block_colors[index] = color;
-		this.drawPixel(x, y);
+		// Use setBlock with only the color field to update color
+		this.setBlock(x, y, { color });
 		return true;
 	}
 
