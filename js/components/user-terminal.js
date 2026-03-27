@@ -269,7 +269,8 @@ class UserTerminal extends HTMLElement {
 			}
 
 			const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
-			block_type_line.textContent = 'Block : ' + (block_info.is_empty ? 'empty' : block_info.name);
+			const block_name = block_info.is_empty ? 'empty' : block_info.name;
+			block_type_line.textContent = `Block : ${block_name} (${hovered_block.bx}, ${hovered_block.by})`;
 		};
 	}
 }
