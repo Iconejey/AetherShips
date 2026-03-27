@@ -759,12 +759,12 @@ class Entity extends HTMLElement {
 				let chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
 
 				// Load block data
-				const [states_buffer, colors_buffer] = await Promise.all([
+				const [states_array, colors_array] = await Promise.all([
 					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'states'),
 					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'colors')
 				]);
 
-				if (!states_buffer || !colors_buffer) throw new Error(`Failed to load chunk layer at (${cx}, ${cy}) for layer ${layer_index}`);
+				if (!states_array || !colors_array) throw new Error(`Failed to load chunk layer at (${cx}, ${cy}) for layer ${layer_index}`);
 
 				// Fill the layer with loaded blocks
 				let layer = chunk_layer.layer;
@@ -774,18 +774,13 @@ class Entity extends HTMLElement {
 				}
 
 				for (let i = 0; i < 1024; i++) {
-					if (states_buffer[i] === 0) continue;
+					if (states_array[i] === 0) continue;
 					const x = i % 32;
 					const y = Math.floor(i / 32);
 
-					// Debug block state and color (in #ffffffff format)
-					const block = state_struct.toObject(states_buffer, i);
-					block.color = `#${colors_buffer[i].toString(16).padStart(8, '0')}`;
-					console.log(block);
-
 					layer.setBlock(x, y, {
-						state: states_buffer[i],
-						color: colors_buffer[i]
+						state: states_array[i],
+						color: colors_array[i]
 					});
 				}
 			}

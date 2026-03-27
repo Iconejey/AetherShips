@@ -12,9 +12,17 @@ contextBridge.exposeInMainWorld('saves', {
 	loadGalaxy: galaxy_name => ipcRenderer.invoke('save-load-galaxy', galaxy_name),
 	writeEntity: (galaxy_name, serialized_entity) => ipcRenderer.invoke('save-write-entity', galaxy_name, serialized_entity),
 	loadEntities: (galaxy_name, position) => ipcRenderer.invoke('save-load-entities', galaxy_name, position),
-	writeLayerChunk: (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, uint32_array) =>
-		ipcRenderer.invoke('save-write-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, Buffer.from(uint32_array)),
-	loadLayerChunk: (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type) => ipcRenderer.invoke('save-load-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type),
+
+	writeLayerChunk: (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, uint32_array) => {
+		const buffer = Buffer.from(uint32_array.buffer, uint32_array.byteOffset, uint32_array.byteLength);
+		return ipcRenderer.invoke('save-write-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, buffer);
+	},
+
+	loadLayerChunk: async (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type) => {
+		const data = await ipcRenderer.invoke('save-load-layer-chunk', galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type);
+		return new Uint32Array(data.buffer, data.byteOffset, data.byteLength / 4);
+	},
+
 	listChunks: (galaxy_name, serialized_entity, layer_index) => ipcRenderer.invoke('save-list-chunks', galaxy_name, serialized_entity, layer_index),
 	clean: galaxy_name => ipcRenderer.invoke('save-clean', galaxy_name),
 	finalize: galaxy_name => ipcRenderer.invoke('save-finalize', galaxy_name)
