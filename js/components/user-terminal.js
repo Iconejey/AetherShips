@@ -236,6 +236,7 @@ class UserTerminal extends HTMLElement {
 	}
 
 	navigation() {
+		this.clear();
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
 		const position_line = this.line();
 
@@ -249,6 +250,7 @@ class UserTerminal extends HTMLElement {
 	}
 
 	edit() {
+		this.clear();
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
 		const block_type_line = this.line(html`Block : <span id="type">-</span>`);
 
