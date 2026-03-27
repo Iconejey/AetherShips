@@ -183,6 +183,8 @@ class Layer {
 		if (fields.color !== undefined) this.block_colors[index] = fields.color;
 
 		this.drawPixel(x, y);
+
+		game.planSave(1000);
 	}
 
 	/**

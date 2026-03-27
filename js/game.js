@@ -36,7 +36,7 @@ class Game extends HTMLElement {
 	/**
 	 * Debounced save planner. Schedules a save after a short delay, batching rapid edits.
 	 */
-	planSave(delay = 500) {
+	planSave(delay = 5000) {
 		clearTimeout(this._save_timeout);
 		this._save_timeout = setTimeout(() => this.save(), delay); // Debounce
 	}
