@@ -121,7 +121,16 @@ class EditPreview extends HTMLElement {
 	}
 
 	onKeyDown(e) {
-		if (e.key === 'Escape') this.cancelDrag();
+		if (e.key === 'Escape') {
+			const edit_mode_select = $('side-bar multi-select#edit-mode');
+
+			// Cancel dragging tool
+			if (this.is_dragging) this.cancelDrag();
+			// Cancel erase edit mode
+			else if (game.edit_mode === 'erase') edit_mode_select.value = 'place';
+			// Go back to pen tool
+			else if (game.selected_tool !== 'pen') game.selected_tool = 'pen';
+		}
 	}
 
 	cancelDrag() {

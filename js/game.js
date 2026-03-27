@@ -33,10 +33,6 @@ class Game extends HTMLElement {
 		this.player = null;
 	}
 
-	get edit_mode() {
-		return $('side-bar multi-select#edit-mode')?.value;
-	}
-
 	/**
 	 * Debounced save planner. Schedules a save after a short delay, batching rapid edits.
 	 */
@@ -262,6 +258,14 @@ class Game extends HTMLElement {
 
 	get selected_tool() {
 		return $('side-bar multi-select#edit-tools').value;
+	}
+
+	set selected_tool(tool_name) {
+		$('side-bar multi-select#edit-tools').value = tool_name;
+	}
+
+	get edit_mode() {
+		return $('side-bar multi-select#edit-mode')?.value;
 	}
 
 	/**
