@@ -45,6 +45,19 @@ class SideBar extends HTMLElement {
 		}
 	}
 
+	updateCategoryPrimary() {
+		const block_list = this.$('#block-list');
+		if (!block_list) return;
+		// Remove .primary from all categories
+		block_list.$$('details.primary').forEach(d => d.classList.remove('primary'));
+		// Find the <details> containing the .active button
+		const active_button = block_list.$('button.active');
+		if (active_button) {
+			const details = active_button.closest('details');
+			if (details) details.classList.add('primary');
+		}
+	}
+
 	showEditTools() {
 		this.innerHTML = html`
 			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
@@ -93,6 +106,7 @@ class SideBar extends HTMLElement {
 				block_list.$$('multi-select').forEach(ms => {
 					if (ms !== cat_select) ms.$$('.active').forEach(b => b.classList.remove('active'));
 				});
+				this.updateCategoryPrimary();
 			};
 
 			for (const block of block_categories[category]) {
@@ -112,6 +126,9 @@ class SideBar extends HTMLElement {
 		// Select first block by default
 		const first_button = block_list.$('button');
 		if (first_button) first_button.classList.add('active');
+
+		// Highlight the initial category
+		this.updateCategoryPrimary();
 
 		const block_search = this.$('#block-search');
 		block_search?.addEventListener('input', () => this.filterBlockList(block_search.value));

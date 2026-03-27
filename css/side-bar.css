@@ -37,6 +37,13 @@ side-bar {
 				display: none;
 			}
 
+			&.primary > summary {
+				color: var(--primary);
+				border-left: 4px solid var(--primary);
+				padding-left: 4px;
+				background: color-mix(in srgb, var(--primary) 10%, transparent);
+			}
+
 			& summary {
 				padding: 6px 8px;
 				cursor: pointer;
