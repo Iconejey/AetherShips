@@ -442,6 +442,26 @@ class EditPreview extends HTMLElement {
 		ctx.stroke();
 		// ─────────────────────────────────────────────────────────────────────
 
+		// -x axis
+		ctx.save();
+		ctx.strokeStyle = '#d44141'; // red
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(-16, 0);
+		ctx.stroke();
+		ctx.restore();
+
+		// -y axis
+		ctx.save();
+		ctx.strokeStyle = '#45bc49'; // green
+		ctx.lineWidth = 2;
+		ctx.beginPath();
+		ctx.moveTo(0, 0);
+		ctx.lineTo(0, -16);
+		ctx.stroke();
+		ctx.restore();
+
 		// Fill pass — all preview blocks in one path for performance
 		ctx.fillStyle = fill_color;
 		ctx.beginPath();
