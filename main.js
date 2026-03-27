@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 function isValidName(name) {
-	return !name || /[<>:"/\\|?*]/g.test(name);
+	return !!name && !/[<>:"/\\|?*\x00-\x1F]/.test(name) && name.length <= 255;
 }
 
 function getSavePaths(temp, galaxy_name, entity, layer_index, chunk_x, chunk_y, data_type) {
@@ -66,7 +66,7 @@ ipcMain.handle('save-list-galaxies', async () => {
 
 // Create new Galaxy
 ipcMain.handle('save-create-galaxy', async (event, name) => {
-	if (!isValidName(name)) throw new Error('Invalid name');
+	if (!isValidName(name)) throw new Error('Invalid galaxy name');
 
 	// Get paths for the new galaxy
 	const { saves_dir, save_path, galaxy_data_path } = getSavePaths(false, name);
@@ -76,7 +76,7 @@ ipcMain.handle('save-create-galaxy', async (event, name) => {
 		if (!fs.existsSync(saves_dir)) fs.mkdirSync(saves_dir);
 
 		// Check if save already exists
-		if (fs.existsSync(save_path)) throw new Error('Save already exists');
+		if (fs.existsSync(save_path)) throw new Error('Galaxy already exists');
 
 		// Create save directory
 		fs.mkdirSync(save_path);
@@ -85,7 +85,10 @@ ipcMain.handle('save-create-galaxy', async (event, name) => {
 		const data = {
 			name,
 			seed: Math.floor(Math.random() * 1e9),
-			player: { position: { x: 0, y: 0, r: 0 } }
+			player: {
+				position: { x: 0, y: 0, r: 0 },
+				driven_entity: null
+			}
 		};
 
 		fs.writeFileSync(galaxy_data_path, JSON.stringify(data, null, 2));
@@ -101,7 +104,7 @@ ipcMain.handle('save-delete-galaxy', async (event, name) => {
 	const { save_path } = getSavePaths(false, name);
 
 	try {
-		if (!fs.existsSync(save_path)) throw new Error('Save does not exist');
+		if (!fs.existsSync(save_path)) throw new Error('Galaxy does not exist');
 
 		// Recursively delete the save directory
 		fs.rmSync(save_path, { recursive: true, force: true });
@@ -130,7 +133,11 @@ ipcMain.handle('save-load-galaxy', async (event, name) => {
 	const { galaxy_data_path } = getSavePaths(false, name);
 
 	try {
-		if (!fs.existsSync(galaxy_data_path)) throw new Error('Save does not exist');
+		if (!fs.existsSync(galaxy_data_path)) {
+			fs.rmSync(path.dirname(galaxy_data_path), { recursive: true, force: true });
+			throw new Error('Galaxy data not found, save folder deleted to prevent future issues');
+		}
+
 		const data = fs.readFileSync(galaxy_data_path, 'utf-8');
 		return JSON.parse(data);
 	} catch (err) {
@@ -155,17 +162,21 @@ ipcMain.handle('save-write-entity', async (event, name, serialized_entity) => {
 	}
 });
 
-// Load entity.json
-ipcMain.handle('save-load-entity', async (event, name, serialized_entity) => {
-	const { entity_data_path } = getSavePaths(false, name, serialized_entity);
+// Returns the list of serialized entities in the sector of the given position
+ipcMain.handle('save-load-entities', async (event, galaxy_name, position) => {
+	const { sector_path } = getSavePaths(false, galaxy_name, { position });
+	const list = [];
+	if (!fs.existsSync(sector_path)) return list;
 
-	try {
-		if (!fs.existsSync(entity_data_path)) throw new Error('Entity does not exist');
-		const data = fs.readFileSync(entity_data_path, 'utf-8');
-		return JSON.parse(data);
-	} catch (err) {
-		throw new Error(err.message);
+	for (const folder_name of fs.readdirSync(sector_path)) {
+		if (folder_name.startsWith('entity_')) {
+			const entity_data_path = path.join(sector_path, folder_name, 'entity.json');
+			const data = fs.readFileSync(entity_data_path, 'utf-8');
+			list.push(JSON.parse(data));
+		}
 	}
+
+	return list;
 });
 
 // Write layer chunk binary data (states/colors)
@@ -174,6 +185,27 @@ ipcMain.handle('save-write-layer-chunk', async (event, galaxy_name, serialized_e
 	if (!fs.existsSync(layer_path)) fs.mkdirSync(layer_path, { recursive: true });
 	fs.writeFileSync(dat_path, buffer);
 	return true;
+});
+
+// Load layer chunk binary data
+ipcMain.handle('save-load-layer-chunk', async (event, galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type) => {
+	const { dat_path } = getSavePaths(false, galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type);
+	if (!fs.existsSync(dat_path)) throw new Error('Chunk data does not exist');
+	return fs.readFileSync(dat_path);
+});
+
+// List chunks in entity layer
+ipcMain.handle('save-list-chunks', async (event, galaxy_name, serialized_entity, layer_index) => {
+	const { layer_path } = getSavePaths(false, galaxy_name, serialized_entity, layer_index);
+	if (!fs.existsSync(layer_path)) return [];
+
+	const files = fs.readdirSync(layer_path);
+	return files
+		.filter(file => file.startsWith('states_'))
+		.map(file => {
+			const [, cx, cy] = file.match(/states_(\-?\d+)_(\-?\d+)\.dat/).map(Number);
+			return { cx, cy };
+		});
 });
 
 // Remove temporary save folder on game save start (in case of crash during save)
@@ -191,8 +223,29 @@ ipcMain.handle('save-finalize', async (event, galaxy_name) => {
 	// If temp folder doesn't exist, something went wrong during save
 	if (!fs.existsSync(temp_path)) throw new Error('Temporary save folder does not exist');
 
-	// Remove old save folder if it exists
-	if (fs.existsSync(final_path)) fs.rmSync(final_path, { recursive: true, force: true });
+	// Remove old save folder if it exists, with robust retry logic for ENOTEMPTY
+	if (fs.existsSync(final_path)) {
+		const maxRetries = 5;
+		const delay = ms => new Promise(res => setTimeout(res, ms));
+		let lastErr = null;
+		for (let attempt = 0; attempt < maxRetries; attempt++) {
+			try {
+				fs.rmSync(final_path, { recursive: true, force: true });
+				lastErr = null;
+				break;
+			} catch (err) {
+				lastErr = err;
+				if (err.code === 'ENOTEMPTY' || err.code === 'EPERM' || err.code === 'EBUSY') {
+					// Wait and retry
+					Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 100 + attempt * 100); // 100ms, 200ms, ...
+					continue;
+				} else {
+					throw err;
+				}
+			}
+		}
+		if (lastErr) throw lastErr;
+	}
 
 	// Rename temp folder to real save folder
 	fs.renameSync(temp_path, final_path);

@@ -243,8 +243,8 @@ class UserTerminal extends HTMLElement {
 			const followed = window.game?.camera?.followed_entity;
 			if (!followed) return;
 
-			const { sector, chunk } = followed.global_position;
-			if (position_line) position_line.innerHTML = html`Sector [${sector.sx},${sector.sy}] position (${chunk.cx},${chunk.cy})`;
+			const { sector, chunk } = Entity.globalPosition(followed.position);
+			if (position_line) position_line.textContent = `Sector [${sector.sx}, ${sector.sy}] position (${chunk.cx}, ${chunk.cy})`;
 		};
 	}
 

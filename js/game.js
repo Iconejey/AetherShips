@@ -28,6 +28,9 @@ class Game extends HTMLElement {
 		this.space_double_press_window_ms = 300;
 		this.start_menu_camera_rotation_offset_radians = -Math.PI / 4;
 		this.scale = 1;
+
+		// Player instance
+		this.player = null;
 	}
 
 	/**
@@ -54,10 +57,10 @@ class Game extends HTMLElement {
 		await window.saves.clean(this.galaxy.name);
 
 		// Save galaxy data
-		await window.saves.writeGalaxy(this.galaxy);
+		await window.saves.writeGalaxy({ ...this.galaxy, player: this.player.serialize() });
 
 		// Save each entity
-		for (const Entity of this.$$('entity-root')) await Entity.save(this.galaxy.name);
+		for (const entity of this.$$('entity-root')) await entity.save(this.galaxy.name);
 
 		// Finalize save by replacing old save with new temp save
 		await window.saves.finalize(this.galaxy.name);
@@ -185,14 +188,32 @@ class Game extends HTMLElement {
 	}
 
 	async loadGalaxy(name) {
-		$$('entity-root').forEach(e => e.remove());
-		document.body.classList.remove('start-menu');
+		try {
+			$$('entity-root').forEach(e => e.remove());
+			document.body.classList.remove('start-menu');
 
-		this.galaxy = await window.saves.loadGalaxy(name);
-		this.resetStars();
+			// Load galaxy data
+			this.galaxy = await window.saves.loadGalaxy(name);
 
-		const entity = Entity.create(this.galaxy.player.position, true);
-		this.camera.followed_entity = entity;
+			// Initialize Player
+			this.player = new Player(this.galaxy.player.position);
+
+			// Load all entities near player
+			await Entity.loadNearby(this.player.position, 1000);
+
+			// Drive entity if player was driving
+			const driven_entity_id = this.galaxy.player.driven_entity;
+			if (driven_entity_id) {
+				const driven_entity = Entity.get(driven_entity_id);
+				console.log('Player was driving entity ID:', driven_entity_id, 'Found entity:', driven_entity);
+				this.player.drive(driven_entity);
+			}
+
+			this.resetStars();
+		} catch (err) {
+			console.error('Failed to load galaxy:', err);
+			$('user-terminal').startMenu(() => $('user-terminal').error(`Failed to load galaxy: ${err.message}`));
+		}
 	}
 
 	/**
@@ -443,6 +464,12 @@ class Game extends HTMLElement {
 			if (Math.abs(entity.velocity.vx) < 0.0001) entity.velocity.vx = 0;
 			if (Math.abs(entity.velocity.vy) < 0.0001) entity.velocity.vy = 0;
 			if (Math.abs(entity.velocity.vr) < 0.0001) entity.velocity.vr = 0;
+		}
+
+		// If the player is driving an entity, update player position to match the entity
+		if (this.player?.driven_entity) {
+			const driven = this.player.driven_entity;
+			this.player.setPosition(driven.position.x, driven.position.y, driven.position.r);
 		}
 
 		// Update camera to follow entity if one is being followed

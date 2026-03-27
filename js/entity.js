@@ -145,20 +145,30 @@ class Layer {
 	}
 
 	/**
-	 * Sets the block at the specified (x, y) coordinates within the layer to the given fields
+	 * Sets the block at the specified (x, y) coordinates within the layer to the given fields.
+	 *
+	 * If the fields object contains a 'state' property, its value (a uint32) is directly assigned to the block state at the given position.
+	 * Otherwise, the fields object is interpreted as individual struct fields and updated via state_struct.update.
+	 *
 	 * @param {number} x - The x-coordinate of the block to set (0-31).
 	 * @param {number} y - The y-coordinate of the block to set (0-31).
-	 * @param {Object} fields - An object containing the fields to set for the block, where keys correspond to the struct's field names.
+	 * @param {Object} fields - An object containing the fields to set for the block. If 'state' is present, it is used directly; otherwise, keys correspond to the struct's field names (e.g., type, health, is_burning, color).
+	 * @param {number} [fields.state] - (Optional) The raw uint32 value to assign directly to the block state.
+	 * @param {number} [fields.color] - (Optional) The RGBA8888 color value to assign to the block color buffer.
 	 */
 	setBlock(x, y, fields) {
-		if (fields.type === 0) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
+		if (fields.type === 0 && fields.state === undefined) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
 		const layer_blocks = this.block_states;
 		const index = y * 32 + x;
 
 		const old_type = state_struct.type.get(layer_blocks, index);
-		state_struct.update(layer_blocks, index, fields);
-		const new_type = state_struct.type.get(layer_blocks, index);
 
+		// If state is provided directly, use it
+		if ('state' in fields) layer_blocks[index] = fields.state >>> 0;
+		// Else update individual fields using the struct definition
+		else state_struct.update(layer_blocks, index, fields);
+
+		const new_type = state_struct.type.get(layer_blocks, index);
 		if (old_type === 0) this.block_count++;
 
 		const had_glow = blocks_by_type[old_type]?.glow ?? false;
@@ -328,17 +338,17 @@ class Layer {
 	 * Saves the block state and color data for this chunk layer
 	 * @returns {Promise<void>}
 	 */
-	async save(galaxy_name) {
+	async save() {
 		const serialized_entity = this.entity.serialize();
 		const layer_index = this.layer_index;
 		const chunk_x = this.chunk_layer.chunk_x;
 		const chunk_y = this.chunk_layer.chunk_y;
 
 		// Save block states
-		await window.saves.writeLayerChunk(galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, 'states', this.block_states);
+		await window.saves.writeLayerChunk(game.galaxy.name, serialized_entity, layer_index, chunk_x, chunk_y, 'states', this.block_states);
 
 		// Save block colors
-		await window.saves.writeLayerChunk(galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, 'colors', this.block_colors);
+		await window.saves.writeLayerChunk(game.galaxy.name, serialized_entity, layer_index, chunk_x, chunk_y, 'colors', this.block_colors);
 	}
 }
 
@@ -396,7 +406,6 @@ customElements.define('entity-layer', EntityLayer);
 class Entity extends HTMLElement {
 	static create(position, add_to_dom = false) {
 		const entity = document.createElement('entity-root');
-		// Generate unique id: current time in ms (base 36) + '-' + Math.random (base 36, remove leading '0.')
 		entity.id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
 		if (add_to_dom) entity.addToDOM();
 		entity.position = { ...position };
@@ -405,11 +414,31 @@ class Entity extends HTMLElement {
 		return entity;
 	}
 
-	static fromSerialized(data) {
+	static fromSerialized(data, load_blocks = false) {
 		const entity = document.createElement('entity-root');
 		for (const key in data) entity[key] = data[key];
 		entity.addToDOM();
+		if (load_blocks) entity.loadBlocks();
 		return entity;
+	}
+
+	static async loadNearby(position, radius) {
+		// Get entities in sector
+		const serialized_entities = await window.saves.loadEntities(game.galaxy.name, position);
+
+		// Load entities within radius
+		for (const serialized_entity of serialized_entities) {
+			const entity_position = serialized_entity.position;
+			const dx = entity_position.x - position.x;
+			const dy = entity_position.y - position.y;
+			if (dx * dx + dy * dy <= radius * radius) {
+				Entity.fromSerialized(serialized_entity, true);
+			}
+		}
+	}
+
+	static get(id) {
+		return game.$(`#${id}`);
 	}
 
 	static blockToChunkCoord(x, y) {
@@ -419,19 +448,15 @@ class Entity extends HTMLElement {
 		};
 	}
 
-	toLocalCoord(value) {
-		return ((value % 32) + 32) % 32;
-	}
-
-	get global_position() {
+	static globalPosition(position) {
 		return {
 			chunk: {
-				cx: Math.floor((this.position.x / 32) % 256),
-				cy: Math.floor((this.position.y / 32) % 256)
+				cx: Math.floor((position.x / 32) % 256),
+				cy: Math.floor((position.y / 32) % 256)
 			},
 			sector: {
-				sx: Math.floor(this.position.x / (32 * 256)),
-				sy: Math.floor(this.position.y / (32 * 256))
+				sx: Math.floor(position.x / (32 * 256)),
+				sy: Math.floor(position.y / (32 * 256))
 			}
 		};
 	}
@@ -451,14 +476,20 @@ class Entity extends HTMLElement {
 				const entity_layer = document.createElement('entity-layer');
 				entity_layer.layer_index = i;
 				entity_layer.dataset.layer = i;
+
 				// Set z-index based on layer depth
 				entity_layer.style.zIndex = i.toString();
-				if (i > 0) {
-					entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
-				}
+
+				// Add drop shadow to layers above 0
+				if (i > 0) entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
+
 				this.appendChild(entity_layer);
 			}
 		}
+	}
+
+	toLocalCoord(value) {
+		return ((value % 32) + 32) % 32;
 	}
 
 	/**
@@ -529,7 +560,6 @@ class Entity extends HTMLElement {
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
 		layer.setBlock(local_x, local_y, fields);
-		console.log('Set block at', { layer: l, x, y, fields });
 	}
 
 	/**
@@ -675,7 +705,6 @@ class Entity extends HTMLElement {
 	 * Renders all dirty layers of the entity by calling their render methods, then clears the dirty layers list
 	 */
 	render() {
-		console.log(`Rendering ${this.dirty_layers.length} dirty layers`);
 		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();
 		this.dirty_layers.length = 0;
 	}
@@ -699,19 +728,70 @@ class Entity extends HTMLElement {
 
 	/**
 	 * Serializes and saves this entity using window.saves.writeEntity
-	 * @param {string} galaxyName - The name of the galaxy (save root)
 	 * @returns {Promise<void>}
 	 */
-	async save(galaxyName) {
+	async save() {
+		const galaxy_name = game.galaxy.name;
 		const entity_data = this.serialize();
-		await window.saves.writeEntity(galaxyName, entity_data);
+		await window.saves.writeEntity(galaxy_name, entity_data);
 
 		// Save all blocks data
 		for (const chunk_layer of this.getAllChunkLayers()) {
-			if (chunk_layer.layer && typeof chunk_layer.layer.save === 'function') {
-				await chunk_layer.layer.save(galaxyName);
+			await chunk_layer?.layer.save(galaxy_name);
+		}
+	}
+
+	/**
+	 * Loads entity blocks from save, ensuring all chunk layers are created and loaded
+	 */
+	async loadBlocks() {
+		const serialized_entity = this.serialize();
+		for (const layer_index of [0, 1, 2]) {
+			const entity_layer = this.getEntityLayer(layer_index);
+
+			// Get all chunk coordinates for this entity and layer
+			const chunk_coords = await window.saves.listChunks(game.galaxy.name, serialized_entity, layer_index);
+
+			for (const coord of chunk_coords) {
+				const { cx, cy } = coord;
+
+				// Ensure chunk_layer exists
+				let chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
+
+				// Load block data
+				const [states_buffer, colors_buffer] = await Promise.all([
+					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'states'),
+					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'colors')
+				]);
+
+				if (!states_buffer || !colors_buffer) throw new Error(`Failed to load chunk layer at (${cx}, ${cy}) for layer ${layer_index}`);
+
+				// Fill the layer with loaded blocks
+				let layer = chunk_layer.layer;
+				if (!layer) {
+					layer = new Layer(chunk_layer, layer_index, entity_layer);
+					chunk_layer.layer = layer;
+				}
+
+				for (let i = 0; i < 1024; i++) {
+					if (states_buffer[i] === 0) continue;
+					const x = i % 32;
+					const y = Math.floor(i / 32);
+
+					// Debug block state and color (in #ffffffff format)
+					const block = state_struct.toObject(states_buffer, i);
+					block.color = `#${colors_buffer[i].toString(16).padStart(8, '0')}`;
+					console.log(block);
+
+					layer.setBlock(x, y, {
+						state: states_buffer[i],
+						color: colors_buffer[i]
+					});
+				}
 			}
 		}
+
+		this.render();
 	}
 }
 
