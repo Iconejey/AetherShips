@@ -252,11 +252,9 @@ class UserTerminal extends HTMLElement {
 	edit() {
 		this.clear();
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
-		const block_type_line = this.line(html`Block : <span id="type">-</span>`);
+		const block_type_line = this.line('Block : -');
 
 		this.tick = () => {
-			if (game?.mode !== this.current_mode) return (this.mode = game?.mode ?? 'navigation');
-
 			const followed_entity = game?.camera?.followed_entity;
 			const edit_preview = $('edit-preview');
 			if (!followed_entity || !edit_preview) {
@@ -271,7 +269,7 @@ class UserTerminal extends HTMLElement {
 			}
 
 			const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
-			block_type_line.textContent = block_info.is_empty ? 'empty' : blocks_by_type[block_info.type]?.name;
+			block_type_line.textContent = 'Block : ' + (block_info.is_empty ? 'empty' : block_info.name);
 		};
 	}
 }
