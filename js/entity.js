@@ -183,7 +183,6 @@ class Layer {
 		if (fields.color !== undefined) this.block_colors[index] = fields.color;
 
 		this.drawPixel(x, y);
-
 		game.planSave(1000);
 	}
 
@@ -214,6 +213,7 @@ class Layer {
 		// If layer still has blocks but no glow, keep main canvas
 		// If layer is completely empty, remove main canvas (handled by Entity)
 		if (this.block_count > 0) this.drawPixel(x, y);
+		game.planSave(1000);
 	}
 
 	clearGlowPixel(x, y) {
