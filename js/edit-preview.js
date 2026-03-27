@@ -77,8 +77,6 @@ class EditPreview extends HTMLElement {
 		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
 		if (info.is_empty) return;
 
-		console.log('block info', info);
-
 		// Find the button for this block type and activate it
 		game.selected_block = info.name;
 	}

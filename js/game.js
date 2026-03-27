@@ -258,7 +258,6 @@ class Game extends HTMLElement {
 
 	set selected_block(block_type) {
 		const block_button = $(`#block-list button[data-value="${block_type}"]`);
-		console.log(block_type, block_button);
 		block_button?.click();
 	}
 
