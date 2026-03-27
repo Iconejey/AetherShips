@@ -37,6 +37,9 @@ class Game extends HTMLElement {
 	 * Debounced save planner. Schedules a save after a short delay, batching rapid edits.
 	 */
 	planSave(delay = 5000) {
+		if (this.loading) return; // Don't save while loading
+		if (document.body.classList.contains('start-menu')) return; // Don't save if we're in the start menu
+
 		clearTimeout(this._save_timeout);
 		this._save_timeout = setTimeout(() => this.save(), delay); // Debounce
 	}
@@ -190,7 +193,7 @@ class Game extends HTMLElement {
 	async loadGalaxy(name) {
 		try {
 			$$('entity-root').forEach(e => e.remove());
-			document.body.classList.remove('start-menu');
+			this.loading = true;
 
 			// Load galaxy data
 			this.galaxy = await window.saves.loadGalaxy(name);
@@ -205,11 +208,12 @@ class Game extends HTMLElement {
 			const driven_entity_id = this.galaxy.player.driven_entity;
 			if (driven_entity_id) {
 				const driven_entity = Entity.get(driven_entity_id);
-				console.log('Player was driving entity ID:', driven_entity_id, 'Found entity:', driven_entity);
 				this.player.drive(driven_entity);
 			}
 
 			this.resetStars();
+			this.loading = false;
+			document.body.classList.remove('start-menu');
 		} catch (err) {
 			console.error('Failed to load galaxy:', err);
 			$('user-terminal').startMenu(() => $('user-terminal').error(`Failed to load galaxy: ${err.message}`));

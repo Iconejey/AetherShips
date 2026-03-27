@@ -415,11 +415,11 @@ class Entity extends HTMLElement {
 		return entity;
 	}
 
-	static fromSerialized(data, load_blocks = false) {
+	static async fromSerialized(data, load_blocks = false) {
 		const entity = document.createElement('entity-root');
 		for (const key in data) entity[key] = data[key];
 		entity.addToDOM();
-		if (load_blocks) entity.loadBlocks();
+		if (load_blocks) await entity.loadBlocks();
 		return entity;
 	}
 
@@ -433,7 +433,7 @@ class Entity extends HTMLElement {
 			const dx = entity_position.x - position.x;
 			const dy = entity_position.y - position.y;
 			if (dx * dx + dy * dy <= radius * radius) {
-				Entity.fromSerialized(serialized_entity, true);
+				await Entity.fromSerialized(serialized_entity, true);
 			}
 		}
 	}
