@@ -66,6 +66,38 @@ class EditPreview extends HTMLElement {
 		}
 	}
 
+	pickBlockTypeUnderCursor() {
+		const entity = game?.camera?.followed_entity;
+		if (!entity) return;
+
+		const cursor = this.screenToBlock(this.mouse_x, this.mouse_y);
+		if (!cursor) return;
+
+		const layer = game.selected_layer;
+		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
+		if (info.is_empty) return;
+
+		console.log('block info', info);
+
+		// Find the button for this block type and activate it
+		game.selected_block = info.name;
+	}
+
+	copyBlockColorUnderCursor() {
+		const entity = game?.camera?.followed_entity;
+		if (!entity) return;
+
+		const cursor = this.screenToBlock(this.mouse_x, this.mouse_y);
+		if (!cursor) return;
+
+		const layer = game.selected_layer;
+		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
+		if (info.is_empty) return;
+
+		const color_hex = this.rgba8888ToHex(info.color);
+		$('side-bar')?.addPaintColor?.(color_hex, true);
+	}
+
 	onMouseDown(e) {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
@@ -73,10 +105,16 @@ class EditPreview extends HTMLElement {
 		const edit_mode = game.edit_mode;
 
 		const is_pick_action = [1, 2, 3, 4].includes(e.button) || (e.button === 0 && e.ctrlKey);
-		if (edit_mode === 'paint' && is_pick_action) {
-			e.preventDefault();
-			this.copyBlockColorUnderCursor();
-			return;
+		if (is_pick_action) {
+			if (edit_mode === 'paint') {
+				e.preventDefault();
+				this.copyBlockColorUnderCursor();
+				return;
+			} else if (edit_mode === 'place') {
+				e.preventDefault();
+				this.pickBlockTypeUnderCursor();
+				return;
+			}
 		}
 
 		if (e.button !== 0) return;
@@ -167,21 +205,6 @@ class EditPreview extends HTMLElement {
 		}
 
 		if (has_any_change) entity.render();
-	}
-
-	copyBlockColorUnderCursor() {
-		const entity = game?.camera?.followed_entity;
-		if (!entity) return;
-
-		const cursor = this.screenToBlock(this.mouse_x, this.mouse_y);
-		if (!cursor) return;
-
-		const layer = game.selected_layer;
-		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
-		if (info.is_empty) return;
-
-		const color_hex = this.rgba8888ToHex(info.color);
-		$('side-bar')?.addPaintColor?.(color_hex, true);
 	}
 
 	hexToRgba8888(color_hex) {

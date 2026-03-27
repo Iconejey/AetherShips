@@ -312,6 +312,7 @@ class Layer {
 
 		return {
 			type,
+			name: block_def?.name ?? 'unknown',
 			color: this.block_colors[index],
 			is_empty,
 			can_be_painted
