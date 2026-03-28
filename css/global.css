@@ -14,6 +14,9 @@
 }
 
 body {
+	--success: #7cfc7c;
+	--error: #ff4d4d;
+
 	--ura-primary: #00eaff;
 	--ura-trans: color-mix(in srgb, var(--ura-primary) 12%, transparent);
 	--pirate-primary: #ff6e00;

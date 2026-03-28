@@ -66,7 +66,7 @@ class EditPreview extends HTMLElement {
 		}
 	}
 
-	pickBlockTypeUnderCursor() {
+	copyBlockUnderCursor(color_only = false) {
 		const entity = game?.camera?.followed_entity;
 		if (!entity) return;
 
@@ -77,23 +77,8 @@ class EditPreview extends HTMLElement {
 		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
 		if (info.is_empty) return;
 
-		// Find the button for this block type and activate it
-		game.selected_block = info.name;
-	}
-
-	copyBlockColorUnderCursor() {
-		const entity = game?.camera?.followed_entity;
-		if (!entity) return;
-
-		const cursor = this.screenToBlock(this.mouse_x, this.mouse_y);
-		if (!cursor) return;
-
-		const layer = game.selected_layer;
-		const info = entity.getBlockInfo(layer, cursor.bx, cursor.by);
-		if (info.is_empty) return;
-
-		const color_hex = this.rgba8888ToHex(info.color);
-		$('side-bar')?.addPaintColor?.(color_hex, true);
+		if (!color_only) game.selected_block = info.name;
+		game.selected_paint_color = this.rgba8888ToHex(info.color);
 	}
 
 	onMouseDown(e) {
@@ -102,17 +87,10 @@ class EditPreview extends HTMLElement {
 		if (this.isUiPointerEvent(e)) return;
 		const edit_mode = game.edit_mode;
 
-		const is_pick_action = [1, 2, 3, 4].includes(e.button) || (e.button === 0 && e.ctrlKey);
-		if (is_pick_action) {
-			if (edit_mode === 'paint') {
-				e.preventDefault();
-				this.copyBlockColorUnderCursor();
-				return;
-			} else if (edit_mode === 'place') {
-				e.preventDefault();
-				this.pickBlockTypeUnderCursor();
-				return;
-			}
+		// Pick action
+		if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
+			e.preventDefault();
+			return this.copyBlockUnderCursor(edit_mode === 'paint');
 		}
 
 		if (e.button !== 0) return;
@@ -134,10 +112,7 @@ class EditPreview extends HTMLElement {
 	}
 
 	onMouseUp() {
-		if (this.is_dragging) {
-			const edit_mode = game.edit_mode;
-			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
-		}
+		if (this.is_dragging) this.applyEdit();
 		this.cancelDrag();
 	}
 
@@ -180,25 +155,29 @@ class EditPreview extends HTMLElement {
 		const entity = game?.camera?.followed_entity;
 		if (!entity) return;
 
-		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+		const edit_mode = game.edit_mode;
 		const layer = game.selected_layer;
 		const block_name = game.selected_block;
-		const selected_paint_hex = $('side-bar')?.getSelectedPaintColor?.();
-		const selected_paint_color = selected_paint_hex ? this.hexToRgba8888(selected_paint_hex) : null;
+		const selected_paint_color = this.hexToRgba8888(game.selected_paint_color);
 		const blocks = this.getPreviewBlocks();
 		if (blocks.length === 0) return;
 
 		let has_any_change = false;
 		for (const [bx, by] of blocks) {
+			// Place mode
 			if (edit_mode === 'place') {
-				entity.setByName(layer, bx, by, block_name);
-				has_any_change = true;
-			} else if (edit_mode === 'erase') {
+				if (entity.setByName(layer, bx, by, block_name, selected_paint_color)) has_any_change = true;
+			}
+
+			// Erase mode
+			else if (edit_mode === 'erase') {
 				entity.deleteBlock(layer, bx, by);
 				has_any_change = true;
-			} else if (edit_mode === 'paint' && selected_paint_color !== null) {
-				const painted = entity.paintBlock(layer, bx, by, selected_paint_color);
-				has_any_change = has_any_change || painted;
+			}
+
+			// Paint mode
+			else if (edit_mode === 'paint') {
+				if (entity.paintBlock(layer, bx, by, selected_paint_color)) has_any_change = true;
 			}
 		}
 

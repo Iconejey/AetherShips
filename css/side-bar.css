@@ -28,10 +28,6 @@ side-bar {
 		overflow-y: auto;
 		overflow-x: hidden;
 
-		&.hidden {
-			display: none;
-		}
-
 		& details {
 			&.hidden {
 				display: none;
@@ -85,72 +81,30 @@ side-bar {
 		padding: 8px;
 		border-top: 1px dashed var(--border);
 		border-bottom: 1px dashed var(--border);
-	}
 
-	& #block-search {
-		width: 100%;
-		height: 34px;
-		padding: 0 10px;
-		border-radius: 8px;
-		border: 1px solid var(--border);
-		background: color-mix(in srgb, var(--bg) 75%, transparent);
-		color: var(--text);
-		outline: none;
-
-		&:focus {
-			border-color: var(--primary);
-			box-shadow: 0 0 0 2px var(--primary-trans);
-		}
-
-		&::placeholder {
+		& #block-search {
+			width: 100%;
+			height: 34px;
+			padding: 0 10px;
+			border-radius: 8px;
+			border: 1px solid var(--border);
+			background: color-mix(in srgb, var(--bg) 75%, transparent);
 			color: var(--text);
+			outline: none;
+
+			&:focus {
+				border-color: var(--primary);
+				box-shadow: 0 0 0 2px var(--primary-trans);
+			}
+
+			&::placeholder {
+				color: var(--text);
+			}
 		}
 	}
 
 	& #paint-panel {
-		display: none;
-		flex: 1;
-		flex-direction: column;
-		gap: 8px;
-		padding: 8px;
-
-		&.active {
-			display: flex;
-		}
-
-		& .paint-controls {
-			display: grid;
-			grid-template-columns: 1fr 40px;
-			gap: 8px;
-		}
-
-		& #paint-color-picker {
-			width: 100%;
-			height: 40px;
-			border: 1px solid var(--border);
-			background: transparent;
-			padding: 2px;
-			border-radius: 8px;
-			cursor: pointer;
-		}
-
-		& #paint-colors {
-			display: flex;
-			flex-wrap: wrap;
-			align-content: flex-start;
-			gap: 8px;
-		}
-
-		& .paint-color-button {
-			font-size: 0;
-			border: 1px solid #ffffff44;
-
-			&.active {
-				outline: 2px solid var(--primary);
-				outline-offset: 2px;
-				transform: scale(0.9);
-			}
-		}
+		border-top: 1px dashed var(--border);
 	}
 
 	& .round-button-group {

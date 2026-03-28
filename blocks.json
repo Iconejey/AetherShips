@@ -19,7 +19,7 @@
 		{ "name": "titanium_ingot", "type": 22, "health": 7, "colors": ["#a2a9b2ff"] },
 		{ "name": "carbon", "type": 23, "health": 6, "colors": ["#3f3f3fff"] },
 		{ "name": "steel", "type": 24, "health": 8, "colors": ["#717a82ff"] },
-		{ "name": "glass", "type": 25, "health": 3, "colors": ["#a9ced799"] },
+		{ "name": "glass", "type": 25, "health": 3, "colors": ["#a9ced792"] },
 		{ "name": "cut_crystal", "type": 26, "health": 7, "colors": ["#cd4d7eb0"] },
 		{ "name": "refined_uranium", "type": 27, "health": 8, "colors": ["#6da342ff"] },
 		{ "name": "bio_fuel", "type": 28, "health": 4, "colors": ["#7a5534ff"] },

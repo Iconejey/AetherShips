@@ -261,6 +261,14 @@ class Game extends HTMLElement {
 		block_button?.click();
 	}
 
+	get selected_paint_color() {
+		return $('side-bar #paint-color-picker').value;
+	}
+
+	set selected_paint_color(new_color) {
+		$('side-bar #paint-color-picker').value = new_color;
+	}
+
 	get selected_tool() {
 		return $('side-bar multi-select#edit-tools').value;
 	}
@@ -662,11 +670,11 @@ class Game extends HTMLElement {
 				block.category = category;
 				blocks_by_type[block.type] = block;
 				blocks_by_name[block.name] = block;
-				block.init = (x, y) => ({
+				block.init = color => ({
 					type: block.type,
 					health: block.health,
 					is_burning: 0,
-					color: oneOf(block.colors)
+					color: block.can_be_painted && color !== null ? color : oneOf(block.colors)
 				});
 			}
 		}

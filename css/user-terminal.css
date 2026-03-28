@@ -15,10 +15,10 @@ user-terminal {
 		height: 1.5em;
 
 		&.error {
-			color: #ff4d4d;
+			color: var(--error);
 		}
 		&.success {
-			color: #7cfc7c;
+			color: var(--success);
 		}
 	}
 

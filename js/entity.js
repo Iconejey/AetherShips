@@ -29,6 +29,7 @@ class Struct {
 				set(arr, index, value) {
 					const int32 = arr[index];
 					arr[index] = (int32 & ~(((1 << size) - 1) << field_offset)) | ((value & ((1 << size) - 1)) << field_offset);
+					return arr[index] !== int32; // Return true if the value was changed
 				}
 			};
 			offset += size;
@@ -47,9 +48,11 @@ class Struct {
 	 * @param {Object} obj - An object containing the values to set, where keys correspond to the struct's field names.
 	 */
 	update(arr, index, obj) {
+		let changed = false;
 		for (const key in obj) {
-			if (this[key]) this[key].set(arr, index, obj[key]);
+			changed ||= this[key]?.set(arr, index, obj[key]);
 		}
+		return changed;
 	}
 
 	/*
@@ -155,6 +158,7 @@ class Layer {
 	 * @param {Object} fields - An object containing the fields to set for the block. If 'state' is present, it is used directly; otherwise, keys correspond to the struct's field names (e.g., type, health, is_burning, color).
 	 * @param {number} [fields.state] - (Optional) The raw uint32 value to assign directly to the block state.
 	 * @param {number} [fields.color] - (Optional) The RGBA8888 color value to assign to the block color buffer.
+	 * @return {boolean} True if the block state was changed
 	 */
 	setBlock(x, y, fields) {
 		if (fields.type === 0 && fields.state === undefined) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
@@ -162,11 +166,17 @@ class Layer {
 		const index = y * 32 + x;
 
 		const old_type = state_struct.type.get(layer_blocks, index);
+		const old_state = layer_blocks[index];
+		let changed = false;
 
 		// If state is provided directly, use it
-		if ('state' in fields) layer_blocks[index] = fields.state >>> 0;
+		if ('state' in fields) {
+			layer_blocks[index] = fields.state >>> 0;
+			if (old_state !== layer_blocks[index]) changed = true;
+		}
+
 		// Else update individual fields using the struct definition
-		else state_struct.update(layer_blocks, index, fields);
+		else changed ||= state_struct.update(layer_blocks, index, fields);
 
 		const new_type = state_struct.type.get(layer_blocks, index);
 		if (old_type === 0) this.block_count++;
@@ -180,10 +190,14 @@ class Layer {
 		if (had_glow && !has_glow) this.glow_count--;
 
 		// Store color separately
-		if (fields.color !== undefined) this.block_colors[index] = fields.color;
+		if (fields.color !== undefined) {
+			changed ||= this.block_colors[index] !== fields.color;
+			this.block_colors[index] = fields.color;
+		}
 
 		this.drawPixel(x, y);
 		game.planSave(1000);
+		return changed;
 	}
 
 	/**
@@ -278,11 +292,12 @@ class Layer {
 	 * @param {number} x - The x-coordinate of the block to initialize (0-31).
 	 * @param {number} y - The y-coordinate of the block to initialize (0-31).
 	 * @param {string} name - The name of the block type to initialize (e.g., "rock").
+	 * @return {boolean} True if the block was changed
 	 */
-	setByName(x, y, name) {
+	setByName(x, y, name, color = null) {
 		const block = blocks_by_name[name];
 		if (!block) throw new Error(`Block name "${name}" does not exist`);
-		this.setBlock(x, y, block.init(x, y));
+		return this.setBlock(x, y, block.init(color));
 	}
 
 	/**
@@ -290,11 +305,12 @@ class Layer {
 	 * @param {number} x - The x-coordinate of the block to initialize (0-31).
 	 * @param {number} y - The y-coordinate of the block to initialize (0-31).
 	 * @param {number} type - The numeric type of the block to initialize (e.g., 1 for dirt).
+	 * @return {boolean} True if the block was changed
 	 */
-	setByType(x, y, type) {
+	setByType(x, y, type, color = null) {
 		const block = blocks_by_type[type];
 		if (!block) throw new Error(`Block type "${type}" does not exist`);
-		this.setBlock(x, y, block.init(x, y));
+		return this.setBlock(x, y, block.init(color));
 	}
 
 	/**
@@ -329,12 +345,18 @@ class Layer {
 	paintBlock(x, y, color) {
 		const info = this.getBlockInfo(x, y);
 		if (info.is_empty || !info.can_be_painted) return false;
+
 		// Preserve alpha channel
 		const old_color = info.color || 0;
 		const old_alpha = old_color & 0xff;
+
 		// Compose new color: new RGB, old alpha
 		const new_color = (color & 0xffffff00) | old_alpha;
+
+		// If color is the same, skip update
 		if (info.color === new_color) return false;
+
+		// Update block color and redraw
 		this.setBlock(x, y, { color: new_color });
 		return true;
 	}
@@ -552,19 +574,20 @@ class Entity extends HTMLElement {
 		return chunk_layers;
 	}
 
-	/*
+	/**
 	 * Sets the block at the specified (x, y) coordinates within the entity's layers to the given fields.
 	 * @param {number} l - The layer index (0-2) to set the block in.
 	 * @param {number} x - The x-coordinate of the block to set.
 	 * @param {number} y - The y-coordinate of the block to set.
 	 * @param {Object} fields - An object containing the fields to set for the block, where keys correspond to the struct's field names.
+	 * @returns {Boolean} True if the block has changed
 	 */
 	setBlock(l, x, y, fields) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
-		layer.setBlock(local_x, local_y, fields);
+		return layer.setBlock(local_x, local_y, fields);
 	}
 
 	/**
@@ -573,13 +596,14 @@ class Entity extends HTMLElement {
 	 * @param {number} x - The x-coordinate of the block to initialize.
 	 * @param {number} y - The y-coordinate of the block to initialize.
 	 * @param {string} name - The name of the block type to initialize (e.g., "dirt").
+	 * @return {boolean} True if the block was changed
 	 */
-	setByName(l, x, y, name) {
+	setByName(l, x, y, name, color = null) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
-		layer.setByName(local_x, local_y, name);
+		return layer.setByName(local_x, local_y, name, color);
 	}
 
 	/**
@@ -588,13 +612,14 @@ class Entity extends HTMLElement {
 	 * @param {number} x - The x-coordinate of the block to initialize.
 	 * @param {number} y - The y-coordinate of the block to initialize.
 	 * @param {number} type - The numeric type of the block to initialize (e.g., 1 for dirt).
+	 * @return {boolean} True if the block was changed
 	 */
-	setByType(l, x, y, type) {
+	setByType(l, x, y, type, color = null) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const layer = this.getLayer(l, cx, cy, true);
 		const local_x = this.toLocalCoord(x);
 		const local_y = this.toLocalCoord(y);
-		layer.setByType(local_x, local_y, type);
+		return layer.setByType(local_x, local_y, type, color);
 	}
 
 	/**
