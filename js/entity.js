@@ -329,10 +329,13 @@ class Layer {
 	paintBlock(x, y, color) {
 		const info = this.getBlockInfo(x, y);
 		if (info.is_empty || !info.can_be_painted) return false;
-		if (info.color === color) return false;
-
-		// Use setBlock with only the color field to update color
-		this.setBlock(x, y, { color });
+		// Preserve alpha channel
+		const old_color = info.color || 0;
+		const old_alpha = old_color & 0xff;
+		// Compose new color: new RGB, old alpha
+		const new_color = (color & 0xffffff00) | old_alpha;
+		if (info.color === new_color) return false;
+		this.setBlock(x, y, { color: new_color });
 		return true;
 	}
 
