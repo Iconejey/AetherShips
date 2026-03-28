@@ -260,6 +260,8 @@ function createWindow() {
 		width: 800,
 		height: 600,
 		fullscreen: true,
+		autoHideMenuBar: true,
+		menuBarVisibility: 'hidden',
 		webPreferences: {
 			nodeIntegration: false,
 			contextIsolation: true,
