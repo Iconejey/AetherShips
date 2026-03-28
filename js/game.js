@@ -256,8 +256,8 @@ class Game extends HTMLElement {
 		return $('side-bar #block-list .active')?.getAttribute('data-value');
 	}
 
-	set selected_block(block_type) {
-		const block_button = $(`#block-list button[data-value="${block_type}"]`);
+	set selected_block(block_name) {
+		const block_button = $(`#block-list button[data-value="${block_name}"]`);
 		block_button?.click();
 	}
 

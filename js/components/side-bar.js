@@ -123,9 +123,8 @@ class SideBar extends HTMLElement {
 			block_list.appendChild(details);
 		}
 
-		// Select first block by default
-		const first_button = block_list.$('button');
-		if (first_button) first_button.classList.add('active');
+		// Select 'iron_hull_tier_1' by default
+		game.selected_block = 'iron_hull_tier_1';
 
 		// Highlight the initial category
 		this.updateCategoryPrimary();
@@ -168,9 +167,8 @@ class SideBar extends HTMLElement {
 
 	focusBlockSearch(select_text = true) {
 		const block_search = this.$('#block-search');
-		if (!block_search) return;
-		block_search.focus();
-		if (select_text) block_search.select();
+		block_search?.focus();
+		if (select_text) block_search?.select();
 	}
 
 	filterBlockList(search_term) {

@@ -30,7 +30,7 @@
 	],
 
 	"structure": [
-		{ "name": "iron_hull_tier_1", "type": 50, "health": 10, "colors": ["#9b9b9bff"], "can_be_painted": true },
+		{ "name": "iron_hull_tier_1", "type": 50, "health": 10, "colors": ["#e2e2e2ff"], "can_be_painted": true },
 		{ "name": "steel_hull_tier_2", "type": 51, "health": 12, "colors": ["#7a8289ff"], "can_be_painted": true },
 		{ "name": "titanium_hull_tier_3", "type": 52, "health": 14, "colors": ["#9aa2abff"], "can_be_painted": true },
 		{ "name": "alloy_hull_tier_4", "type": 53, "health": 16, "colors": ["#767c8bff"], "can_be_painted": true },
