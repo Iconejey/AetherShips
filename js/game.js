@@ -656,27 +656,29 @@ class Game extends HTMLElement {
 
 	async loadBlocks() {
 		const data = await fetch('blocks.json').then(r => r.json());
+
 		block_categories = data;
 		for (const category in block_categories) {
 			for (const block of block_categories[category]) {
-				block.colors = block.colors.map(c => {
-					const raw = c.replace('#', '');
-					const r = parseInt(raw.slice(0, 2), 16);
-					const g = parseInt(raw.slice(2, 4), 16);
-					const b = parseInt(raw.slice(4, 6), 16);
-					const a = raw.length === 8 ? parseInt(raw.slice(6, 8), 16) : 0xff;
-					return (((r << 24) >>> 0) | (g << 16) | (b << 8) | a) >>> 0;
-				});
+				block.colors = block.colors.map(hexToRgba8888);
 				block.category = category;
 				blocks_by_type[block.type] = block;
 				blocks_by_name[block.name] = block;
 				block.init = paint_color => {
 					// Get default color
-					let color = oneOf(block.colors);
-					const alpha = color & 0xff;
+					let block_default_color = oneOf(block.colors);
 
-					// If paint color is provided and block can be painted, use paint color with default alpha
-					if (block.can_be_painted && paint_color !== null) color = (paint_color & 0xffffff00) | alpha;
+					// Get default alpha (needed even with paint color)
+					const block_default_alpha = block_default_color & 0xff;
+
+					// If paint color is a string, convert to uint32
+					if (typeof paint_color === 'string') paint_color = hexToRgba8888(paint_color);
+
+					// If paint color provided, apply default alpha to it
+					if (paint_color !== null) paint_color = (paint_color & 0xffffff00) | block_default_alpha;
+
+					// If paint provided and block can be painted, use paint color; otherwise use default color
+					const color = paint_color !== null && block.can_be_painted ? paint_color : block_default_color;
 
 					return {
 						type: block.type,

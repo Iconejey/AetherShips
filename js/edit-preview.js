@@ -78,7 +78,7 @@ class EditPreview extends HTMLElement {
 		if (info.is_empty) return;
 
 		if (!color_only) game.selected_block = info.name;
-		game.selected_paint_color = this.rgba8888ToHex(info.color);
+		game.selected_paint_color = rgba8888ToHex(info.color);
 	}
 
 	onMouseDown(e) {
@@ -158,7 +158,7 @@ class EditPreview extends HTMLElement {
 		const edit_mode = game.edit_mode;
 		const layer = game.selected_layer;
 		const block_name = game.selected_block;
-		const selected_paint_color = this.hexToRgba8888(game.selected_paint_color);
+		const selected_paint_color = hexToRgba8888(game.selected_paint_color);
 		const blocks = this.getPreviewBlocks();
 		if (blocks.length === 0) return;
 
@@ -182,24 +182,6 @@ class EditPreview extends HTMLElement {
 		}
 
 		if (has_any_change) entity.render();
-	}
-
-	hexToRgba8888(color_hex) {
-		const raw = color_hex?.replace('#', '');
-		if (!raw || raw.length !== 6) return null;
-
-		const r = parseInt(raw.slice(0, 2), 16);
-		const g = parseInt(raw.slice(2, 4), 16);
-		const b = parseInt(raw.slice(4, 6), 16);
-		const a = 0xff;
-		return (((r << 24) >>> 0) | (g << 16) | (b << 8) | a) >>> 0;
-	}
-
-	rgba8888ToHex(color_value) {
-		const r = ((color_value >>> 24) & 0xff).toString(16).padStart(2, '0');
-		const g = ((color_value >>> 16) & 0xff).toString(16).padStart(2, '0');
-		const b = ((color_value >>> 8) & 0xff).toString(16).padStart(2, '0');
-		return `#${r}${g}${b}`;
 	}
 
 	scheduleDraw() {

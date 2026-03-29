@@ -116,9 +116,10 @@ class SideBar extends HTMLElement {
 				const formatted_label = block_label[0].toUpperCase() + block_label.slice(1);
 				cat_select.add(block.name, formatted_label, `Select ${formatted_label} block`);
 				const block_button = cat_select.lastElementChild;
-				if (block_button instanceof HTMLButtonElement) {
-					block_button.setAttribute('data-search', `${formatted_label} ${block.name}`.toLowerCase());
-				}
+				block_button.setAttribute('data-search', `${formatted_label} ${block.name}`.toLowerCase());
+				block_button.onclick = () => {
+					game.selected_paint_color = rgba8888ToHex(block.colors[0]);
+				};
 			}
 
 			details.appendChild(cat_select);
