@@ -7,25 +7,30 @@ class SideBar extends HTMLElement {
 	handleShortcut(event) {
 		if (game.mode !== 'edit') return;
 
-		// Ctrl/Cmd + F to focus block search
-		const is_find_shortcut = (event.ctrlKey || event.metaKey) && !event.altKey && event.key.toLowerCase() === 'f';
-		if (is_find_shortcut) {
+		const ctrl = event.ctrlKey || event.metaKey;
+		const alt = event.altKey;
+		const key = event.key.toLowerCase();
+		const is_input = event.target.tagName === 'INPUT' || event.target.isContentEditable;
+
+		// Ctrl+L to toggle non-selected layer visibility
+		if (ctrl && !alt && key === 'l') {
+			event.preventDefault();
+			return this.$('#toggle-layer-visibility').toggle();
+		}
+
+		// Ctrl+F to focus block search
+		if (ctrl && !alt && key === 'f') {
 			event.preventDefault();
 			return this.focusBlockSearch();
 		}
 
 		// Blur inputs on Escape
-		if (event.key === 'Escape' && document.activeElement.tagName === 'INPUT') {
+		if (key === 'escape' && is_input) {
 			event.preventDefault();
 			return document.activeElement.blur();
 		}
 
-		if (event.metaKey) return;
-
-		const target = event.target;
-		const is_editable_target = target instanceof HTMLElement && (target.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName));
-
-		if (is_editable_target) return;
+		if (ctrl || is_input) return;
 
 		const edit_layer_select = this.$('#edit-layer');
 		const layer_value = edit_layer_select?.getValueForEvent(event);
@@ -68,7 +73,7 @@ class SideBar extends HTMLElement {
 		this.innerHTML = html`
 			<div class="round-button-group">
 				<multi-select id="edit-layer" type="round"></multi-select>
-				<icon-toggle id="toggle-layer-visibility" on-icon="layers" off-icon="layers_clear"></icon-toggle>
+				<icon-toggle id="toggle-layer-visibility" on-icon="layers" off-icon="layers_clear" title="Toggle visibility of non-selected layers (Ctrl+L)"></icon-toggle>
 			</div>
 			<div id="block-search-wrapper">
 				<input id="block-search" type="search" placeholder="Search blocks" aria-label="Search blocks" />

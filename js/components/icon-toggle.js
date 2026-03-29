@@ -20,9 +20,13 @@ class IconToggle extends HTMLElement {
 		return this.button.innerText === this.on_icon;
 	}
 
+	toggle() {
+		this.value = !this.value;
+	}
+
 	connectedCallback() {
 		this.innerHTML = html`<button class="round"></button>`;
-		this.button.addEventListener('click', e => (this.value = !this.value));
+		this.button.addEventListener('click', e => this.toggle());
 		this.value = true;
 	}
 }
