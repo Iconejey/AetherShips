@@ -670,12 +670,21 @@ class Game extends HTMLElement {
 				block.category = category;
 				blocks_by_type[block.type] = block;
 				blocks_by_name[block.name] = block;
-				block.init = color => ({
-					type: block.type,
-					health: block.health,
-					is_burning: 0,
-					color: block.can_be_painted && color !== null ? color : oneOf(block.colors)
-				});
+				block.init = paint_color => {
+					// Get default color
+					let color = oneOf(block.colors);
+					const alpha = color & 0xff;
+
+					// If paint color is provided and block can be painted, use paint color with default alpha
+					if (block.can_be_painted && paint_color !== null) color = (paint_color & 0xffffff00) | alpha;
+
+					return {
+						type: block.type,
+						health: block.health,
+						is_burning: 0,
+						color
+					};
+				};
 			}
 		}
 	}
