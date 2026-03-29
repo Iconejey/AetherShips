@@ -527,6 +527,12 @@ class Game extends HTMLElement {
 			this.updateFpsCounter(delta_seconds);
 			this.updateEntityPositions();
 
+			// --- Synchronize edit-preview rendering ---
+			const editPreview = document.querySelector('edit-preview');
+			if (editPreview && typeof editPreview.draw === 'function') {
+				editPreview.draw();
+			}
+
 			this.animation_frame_id = window.requestAnimationFrame(tick);
 		};
 

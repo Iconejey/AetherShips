@@ -14,7 +14,6 @@ class EditPreview extends HTMLElement {
 		this.drag_start_block_y = null;
 		this.is_dragging = false;
 		this.pen_is_down = false;
-		this.raf_id = null;
 	}
 
 	connectedCallback() {
@@ -33,15 +32,6 @@ class EditPreview extends HTMLElement {
 		});
 		window.addEventListener('keydown', e => this.onKeyDown(e));
 		window.addEventListener('resize', () => this.onResize());
-
-		this.scheduleDraw();
-	}
-
-	disconnectedCallback() {
-		if (this.raf_id !== null) {
-			cancelAnimationFrame(this.raf_id);
-			this.raf_id = null;
-		}
 	}
 
 	onResize() {
@@ -184,12 +174,7 @@ class EditPreview extends HTMLElement {
 		if (has_any_change) entity.render();
 	}
 
-	scheduleDraw() {
-		this.raf_id = requestAnimationFrame(() => {
-			this.draw();
-			this.scheduleDraw();
-		});
-	}
+	// scheduleDraw() removed; draw will be called by game loop
 
 	/**
 	 * Returns the entity-space info needed to project between block and screen coords.
