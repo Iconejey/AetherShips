@@ -589,48 +589,42 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Zooms while keeping cursor world focus stable by updating inspect screen offset
+	 * Zooms while keeping cursor world focus stable by updating inspect screen offset. Zoomin in makes the world appear to move towards the cursor, zooming out makes it move away. It's like using the pointer as the scale transform origin.
 	 * @param {number} delta - Wheel-based zoom delta
 	 * @param {number} client_x - Mouse x position in viewport
 	 * @param {number} client_y - Mouse y position in viewport
 	 */
 	zoomInspectAtCursor(delta, client_x, client_y) {
-		const relative_mouse_x = client_x - this.viewport_center_x;
-		const relative_mouse_y = client_y - this.viewport_center_y;
+		// 1. Normalize zoom speed for consistent feel
+		const zoom_speed = 0.15;
+
+		// 2. Calculate multiplicative factor using an exponential curve
+		// This ensures smooth, reversible zooming regardless of device
+		const zoom_factor = Math.exp(delta * zoom_speed);
+
 		const old_scale = this.scale;
+		let new_scale = Math.max(1, Math.min(20, old_scale * zoom_factor));
 
-		this.zoom(delta);
-		const new_scale = this.scale;
+		// Calculate the actual ratio used (crucial for precision near scale bounds)
+		const ratio = new_scale / old_scale;
 
-		if (new_scale === old_scale || !this.camera.followed_entity) return;
+		// 3. Relative coordinates from viewport center
+		// Note: We invert the vector to match the specific rendering coordinate system
+		const rel_x = -(client_x - this.viewport_center_x);
+		const rel_y = -(client_y - this.viewport_center_y);
 
-		const followed_entity = this.camera.followed_entity;
+		// 4. Current screen offsets
+		const ox = this.camera.inspect_offset_screen_x || 0;
+		const oy = this.camera.inspect_offset_screen_y || 0;
 
-		// Zoom in: anchor at mouse cursor (move toward mouse)
-		// Zoom out: anchor at opposite side (move away from mouse)
+		// 5. Update offset using the pivot transformation formula
+		// This anchors the point under the cursor during the scale change
+		this.camera.inspect_offset_screen_x = rel_x - (rel_x - ox) * ratio;
+		this.camera.inspect_offset_screen_y = rel_y - (rel_y - oy) * ratio;
 
-		// Scale movement factor by actual scale change for responsiveness
-		const scale_change = Math.abs(new_scale - old_scale);
-		const zoom_movement_factor = Math.min(0.15 * (scale_change / Math.abs(delta)), 1);
-
-		// For zoom in, use mouse position; for zoom out, use opposite direction
-		const anchor_x = delta > 0 ? relative_mouse_x : -relative_mouse_x;
-		const anchor_y = delta > 0 ? relative_mouse_y : -relative_mouse_y;
-
-		const anchor_world_pos = this.camera.screenToWorld(anchor_x, anchor_y, old_scale);
-		const world_offset_x = anchor_world_pos.x - followed_entity.position.x;
-		const world_offset_y = anchor_world_pos.y - followed_entity.position.y;
-		const cos_r = Math.cos(-followed_entity.position.r);
-		const sin_r = Math.sin(-followed_entity.position.r);
-
-		const target_offset_x = (world_offset_x * cos_r - world_offset_y * sin_r) * new_scale;
-		const target_offset_y = (world_offset_x * sin_r + world_offset_y * cos_r) * new_scale;
-
-		// Lerp toward target offset
-		this.camera.inspect_offset_screen_x += (target_offset_x - this.camera.inspect_offset_screen_x) * zoom_movement_factor;
-		this.camera.inspect_offset_screen_y += (target_offset_y - this.camera.inspect_offset_screen_y) * zoom_movement_factor;
-
-		this.camera.update(followed_entity, new_scale, true);
+		// 6. Apply final scale to the state and CSS variable
+		this.scale = new_scale;
+		this.style.setProperty('--game-scale', this.scale);
 	}
 
 	/**
