@@ -28,6 +28,20 @@ class ColorPicker extends HTMLElement {
 			this.value = event.target.value;
 		});
 
+		this.$('input[type="text"]').addEventListener('paste', event => {
+			event.preventDefault();
+			let paste = (event.clipboardData || window.clipboardData).getData('text');
+			paste = paste.trim();
+			// Add '#' if missing and looks like a hex color
+			if (/^([0-9A-Fa-f]{3}){1,2}$/.test(paste)) paste = '#' + paste;
+
+			// Only allow valid hex colors
+			if (ColorPicker.isValidHexColor(paste)) this.value = paste;
+
+			// Blur the input
+			this.$('input[type="text"]').blur();
+		});
+
 		this.value = '#ffffff'; // Default color
 	}
 }
