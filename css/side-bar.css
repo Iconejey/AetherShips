@@ -20,6 +20,12 @@ side-bar {
 		pointer-events: none;
 	}
 
+	#edit-layer {
+		display: flex;
+		flex-direction: row;
+		gap: 8px;
+	}
+
 	& #block-list {
 		flex: 1;
 		min-height: 0;

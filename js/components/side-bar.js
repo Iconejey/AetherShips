@@ -66,7 +66,10 @@ class SideBar extends HTMLElement {
 
 	showEditTools() {
 		this.innerHTML = html`
-			<multi-select class="round-button-group" id="edit-layer" type="round"></multi-select>
+			<div class="round-button-group">
+				<multi-select id="edit-layer" type="round"></multi-select>
+				<icon-toggle id="toggle-layer-visibility" on-icon="layers" off-icon="layers_clear"></icon-toggle>
+			</div>
 			<div id="block-search-wrapper">
 				<input id="block-search" type="search" placeholder="Search blocks" aria-label="Search blocks" />
 			</div>
@@ -91,6 +94,10 @@ class SideBar extends HTMLElement {
 		edit_layer_select.add('1', 'filter_2', 'Edit layer 2', '2');
 		edit_layer_select.add('2', 'filter_3', 'Edit layer 3', '3');
 		edit_layer_select.value = '1';
+
+		// Layer visibility toggle
+		const layer_visibility_toggle = this.$('#toggle-layer-visibility');
+		layer_visibility_toggle.onchange = () => document.body.classList.toggle('hide-non-selected-layers', !layer_visibility_toggle.value);
 
 		// Blocks
 		const block_list = this.$('#block-list');
