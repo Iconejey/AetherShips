@@ -1,0 +1,2 @@
+# Ignore generated / live-coded Strudel tracks
+**/*.strudel.js
