@@ -31,7 +31,7 @@ entity-root {
 			}
 		}
 
-		--below-op: 0.1;
+		--below-op: 0.8;
 		--above-op: 0.1;
 
 		.followed & {
