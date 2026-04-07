@@ -15,6 +15,7 @@ class MultiSelect extends HTMLElement {
 	connectedCallback() {
 		this.addEventListener('click', event => {
 			if (event.target.tagName === 'BUTTON') this.setActiveButton(event.target);
+			event.target.blur();
 		});
 	}
 

@@ -22,6 +22,7 @@ class IconToggle extends HTMLElement {
 
 	toggle() {
 		this.value = !this.value;
+		this.button.blur();
 	}
 
 	connectedCallback() {
