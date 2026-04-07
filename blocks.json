@@ -35,7 +35,9 @@
 		{ "name": "titanium_hull_tier_3", "type": 52, "health": 14, "colors": ["#9aa2abff"], "can_be_painted": true },
 		{ "name": "alloy_hull_tier_4", "type": 53, "health": 16, "colors": ["#767c8bff"], "can_be_painted": true },
 		{ "name": "glass_window", "type": 54, "health": 4, "colors": ["#8dc3d399"], "can_be_painted": true },
-		{ "name": "lamp", "type": 55, "health": 2, "colors": ["#ffff88ff"], "glow": true, "can_be_painted": true }
+		{ "name": "lamp", "type": 55, "health": 2, "colors": ["#ffff88ff"], "glow": true, "can_be_painted": true },
+		{ "name": "door", "type": 56, "health": 6, "colors": ["#7a7a7aff"], "can_be_painted": true },
+		{ "name": "seat", "type": 57, "health": 3, "colors": ["#6f5a44ff"], "can_be_painted": true }
 	],
 
 	"energy_and_transformation": [
@@ -43,44 +45,43 @@
 		{ "name": "solar_panel_tier_2", "type": 81, "health": 9, "colors": ["#345d74ff"] },
 		{ "name": "solar_panel_tier_3", "type": 82, "health": 10, "colors": ["#386885ff"] },
 		{ "name": "solar_panel_tier_4", "type": 83, "health": 11, "colors": ["#3d7396ff"] },
-		{ "name": "basic_capacitor", "type": 84, "health": 8, "colors": ["#4f6f90ff"] },
-		{ "name": "high_density_capacitor", "type": 85, "health": 10, "colors": ["#3f5f80ff"] },
-		{ "name": "industrial_refinery", "type": 86, "health": 12, "colors": ["#6a6f75ff"] },
-		{ "name": "uranium_refinery", "type": 87, "health": 13, "colors": ["#5a7443ff"] },
-		{ "name": "bio_refinery", "type": 88, "health": 11, "colors": ["#6f5a44ff"] },
+		{ "name": "basic_capacitor", "type": 84, "health": 8, "colors": ["#4f6f90ff"], "can_be_painted": true },
+		{ "name": "high_density_capacitor", "type": 85, "health": 10, "colors": ["#3f5f80ff"], "can_be_painted": true },
+		{ "name": "industrial_refinery", "type": 86, "health": 12, "colors": ["#6a6f75ff"], "can_be_painted": true },
+		{ "name": "uranium_refinery", "type": 87, "health": 13, "colors": ["#5a7443ff"], "can_be_painted": true },
+		{ "name": "bio_refinery", "type": 88, "health": 11, "colors": ["#6f5a44ff"], "can_be_painted": true },
 		{ "name": "greenhouse", "type": 89, "health": 7, "colors": ["#74a06aff"] }
 	],
 
 	"propulsion": [
-		{ "name": "electric_thruster", "type": 110, "health": 12, "colors": ["#6687a7ff"] },
-		{ "name": "bio_fuel_thruster", "type": 111, "health": 11, "colors": ["#846247ff"] },
-		{ "name": "uranium_thruster", "type": 112, "health": 13, "colors": ["#6f8750ff"] },
-		{ "name": "warp_drive", "type": 113, "health": 16, "colors": ["#6f62b3ff"] }
+		{ "name": "electric_thruster", "type": 110, "health": 12, "colors": ["#6687a7ff"], "can_be_painted": true },
+		{ "name": "bio_fuel_thruster", "type": 111, "health": 11, "colors": ["#846247ff"], "can_be_painted": true },
+		{ "name": "uranium_thruster", "type": 112, "health": 13, "colors": ["#6f8750ff"], "can_be_painted": true },
+		{ "name": "warp_drive", "type": 113, "health": 16, "colors": ["#6f62b3ff"], "can_be_painted": true }
 	],
 
 	"combat_and_defense": [
-		{ "name": "cannon_tier_1", "type": 140, "health": 10, "colors": ["#686868ff"] },
-		{ "name": "cannon_tier_2", "type": 141, "health": 11, "colors": ["#5f6972ff"] },
-		{ "name": "cannon_tier_3", "type": 142, "health": 12, "colors": ["#556a78ff"] },
-		{ "name": "cannon_tier_4", "type": 143, "health": 13, "colors": ["#4c6a7eff"] },
-		{ "name": "explosive_charge_tier_1", "type": 144, "health": 8, "colors": ["#a15b47ff"] },
-		{ "name": "explosive_charge_tier_2", "type": 145, "health": 9, "colors": ["#b35b45ff"] },
-		{ "name": "explosive_charge_tier_3", "type": 146, "health": 10, "colors": ["#c25c42ff"] },
-		{ "name": "drill_tier_1", "type": 147, "health": 10, "colors": ["#6f6f63ff"] },
-		{ "name": "drill_tier_2", "type": 148, "health": 11, "colors": ["#65707aff"] },
-		{ "name": "drill_tier_3", "type": 149, "health": 12, "colors": ["#5b718fff"] },
-		{ "name": "missile_launcher_tier_1", "type": 150, "health": 11, "colors": ["#7c6450ff"] },
-		{ "name": "missile_launcher_tier_2", "type": 151, "health": 12, "colors": ["#705f54ff"] },
-		{ "name": "missile_launcher_tier_3", "type": 152, "health": 13, "colors": ["#65625cff"] }
+		{ "name": "cannon_tier_1", "type": 140, "health": 10, "colors": ["#686868ff"], "can_be_painted": true },
+		{ "name": "cannon_tier_2", "type": 141, "health": 11, "colors": ["#5f6972ff"], "can_be_painted": true },
+		{ "name": "cannon_tier_3", "type": 142, "health": 12, "colors": ["#556a78ff"], "can_be_painted": true },
+		{ "name": "cannon_tier_4", "type": 143, "health": 13, "colors": ["#4c6a7eff"], "can_be_painted": true },
+		{ "name": "explosive_charge_tier_1", "type": 144, "health": 8, "colors": ["#a15b47ff"], "can_be_painted": true },
+		{ "name": "explosive_charge_tier_2", "type": 145, "health": 9, "colors": ["#b35b45ff"], "can_be_painted": true },
+		{ "name": "explosive_charge_tier_3", "type": 146, "health": 10, "colors": ["#c25c42ff"], "can_be_painted": true },
+		{ "name": "missile_launcher_tier_1", "type": 147, "health": 11, "colors": ["#7c6450ff"], "can_be_painted": true },
+		{ "name": "missile_launcher_tier_2", "type": 148, "health": 12, "colors": ["#705f54ff"], "can_be_painted": true },
+		{ "name": "missile_launcher_tier_3", "type": 149, "health": 13, "colors": ["#65625cff"], "can_be_painted": true }
 	],
 
 	"logistics_and_automation": [
-		{ "name": "industrial_container", "type": 170, "health": 10, "colors": ["#8b7a66ff"] },
-		{ "name": "bio_fuel_container", "type": 171, "health": 9, "colors": ["#7b5b43ff"] },
-		{ "name": "uranium_container", "type": 172, "health": 11, "colors": ["#6e8750ff"] },
-		{ "name": "conveyor", "type": 173, "health": 8, "colors": ["#777777ff"] },
-		{ "name": "sorter", "type": 174, "health": 8, "colors": ["#67808eff"] },
-		{ "name": "rack", "type": 175, "health": 7, "colors": ["#7a6b5bff"] },
-		{ "name": "module", "type": 176, "health": 8, "colors": ["#556f83ff"] }
+		{ "name": "drill_tier_1", "type": 170, "health": 10, "colors": ["#6f6f63ff"], "can_be_painted": true },
+		{ "name": "drill_tier_2", "type": 171, "health": 11, "colors": ["#65707aff"], "can_be_painted": true },
+		{ "name": "drill_tier_3", "type": 172, "health": 12, "colors": ["#5b718fff"], "can_be_painted": true },
+		{ "name": "industrial_container", "type": 173, "health": 10, "colors": ["#8b7a66ff"], "can_be_painted": true },
+		{ "name": "bio_fuel_container", "type": 174, "health": 9, "colors": ["#7b5b43ff"], "can_be_painted": true },
+		{ "name": "uranium_container", "type": 175, "health": 11, "colors": ["#6e8750ff"], "can_be_painted": true },
+		{ "name": "conveyor", "type": 176, "health": 8, "colors": ["#777777ff"], "can_be_painted": true },
+		{ "name": "sorter", "type": 177, "health": 8, "colors": ["#67808eff"], "can_be_painted": true },
+		{ "name": "rack", "type": 178, "health": 7, "colors": ["#7a6b5bff"], "can_be_painted": true }
 	]
 }
