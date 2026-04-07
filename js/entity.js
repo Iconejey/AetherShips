@@ -427,13 +427,39 @@ class EntityLayer extends HTMLElement {
 
 customElements.define('entity-layer', EntityLayer);
 
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function mergeTemplateData(base_data = {}, override_data = {}) {
+	const merged_data = { ...base_data };
+
+	for (const key in override_data) {
+		const base_value = base_data[key];
+		const override_value = override_data[key];
+
+		if (isPlainObject(base_value) && isPlainObject(override_value)) {
+			merged_data[key] = mergeTemplateData(base_value, override_value);
+			continue;
+		}
+
+		merged_data[key] = override_value;
+	}
+
+	return merged_data;
+}
+
 /**
  * Custom HTMLElement representing an entity (ship, asteroid, planet, etc.)
  */
 class Entity extends HTMLElement {
+	static generateId() {
+		return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+	}
+
 	static create(position, add_to_dom = false) {
 		const entity = document.createElement('entity-root');
-		entity.id = Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+		entity.id = Entity.generateId();
 		if (add_to_dom) entity.addToDOM();
 		entity.position = { ...position };
 		entity.fillRect(1, -1, -1, 2, 2, 'iron_hull_tier_1');
@@ -446,6 +472,24 @@ class Entity extends HTMLElement {
 		for (const key in data) entity[key] = data[key];
 		entity.addToDOM();
 		if (load_blocks) await entity.loadBlocks();
+		return entity;
+	}
+
+	static async fromTemplate(template_name, add_to_dom = false, data = {}) {
+		const template_data = await window.templates.loadEntity(template_name);
+		const entity_data = mergeTemplateData(template_data, data);
+		const entity = document.createElement('entity-root');
+
+		for (const key in entity_data) entity[key] = entity_data[key];
+		entity.id = Entity.generateId();
+		if (add_to_dom) entity.addToDOM();
+
+		await entity.loadBlocksFromSource(
+			layer_index => window.templates.listChunks(template_name, layer_index),
+			(layer_index, cx, cy, type) => window.templates.loadLayerChunk(template_name, layer_index, cx, cy, type),
+			'template'
+		);
+
 		return entity;
 	}
 
@@ -496,23 +540,22 @@ class Entity extends HTMLElement {
 		this.dirty_layers = [];
 	}
 
-	connectedCallback() {
-		// Create three entity-layers (one for each block layer)
-		if (this.children.length === 0) {
-			for (let i = 0; i < 3; i++) {
-				const entity_layer = document.createElement('entity-layer');
-				entity_layer.layer_index = i;
-				entity_layer.dataset.layer = i;
+	createEntityLayer(layer_index) {
+		let entity_layer = this.querySelector(`entity-layer[data-layer="${layer_index}"]`);
+		if (entity_layer) return entity_layer;
 
-				// Set z-index based on layer depth
-				entity_layer.style.zIndex = i.toString();
+		entity_layer = document.createElement('entity-layer');
+		entity_layer.layer_index = layer_index;
+		entity_layer.dataset.layer = layer_index;
 
-				// Add drop shadow to layers above 0
-				if (i > 0) entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
+		// Set z-index based on layer depth
+		entity_layer.style.zIndex = layer_index.toString();
 
-				this.appendChild(entity_layer);
-			}
-		}
+		// Add drop shadow to layers above 0
+		if (layer_index > 0) entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
+
+		this.appendChild(entity_layer);
+		return entity_layer;
 	}
 
 	toLocalCoord(value) {
@@ -520,12 +563,15 @@ class Entity extends HTMLElement {
 	}
 
 	/**
-	 * Gets the EntityLayer at the specified layer index
+	 * Gets the EntityLayer at the specified layer index.
 	 * @param {number} layer_index - The layer index (0-2)
-	 * @returns {EntityLayer}
+	 * @param {boolean} create - Whether to create the entity layer if it doesn't exist
+	 * @returns {EntityLayer|null}
 	 */
-	getEntityLayer(layer_index) {
-		return this.children[layer_index];
+	getEntityLayer(layer_index, create = false) {
+		let entity_layer = this.querySelector(`entity-layer[data-layer="${layer_index}"]`);
+		if (!entity_layer && create) entity_layer = this.createEntityLayer(layer_index);
+		return entity_layer;
 	}
 
 	/**
@@ -537,7 +583,8 @@ class Entity extends HTMLElement {
 	 * @returns {ChunkLayer|null}
 	 */
 	getChunkLayer(layer_index, cx, cy, create = false) {
-		const entity_layer = this.getEntityLayer(layer_index);
+		const entity_layer = this.getEntityLayer(layer_index, create);
+		if (!entity_layer) return null;
 		return entity_layer.getChunkLayer(cx, cy, create);
 	}
 
@@ -550,10 +597,11 @@ class Entity extends HTMLElement {
 	 * @returns {Layer|null}
 	 */
 	getLayer(layer_index, cx, cy, create = false) {
-		const entity_layer = this.getEntityLayer(layer_index);
+		const entity_layer = this.getEntityLayer(layer_index, create);
+		if (!entity_layer) return null;
+
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, create);
 		if (!chunk_layer) return null;
-
 		if (chunk_layer.layer) return chunk_layer.layer;
 		if (!create) return null;
 
@@ -569,7 +617,8 @@ class Entity extends HTMLElement {
 	getAllChunkLayers() {
 		const chunk_layers = [];
 		for (let i = 0; i < 3; i++) {
-			chunk_layers.push(...this.getEntityLayer(i).chunk_layers.values());
+			const entity_layer = this.getEntityLayer(i);
+			if (entity_layer) chunk_layers.push(...entity_layer.chunk_layers.values());
 		}
 		return chunk_layers;
 	}
@@ -631,6 +680,8 @@ class Entity extends HTMLElement {
 	deleteBlock(l, x, y) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
+		if (!entity_layer) return;
+
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) return;
 
@@ -655,6 +706,10 @@ class Entity extends HTMLElement {
 	getBlockInfo(l, x, y) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
+		if (!entity_layer) {
+			return { type: 0, color: 0, is_empty: true, can_be_painted: false };
+		}
+
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) {
 			return { type: 0, color: 0, is_empty: true, can_be_painted: false };
@@ -676,6 +731,8 @@ class Entity extends HTMLElement {
 	paintBlock(l, x, y, color) {
 		const { cx, cy } = Entity.blockToChunkCoord(x, y);
 		const entity_layer = this.getEntityLayer(l);
+		if (!entity_layer) return false;
+
 		const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
 		if (!chunk_layer || !chunk_layer.layer) return false;
 
@@ -771,32 +828,23 @@ class Entity extends HTMLElement {
 		}
 	}
 
-	/**
-	 * Loads entity blocks from save, ensuring all chunk layers are created and loaded
-	 */
-	async loadBlocks() {
-		const serialized_entity = this.serialize();
+	async loadBlocksFromSource(list_chunks, load_layer_chunk, source_name = 'data') {
 		for (const layer_index of [0, 1, 2]) {
-			const entity_layer = this.getEntityLayer(layer_index);
+			const chunk_coords = await list_chunks(layer_index);
+			if (!chunk_coords.length) continue;
 
-			// Get all chunk coordinates for this entity and layer
-			const chunk_coords = await window.saves.listChunks(game.galaxy.name, serialized_entity, layer_index);
+			const entity_layer = this.getEntityLayer(layer_index, true);
 
 			for (const coord of chunk_coords) {
 				const { cx, cy } = coord;
+				const chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
 
-				// Ensure chunk_layer exists
-				let chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
+				const [states_array, colors_array] = await Promise.all([load_layer_chunk(layer_index, cx, cy, 'states'), load_layer_chunk(layer_index, cx, cy, 'colors')]);
 
-				// Load block data
-				const [states_array, colors_array] = await Promise.all([
-					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'states'),
-					window.saves.loadLayerChunk(game.galaxy.name, serialized_entity, layer_index, cx, cy, 'colors')
-				]);
+				if (!states_array || !colors_array) {
+					throw new Error(`Failed to load ${source_name} chunk layer at (${cx}, ${cy}) for layer ${layer_index}`);
+				}
 
-				if (!states_array || !colors_array) throw new Error(`Failed to load chunk layer at (${cx}, ${cy}) for layer ${layer_index}`);
-
-				// Fill the layer with loaded blocks
 				let layer = chunk_layer.layer;
 				if (!layer) {
 					layer = new Layer(chunk_layer, layer_index, entity_layer);
@@ -817,6 +865,20 @@ class Entity extends HTMLElement {
 		}
 
 		this.render();
+	}
+
+	/**
+	 * Loads entity blocks from save, ensuring all chunk layers are created and loaded
+	 */
+	async loadBlocks() {
+		const serialized_entity = this.serialize();
+		const galaxy_name = game.galaxy.name;
+
+		await this.loadBlocksFromSource(
+			layer_index => window.saves.listChunks(galaxy_name, serialized_entity, layer_index),
+			(layer_index, cx, cy, type) => window.saves.loadLayerChunk(galaxy_name, serialized_entity, layer_index, cx, cy, type),
+			'save'
+		);
 	}
 }
 

@@ -178,19 +178,27 @@ class Game extends HTMLElement {
 		this.fps_timer = 0;
 		this.fps_frame_count = 0;
 		this.startGameLoop();
-		this.startMenu();
+		await this.startMenu();
 
 		setTimeout(() => this.test(), 1);
 	}
 
-	startMenu() {
-		// Illustration ship
-		const illustration_ship = document.createElement('entity-root');
-		this.appendChild(illustration_ship);
-		illustration_ship.fillRect(1, -8, -16, 16, 32, 'iron_hull_tier_1');
-		illustration_ship.render();
-		this.camera.followed_entity = illustration_ship;
-		illustration_ship.classList.add('auto-thrust');
+	async startMenu() {
+		try {
+			const illustration_ship = await Entity.fromTemplate('escape_pod', true, {
+				position: { x: 0, y: 0 }
+			});
+			this.camera.followed_entity = illustration_ship;
+			illustration_ship.classList.add('auto-thrust');
+		} catch (err) {
+			console.error('Failed to load start menu illustration ship template:', err);
+			const illustration_ship = document.createElement('entity-root');
+			this.appendChild(illustration_ship);
+			illustration_ship.fillRect(1, -8, -16, 16, 32, 'iron_hull_tier_1');
+			illustration_ship.render();
+			this.camera.followed_entity = illustration_ship;
+			illustration_ship.classList.add('auto-thrust');
+		}
 	}
 
 	async loadGalaxy(name) {

@@ -28,6 +28,16 @@ contextBridge.exposeInMainWorld('saves', {
 	finalize: galaxy_name => ipc.invoke('save-finalize', galaxy_name)
 });
 
+contextBridge.exposeInMainWorld('templates', {
+	loadEntity: template_name => ipc.invoke('template-load-entity', template_name),
+	listChunks: (template_name, layer_index) => ipc.invoke('template-list-chunks', template_name, layer_index),
+
+	loadLayerChunk: async (template_name, layer_index, chunk_x, chunk_y, type) => {
+		const data = await ipc.invoke('template-load-layer-chunk', template_name, layer_index, chunk_x, chunk_y, type);
+		return new Uint32Array(data.buffer, data.byteOffset, data.byteLength / 4);
+	}
+});
+
 contextBridge.exposeInMainWorld('figlet', (text, options) => {
 	return new Promise((resolve, reject) => {
 		figlet(text, options, (err, data) => {

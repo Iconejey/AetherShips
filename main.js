@@ -40,6 +40,57 @@ function getSavePaths(temp, galaxy_name, entity, layer_index, chunk_x, chunk_y, 
 	return paths;
 }
 
+function getTemplatePaths(template_name, layer_index, chunk_x, chunk_y, data_type) {
+	const paths = {};
+	paths.templates_dir = path.join(__dirname, 'templates');
+
+	if (!template_name) return paths;
+	if (!isValidName(template_name)) throw new Error('Invalid template name');
+
+	paths.template_path = path.join(paths.templates_dir, template_name);
+	paths.entity_data_path = path.join(paths.template_path, 'entity.json');
+
+	if (layer_index === undefined) return paths;
+	paths.layer_path = path.join(paths.template_path, `layer_${layer_index}`);
+
+	if (chunk_x === undefined || chunk_y === undefined || !data_type) return paths;
+	const file_name = `${data_type}_${chunk_x}_${chunk_y}.dat`;
+	paths.dat_path = path.join(paths.layer_path, file_name);
+
+	return paths;
+}
+
+ipcMain.handle('template-load-entity', async (event, template_name) => {
+	const { entity_data_path } = getTemplatePaths(template_name);
+
+	try {
+		if (!fs.existsSync(entity_data_path)) throw new Error('Template entity data not found');
+		const data = fs.readFileSync(entity_data_path, 'utf-8');
+		return JSON.parse(data);
+	} catch (err) {
+		throw new Error(err.message);
+	}
+});
+
+ipcMain.handle('template-load-layer-chunk', async (event, template_name, layer_index, chunk_x, chunk_y, type) => {
+	const { dat_path } = getTemplatePaths(template_name, layer_index, chunk_x, chunk_y, type);
+	if (!fs.existsSync(dat_path)) throw new Error('Template chunk data does not exist');
+	return fs.readFileSync(dat_path);
+});
+
+ipcMain.handle('template-list-chunks', async (event, template_name, layer_index) => {
+	const { layer_path } = getTemplatePaths(template_name, layer_index);
+	if (!fs.existsSync(layer_path)) return [];
+
+	const files = fs.readdirSync(layer_path);
+	return files
+		.filter(file => file.startsWith('states_'))
+		.map(file => {
+			const [, cx, cy] = file.match(/states_(\-?\d+)_(\-?\d+)\.dat/).map(Number);
+			return { cx, cy };
+		});
+});
+
 // List save folders
 ipcMain.handle('save-list-galaxies', async () => {
 	const { saves_dir } = getSavePaths(false);
