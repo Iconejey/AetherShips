@@ -1,15 +1,3 @@
-// -- CHORDS --
-// [c#3, e3] C#m-1
-// [c#3, e3, g#3] C#m
-// [b2, e3, g#3] E low
-// [e3, g#3, b3] E high
-// [a2, c#3, e3] A
-// [f#2, a2, c#3] F#m low
-// [c#3, f#3, a3] F#m high
-// [b2, d#3, f#3] B
-// [a2, c#3, e3, g#3] AM7
-// [g#2, b2, d#3, g#3] EM7
-
 // -- INTRO --
 // C#m
 // C#m
@@ -31,14 +19,14 @@ const intro_pad = note("<{[c#3, e3] ~} {[c#3, e3, g#3] ~} {[b2, e3, g#3] ~} {[a2
 	.postgain(0.5);
 
 const intro_per = stack(
-	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(100).decay(0.1).sustain(0.1).postgain(0.005),
-	s("oh").beat("10", 16).attack(1).release(0.2),
-	s("rim:4").beat("4, 12", 16).postgain(0.2).postgain(0.1),
-	s("hh:2").beat("0, 2, 8, 10, 14", 16).delay(0.01)
+	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(100).decay(0.1).sustain(0.1).postgain("<0@2 0.005@8>"),
+	s("oh").beat("10", 16).attack(1).release(0.2).postgain("<0@1 1@9>"),
+	s("rim:4").beat("4, 12", 16).postgain(0.2).postgain("<0@1 .1@9>"),
+	s("hh:2").beat("0, 2, 8, 10, 14", 16).delay(0.01).postgain("<0@1 1@9>")
 )
 	.room(0.3).rsize(4)
 	.lpf(800)
-	.pan(sine);
+	.pan(sine)
 
 const intro_magic = note("<~ ~ g#5*16 e5*16 {c#5*8 f#5*8}>")
 	.transpose(12)
@@ -100,7 +88,25 @@ const verse1_mel = note("<0 1 2 3 4>".pick([
 	.decay(3)
 	.postgain(0.5);
 
-const verse1 = stack(verse1_bass, verse1_pad, verse1_per, verse1_mel);
+const verse1_woosh_wind = note("<~@9 c>")
+    .sound("pink")
+	.lpf(1000)
+	.room(1).rsize(4)
+	.attack(3)
+	.release(0)
+	.decay(0)
+	.postgain(.5);
+
+const verse1_woosh_pan = note("<~@9 g#4>")
+    .sound("gm_synth_strings_2")
+	.room(1).rsize(4)
+	.lpf(800)
+	.attack(3)
+	.release(0)
+	.decay(0)
+	.postgain(.5);
+
+const verse1 = stack(verse1_bass, verse1_pad, verse1_per, verse1_mel, verse1_woosh_wind, verse1_woosh_pan);
 
 // -- PRE BRIDGE --
 // C#m
@@ -156,25 +162,20 @@ const pre_bridge_mel = note("<0 1 2 3 0 1 2 3 0 1 ~@2>".pick([
     .release(1)
     .postgain(1);
 
-const pre_bridge_woosh = note("<~@5 0>".pick([
-	"c",
-]))
+const pre_bridge_woosh_wind = note("<~@5 c>")
     .sound("pink")
     .slow(2)
 	.lpf(1000)
 	.room(1).rsize(4)
-	.attack(6)
-	.release(1)
-	.decay(.1)
+	.attack(7)
+	.release(0)
+	.decay(0)
 	.postgain(.5);
 
-const pre_bridge_magic = note("<0@11 1>".pick([
-	"~",
-	"g#5",
-]))
+const pre_bridge_woosh_magic = note("<~@11 g#5>")
     .sound("gm_celesta:4")
 	.room(1).rsize(4)
-	.attack(4)
+	.attack(5)
 	.release(0)
 	.decay(0)
 	.postgain(.7);
@@ -184,8 +185,8 @@ const pre_bridge = stack(
 	pre_bridge_pad,
 	pre_bridge_per,
 	pre_bridge_mel,
-	pre_bridge_woosh,
-	pre_bridge_magic,
+	pre_bridge_woosh_wind,
+	pre_bridge_woosh_magic,
 );
 
 // -- BRIDGE --
@@ -198,7 +199,6 @@ const pre_bridge = stack(
 const bridge_pad = note("<[c#3, e3, g#3] [b2, e3, g#3] [a2, c#3, e3] [b2, d#3, f#3]>")
     .sound("gm_synth_strings_2")
 	.slow(2)
-    // .transpose(12)
     .room(1).rsize(3)
     .lpf(600)
     .attack(.1)
