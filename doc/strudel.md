@@ -12,10 +12,12 @@ This project uses Strudel.js, a JavaScript library created for music live coding
 
 ## Soundtracks
 
-Soundtrack codes are stored in the `src/strudel` folder with a `.strudel.js` extension. We have one full soundtrack and a draft at the moment.
+Soundtrack codes are stored in the `js/strudel` folder with a `.strudel.js` extension. We have one full soundtrack and a draft at the moment.
 
-## Implementation plan
+## Implementation
 
-We will use [The CodeBerg repo](https://codeberg.org/uzu/strudel) and [NPM page](https://www.npmjs.com/org/strudel) as reference for the implementation of Strudel.js in our project.
+We refer to [The CodeBerg repo](https://codeberg.org/uzu/strudel) and [NPM page](https://www.npmjs.com/org/strudel) for the Strudel.js integration.
 
-We will use **preload** to make the desired dist script available in the frontend and load it in a **Web Worker** to avoid blocking the main thread. For now we just want to load the finished soundtrack that will loop in the background.
+To avoid blocking the main game thread while fully supporting the WebAudio API and DOM requirements of Strudel, we load the Strudel engine in a **hidden `BrowserWindow`** (`hidden-audio.html`). The main game dynamically communicates with this background audio processor via IPC (`window.audio.playTrack()`).
+
+This setup evaluates standard `.strudel.js` scripts natively, meaning you can copy-paste code directly from the Strudel Web REPL without any modifications!
