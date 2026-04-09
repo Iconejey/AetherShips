@@ -86,6 +86,9 @@ class Game extends HTMLElement {
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
 
+		// Start background music
+		window.audio?.playTrack('passing into shadow.strudel');
+
 		if (!this.fps_counter) {
 			this.fps_counter = document.createElement('div');
 			this.fps_counter.className = 'fps_counter';

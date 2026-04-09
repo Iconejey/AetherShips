@@ -2,6 +2,9 @@ const { app, BrowserWindow, ipcMain } = require('electron');
 const fs = require('fs');
 const path = require('path');
 
+// Disable security warnings in development (like unsafe-eval)
+process.env['ELECTRON_DISABLE_SECURITY_WARNINGS'] = 'true';
+
 function isValidName(name) {
 	return !!name && !/[<>:"/\\|?*\x00-\x1F]/.test(name) && name.length <= 255;
 }
@@ -305,6 +308,48 @@ ipcMain.handle('save-finalize', async (event, galaxy_name) => {
 });
 
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
+app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
+
+let audioWin;
+
+function createAudioWindow() {
+	audioWin = new BrowserWindow({
+		show: false,
+		webPreferences: {
+			nodeIntegration: false,
+			contextIsolation: true,
+			sandbox: false,
+			preload: path.join(__dirname, 'preload-audio.js')
+		}
+	});
+
+	audioWin.loadFile('hidden-audio.html');
+}
+
+let audioWinReady = false;
+let pendingTrack = null;
+
+ipcMain.on('audio-ready', () => {
+	audioWinReady = true;
+	if (pendingTrack && audioWin) {
+		audioWin.webContents.send('play-track', pendingTrack);
+		pendingTrack = null;
+	}
+});
+
+ipcMain.on('audio-play', (event, trackName) => {
+	if (audioWin && audioWinReady) {
+		audioWin.webContents.send('play-track', trackName);
+	} else {
+		pendingTrack = trackName;
+	}
+});
+
+ipcMain.on('audio-stop', event => {
+	if (audioWin) {
+		audioWin.webContents.send('stop-track');
+	}
+});
 
 function createWindow() {
 	const win = new BrowserWindow({
@@ -322,13 +367,19 @@ function createWindow() {
 	});
 
 	win.loadFile('index.html');
+
+	win.on('closed', () => app.quit());
 }
 
 app.whenReady().then(() => {
 	createWindow();
+	createAudioWindow();
 
 	app.on('activate', () => {
-		if (BrowserWindow.getAllWindows().length === 0) createWindow();
+		if (BrowserWindow.getAllWindows().length === 0) {
+			createWindow();
+			createAudioWindow();
+		}
 	});
 });
 

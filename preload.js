@@ -1,4 +1,5 @@
 const { contextBridge, ipcRenderer: ipc } = require('electron');
+const fs = require('fs');
 const path = require('path');
 const figlet = require('figlet');
 
@@ -45,4 +46,9 @@ contextBridge.exposeInMainWorld('figlet', (text, options) => {
 			else resolve(data);
 		});
 	});
+});
+
+contextBridge.exposeInMainWorld('audio', {
+	playTrack: track_name => ipc.send('audio-play', track_name),
+	stopTrack: () => ipc.send('audio-stop')
 });

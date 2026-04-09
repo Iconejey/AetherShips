@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval' https: http: data: blob: media:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https: http: 'unsafe-hashes' blob: data:; worker-src * blob: data: https: http: 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https: http:;" />
+        <script>
+            // Polyfill process environment so nanostores does not crash checking process.env.NODE_ENV
+            window.process = { env: { NODE_ENV: 'production' } };
+        </script>
+    </head>
+    <body>
+        <script type="importmap">
+            {
+                "imports": {
+                    "@strudel/web": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/soundfonts": "./node_modules/@strudel/soundfonts/dist/index.mjs",
+                    "@strudel/core": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/webaudio": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/draw": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/tonal": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/mini": "./node_modules/@strudel/web/dist/index.mjs",
+                    "@strudel/transpiler": "./node_modules/@strudel/web/dist/index.mjs",
+                    "sfumato": "./node_modules/sfumato/dist/sfumato.js",
+                    "soundfont2": "./shim-soundfont2.mjs"
+                }
+            }
+        </script>
+        <script type="module">
+            import * as strudel from '@strudel/web';
+            import { registerSoundfonts } from '@strudel/soundfonts';
+
+            // Attach ALL strudel exports to window so eval works properly natively
+            for (const [key, value] of Object.entries(strudel)) {
+                window[key] = value;
+            }
+
+            // Initialize strudel engine
+            const repl = await strudel.initStrudel({
+                prebake: async () => {
+                    await registerSoundfonts();
+                    
+                    const ds = 'https://raw.githubusercontent.com/felixroos/dough-samples/main';
+                    const tc = 'https://raw.githubusercontent.com/tidalcycles/uzu-drumkit/main';
+                    const ts = 'https://raw.githubusercontent.com/todepond/samples/main';
+                    
+                    await Promise.all([
+                        strudel.samples(`${ds}/tidal-drum-machines.json`),
+                        strudel.samples(`${ds}/piano.json`),
+                        strudel.samples(`${ds}/Dirt-Samples.json`),
+                        strudel.samples(`${ds}/vcsl.json`),
+                        strudel.samples(`${ds}/mridangam.json`),
+                        strudel.samples(`${tc}/strudel.json`)
+                    ]);
+                    
+                    strudel.aliasBank?.(`${ts}/tidal-drum-machines-alias.json`);
+
+                    await strudel.defaultPrebake();
+                }
+            });
+            window.strudelRepl = repl;
+
+            // Force initialization of the audio context and worklet
+            // By default Strudel waits for the first mouse click, but we are a hidden background window!
+            await strudel.initAudio();
+
+            window.audioController.notifyReady();
+
+            window.audioController.onPlayTrack((trackName) => {
+                const src = window.audioController.getTrackSource(trackName);
+                if (src) {
+                    try {
+                        const evaluate = window.strudelRepl?.evaluate ?? strudel.evaluate ?? window.evaluate;
+                        if (!evaluate) throw new Error("No evaluate function found");
+                        evaluate(src);
+                    } catch (e) {
+                        console.error("Strudel evaluation error:", e);
+                    }
+                } else {
+                    console.warn("Track not found:", trackName);
+                }
+            });
+
+            window.audioController.onStopTrack(() => {
+                (window.hush ?? strudel.hush ?? window.strudelRepl?.hush)?.();
+            });
+        </script>
+    </body>
+</html>
