@@ -324,7 +324,7 @@ const verse2 = stack(
 const preloader = s("[gm_synth_strings_2, bd:4, oh, rim:4, rim:0, hh:2, gm_celesta:4, gm_contrabass]").gain(0).postgain(0);
 
 arrange(
-    [1, preloader],
+    // [1, preloader],
     [10, intro],
     [10, verse1],
     [12, pre_bridge],
