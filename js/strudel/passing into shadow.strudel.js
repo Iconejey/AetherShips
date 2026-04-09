@@ -14,9 +14,9 @@ const intro_pad = note("<{[c#3, e3] ~} {[c#3, e3, g#3] ~} {[b2, e3, g#3] ~} {[a2
 	.transpose(12)
 	.room(1).rsize(3)
 	.lpf(800)
-	.attack(2)
+	.attack("<4@2 2@8>")
 	.release("3.5")
-	.postgain(0.5);
+	.postgain(.5);
 
 const intro_per = stack(
 	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(100).decay(0.1).sustain(0.1).postgain("<0@2 0.005@8>"),
