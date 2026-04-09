@@ -19,7 +19,7 @@ const intro_pad = note("<{[c#3, e3] ~} {[c#3, e3, g#3] ~} {[b2, e3, g#3] ~} {[a2
 	.sound("gm_synth_strings_2")
 	.transpose(12)
 	.room(1).rsize(3)
-	.lpf(800)
+	.lpf(_gl ? 300 : 800)
 	.attack("<4@2 2@8>")
 	.release("3.5")
 	.postgain(.5 * _m);
@@ -31,7 +31,7 @@ const intro_per = stack(
 	s("hh:2").beat("0, 2, 8, 10, 14", 16).delay(0.01).postgain("<0@1 1@9>").gain(_p)
 )
 	.room(0.3).rsize(4)
-	.lpf(800)
+	.lpf(_gl ? 300 : 800)
 	.pan(sine);
 
 const intro_magic = note("<~ ~ g#5*16 e5*16 {c#5*8 f#5*8}>")
@@ -41,7 +41,7 @@ const intro_magic = note("<~ ~ g#5*16 e5*16 {c#5*8 f#5*8}>")
 	.room(1).rsize(4)
 	.slow(2)
 	.sound("gm_celesta:4")
-	.lpf(5000)
+	.lpf(_gl ? 300 : 5000)
 	.postgain(0.3 * _m);
 
 const intro = stack(intro_pad, intro_per, intro_magic);
@@ -60,7 +60,7 @@ const verse1_bass = note("<{c#3 ~} {e3 ~} {f#3 ~} {a2 ~ b2 ~} {e3 ~}>")
     .sound("supersaw")
     .transpose(-24)
     .room(1).rsize(3)
-    .lpf(200)
+    .lpf(_gl ? 150 : 200)
     .release("<4@6 2.5@4>")
     .postgain(1 * _b);
 
@@ -70,16 +70,16 @@ const verse1_pad = note("<{[c#3, e3] ~} {[b2, e3, g#3] ~} {[c#3, f#3, a3] ~} {[a
 	.transpose(12)
 	.room(1)
 	.size(3)
-	.lpf(800)
+	.lpf(_gl ? 300 : 800)
 	.attack(2)
 	.release("<3.5@6 2.5@4>")
 	.postgain(0.2 * _m);
 
 const verse1_per = stack(
-	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(200).decay(0.1).sustain(0.1).postgain(1 * _p),
-	s("oh").beat("10", 16).attack(1).release(0.2).postgain(0.5 * _p),
-	s("rim:0").beat("4, 12", 16).room(0.2).rsize(1).postgain(0.5 * _p),
-	s("hh:2").beat("0, 2, 8, 10, 14", 16).delay(0.01).postgain(0.5 * _p)
+	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(_gl ? 150 : 200).decay(0.1).sustain(0.1).postgain(1 * _p),
+	s("oh").beat("10", 16).lpf(_gl ? 300 : 20000).attack(1).release(0.2).postgain(0.5 * _p),
+	s("rim:0").beat("4, 12", 16).lpf(_gl ? 300 : 20000).room(0.2).rsize(1).postgain(0.5 * _p),
+	s("hh:2").beat("0, 2, 8, 10, 14", 16).lpf(_gl ? 300 : 20000).delay(0.01).postgain(0.5 * _p)
 );
 
 const verse1_mel = note("<0 1 2 3 4>".pick([
@@ -97,7 +97,7 @@ const verse1_mel = note("<0 1 2 3 4>".pick([
 
 const verse1_woosh_wind = note("<~@9 c>")
     .sound("pink")
-	.lpf(1000)
+	.lpf(_gl ? 300 : 1000)
 	.room(1).rsize(4)
 	.attack(3)
 	.release(0)
@@ -107,7 +107,7 @@ const verse1_woosh_wind = note("<~@9 c>")
 const verse1_woosh_pan = note("<~@9 g#4>")
     .sound("gm_synth_strings_2")
 	.room(1).rsize(4)
-	.lpf(800)
+	.lpf(_gl ? 300 : 800)
 	.attack(3)
 	.release(0)
 	.decay(0)
@@ -129,7 +129,7 @@ const verse1 = stack(verse1_bass, verse1_pad, verse1_per, verse1_mel, verse1_woo
 const pre_bridge_bass = note("<{c#3 ~} {a2 ~} {e2 ~} ~ {b2 ~} {a2 ~} {e2 ~} {a2 ~} {b2 ~} {a2 ~} ~ ~>")
     .sound("supersaw")
     .room(1).rsize(3)
-    .lpf(200)
+    .lpf(_gl ? 300 : 200)
     .release("<4@6 2.5@4>")
     .postgain(0.8 * _b);
 
@@ -137,7 +137,7 @@ const pre_bridge_pad = note("<[c#3, e3, g#3] [a2, c#3, e3] [b2, e3, g#3] [c#3, e
     .sound("gm_synth_strings_2")
     .transpose(12)
     .room(1).rsize(3)
-    .lpf(900)
+    .lpf(_gl ? 300 : 900)
     .attack(.1)
     .release(.1)
     .postgain(0.1 * _m);
@@ -148,6 +148,7 @@ const pre_bridge_per = note("<0@10 ~@2>".pick([
   .s("rim:0")
   .room(1).rsize(4)
   .delay(.2).delaytime(0.1)
+  .lpf(_gl ? 300 : 20000)
   .attack(.05)
   .decay(.2)
   .release(10)
@@ -160,7 +161,7 @@ const pre_bridge_mel = note("<0 1 2 3 0 1 2 3 0 1 ~@2>".pick([
     "e4 e4 f#4 g#4",
 ]))
     .sound("gm_contrabass")
-    .lpf(900)
+    .lpf(_gl ? 300 : 900)
     .transpose(12)
     .room(1).rsize(1)
     .attack(.1)
@@ -172,7 +173,7 @@ const pre_bridge_mel = note("<0 1 2 3 0 1 2 3 0 1 ~@2>".pick([
 const pre_bridge_woosh_wind = note("<~@5 c>")
     .sound("pink")
     .slow(2)
-	.lpf(1000)
+	.lpf(_gl ? 300 : 1000)
 	.room(1).rsize(4)
 	.attack(7)
 	.release(0)
@@ -182,6 +183,7 @@ const pre_bridge_woosh_wind = note("<~@5 c>")
 const pre_bridge_woosh_magic = note("<~@11 g#5>")
     .sound("gm_celesta:4")
 	.room(1).rsize(4)
+	.lpf(_gl ? 300 : 20000)
 	.attack(5)
 	.release(0)
 	.decay(0)
@@ -207,7 +209,7 @@ const bridge_pad = note("<[c#3, e3, g#3] [b2, e3, g#3] [a2, c#3, e3] [b2, d#3, f
     .sound("gm_synth_strings_2")
 	.slow(2)
     .room(1).rsize(3)
-    .lpf(600)
+    .lpf(_gl ? 300 : 600)
     .attack(.1)
     .release(.1)
     .postgain(0.2 * _m);
@@ -220,7 +222,7 @@ const bridge_echo = note("<0 1 2 ~ 0 3 ~ ~>".pick([
 ]))
 	.sound("gm_celesta:4")
     .room(1).size(4)
-    .lpf(1200)
+    .lpf(_gl ? 300 : 1200)
     .sustain(.5)
     .release(.5)
     .postgain(1 * _m);
@@ -236,7 +238,7 @@ const bridge_mel = note("<0 ~ 0 1 2 3 4 5>".pick([
 	.transpose(12)
 	.sound("gm_celesta:4")
     .room(1).size(4)
-    .lpf(1200)
+    .lpf(_gl ? 300 : 1200)
     .sustain(.5)
     .release(1)
     .postgain(.5 * _m);
@@ -259,7 +261,7 @@ const verse2_bass = note("<{c#3 ~} {c#3 ~} {e3 ~} {a3 ~ b3 ~} {c#3 ~} {c#3 ~} ~ 
     .sound("supersaw")
     .transpose(-24)
     .room(1).rsize(3)
-    .lpf(200)
+    .lpf(_gl ? 150 : 200)
     .release("<4@6 2.5@2 4@8>")
     .postgain(1 * _b);
 
@@ -269,16 +271,16 @@ const verse2_pad = note("<{[c#3, e3] ~} {[c#3, e3, g#3] ~} {[b2, e3, g#3] ~} {[a
 	.transpose(12)
 	.room(1)
 	.size(3)
-	.lpf(800)
+	.lpf(_gl ? 300 : 800)
 	.attack(2)
 	.release("<3.5@6 2.5@2 3.5@6 2.5 6>")
 	.postgain(0.2 * _m);
 
 const verse2_per = stack(
-	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(200).decay(0.1).sustain(0.1).postgain(1 * _p),
-	s("oh").beat("10", 16).attack(1).release(0.2).postgain(0.5 * _p),
-	s("rim:0").beat("4, 12", 16).room(0.2).rsize(1).postgain(0.5 * _p),
-	s("hh:2").beat("0, 2, 8, 10, 14", 16).delay(0.01).postgain(0.5 * _p)
+	s("bd:4").beat("0, 6, <15 ~>", 16).lpf(_gl ? 150 : 200).decay(0.1).sustain(0.1).postgain(1 * _p),
+	s("oh").beat("10", 16).lpf(_gl ? 300 : 20000).attack(1).release(0.2).postgain(0.5 * _p),
+	s("rim:0").beat("4, 12", 16).lpf(_gl ? 300 : 20000).room(0.2).rsize(1).postgain(0.5 * _p),
+	s("hh:2").beat("0, 2, 8, 10, 14", 16).lpf(_gl ? 300 : 20000).delay(0.01).postgain(0.5 * _p)
 );
 
 const verse2_mel1 = note("<0 1 2 3 0 ~ 4 3>".pick([
@@ -293,6 +295,7 @@ const verse2_mel1 = note("<0 1 2 3 0 ~ 4 3>".pick([
 	.room(1).rsize(4)
 	.slow(2)
 	.decay(3)
+	.lpf(_gl ? 300 : 20000)
     .release("<.1@7 {.1 4}>")
 	.postgain(0.2 * _m);
 
@@ -300,13 +303,14 @@ const verse2_mel2 = note("<~@5 0 ~ 1>".pick([
     "~ [~ [f#5 c#6]]",
     "~ [~ e5] b4 c#5",
 ]))
-.sound("gm_celesta:4")
-.transpose(12)
-.room(1).rsize(4)
-.slow(2)
-.decay(3)
-.release("<1@7 {1 4}>")
-.postgain(.5 * _m);
+	.sound("gm_celesta:4")
+	.transpose(12)
+	.room(1).rsize(4)
+	.slow(2)
+	.decay(3)
+	.lpf(_gl ? 300 : 20000)
+	.release("<1@7 {1 4}>")
+	.postgain(.5 * _m);
 
 const verse2_magic = note("<~@4 0 ~ 0@2>".pick([
     "c#5*16",
@@ -317,7 +321,7 @@ const verse2_magic = note("<~@4 0 ~ 0@2>".pick([
 	.room(1).rsize(4)
 	.slow(2)
 	.sound("gm_celesta:4")
-	.lpf(5000)
+	.lpf(_gl ? 300 : 5000)
 	.postgain(0.5 * _m);
 
 const verse2 = stack(
@@ -340,4 +344,4 @@ arrange(
     [8, bridge],
     [16, verse2],
     [2, note("~")]
-).lpf(300);
+)
