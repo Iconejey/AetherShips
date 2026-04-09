@@ -65,7 +65,24 @@
 
             window.audioController.notifyReady();
 
+            window.strudelGlobalParams = { isGalaxyLoaded: false, currentTrack: null };
+            window.audioController.onSetGalaxyLoaded((val) => {
+                if (window.strudelGlobalParams.isGalaxyLoaded === val) return;
+                window.strudelGlobalParams.isGalaxyLoaded = val;
+                
+                if (window.strudelGlobalParams.currentTrack) {
+                    const src = window.audioController.getTrackSource(window.strudelGlobalParams.currentTrack);
+                    if (src) {
+                        try {
+                            const evaluate = window.strudelRepl?.evaluate ?? strudel.evaluate ?? window.evaluate;
+                            evaluate(src);
+                        } catch (e) { console.error(e); }
+                    }
+                }
+            });
+
             window.audioController.onPlayTrack((trackName) => {
+                window.strudelGlobalParams.currentTrack = trackName;
                 const src = window.audioController.getTrackSource(trackName);
                 if (src) {
                     try {

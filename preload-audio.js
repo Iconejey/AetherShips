@@ -4,6 +4,7 @@ const fs = require('fs');
 
 contextBridge.exposeInMainWorld('audioController', {
 	notifyReady: () => ipcRenderer.send('audio-ready'),
+	onSetGalaxyLoaded: callback => ipcRenderer.on('set-galaxy-loaded', (e, val) => callback(val)),
 	onPlayTrack: callback => ipcRenderer.on('play-track', (e, trackName) => callback(trackName)),
 	onStopTrack: callback => ipcRenderer.on('stop-track', () => callback()),
 	getTrackSource: trackName => {

@@ -351,6 +351,10 @@ ipcMain.on('audio-stop', event => {
 	}
 });
 
+ipcMain.on('audio-set-galaxy-loaded', (event, val) => {
+	audioWin?.webContents.send('set-galaxy-loaded', val);
+});
+
 function createWindow() {
 	const win = new BrowserWindow({
 		width: 800,

@@ -87,6 +87,7 @@ class Game extends HTMLElement {
 		this.initializeStars();
 
 		// Start background music
+		window.audio?.setGalaxyLoaded(false);
 		window.audio?.playTrack('passing into shadow.strudel');
 
 		if (!this.fps_counter) {
@@ -228,6 +229,7 @@ class Game extends HTMLElement {
 			this.resetStars();
 			this.loading = false;
 			document.body.classList.remove('start-menu');
+			window.audio?.setGalaxyLoaded(true);
 		} catch (err) {
 			console.error('Failed to load galaxy:', err);
 			$('user-terminal').startMenu(() => $('user-terminal').error(`Failed to load galaxy: ${err.message}`));
