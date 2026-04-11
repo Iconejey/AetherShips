@@ -7,6 +7,10 @@
 	pointer-events: none;
 	z-index: -1;
 
+	body.map-mode & {
+		display: none;
+	}
+
 	& .star {
 		position: fixed;
 		width: 2px;
