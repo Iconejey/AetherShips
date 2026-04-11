@@ -7,8 +7,12 @@ class Camera {
 	}
 
 	set followed_entity(new_followed_entity) {
-		this.followed_entity?.classList.remove('followed');
-		new_followed_entity.classList.add('followed');
+		const current = this.followed_entity;
+		if (current !== new_followed_entity) {
+			if (current) this.startTransition();
+			current?.classList.remove('followed');
+			new_followed_entity.classList.add('followed');
+		}
 	}
 
 	/**
@@ -23,6 +27,11 @@ class Camera {
 		this.r = r;
 		this.inspect_offset_screen_x = 0;
 		this.inspect_offset_screen_y = 0;
+		this.is_transitioning = false;
+	}
+
+	startTransition() {
+		this.is_transitioning = true;
 	}
 
 	/**
@@ -80,6 +89,25 @@ class Camera {
 		this.r = r;
 	}
 
+	smoothMoveTo(x, y, r = this.r, delta_seconds = 0.016) {
+		const lerp_speed = 10 * delta_seconds;
+		this.x += (x - this.x) * lerp_speed;
+		this.y += (y - this.y) * lerp_speed;
+
+		// Find shortest angle
+		const diff = (r - this.r) % (Math.PI * 2);
+		let target_r = this.r + diff;
+		if (target_r - this.r > Math.PI) target_r -= Math.PI * 2;
+		if (target_r - this.r < -Math.PI) target_r += Math.PI * 2;
+
+		this.r += (target_r - this.r) * lerp_speed;
+
+		if (Math.abs(x - this.x) < 0.01 && Math.abs(y - this.y) < 0.01 && Math.abs(target_r - this.r) < 0.001) {
+			this.moveTo(x, y, r);
+			this.is_transitioning = false;
+		}
+	}
+
 	/**
 	 * Offsets the camera position by the given delta
 	 * @param {number} dx - Delta x
@@ -97,10 +125,12 @@ class Camera {
 	 * @param {Entity} entity - The entity to focus on
 	 * @param {'navigation'|'inspect'} mode - Active game mode
 	 */
-	update(entity, scale = 1, free = false, align_world = false) {
+	update(entity, scale = 1, free = false, align_world = false, delta_seconds = 0.016) {
 		if (!entity) return;
 
 		const target_r = align_world ? 0 : entity.position.r;
+		let target_x = entity.position.x;
+		let target_y = entity.position.y;
 
 		if (free) {
 			// Convert inspect screen offset back into world-space using camera rotation.
@@ -109,10 +139,14 @@ class Camera {
 			const world_offset_x = (this.inspect_offset_screen_x * cos_r - this.inspect_offset_screen_y * sin_r) / scale;
 			const world_offset_y = (this.inspect_offset_screen_x * sin_r + this.inspect_offset_screen_y * cos_r) / scale;
 
-			this.moveTo(entity.position.x + world_offset_x, entity.position.y + world_offset_y, target_r);
+			target_x += world_offset_x;
+			target_y += world_offset_y;
 		}
 
-		// Center camera on entity
-		else this.moveTo(entity.position.x, entity.position.y, target_r);
+		if (this.is_transitioning) {
+			this.smoothMoveTo(target_x, target_y, target_r, delta_seconds);
+		} else {
+			this.moveTo(target_x, target_y, target_r);
+		}
 	}
 }

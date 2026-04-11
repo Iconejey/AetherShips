@@ -187,6 +187,7 @@ class Game extends HTMLElement {
 		if (compass_el) {
 			compass_el.addEventListener('click', () => {
 				this.camera_align_world = !this.camera_align_world;
+				this.camera.startTransition();
 			});
 		}
 
@@ -532,7 +533,7 @@ class Game extends HTMLElement {
 			if (is_start_menu_camera) {
 				this.camera.moveTo(followed_entity.position.x, followed_entity.position.y, followed_entity.position.r + this.start_menu_camera_rotation_offset_radians);
 			} else {
-				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation', this.camera_align_world);
+				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation', this.camera_align_world, delta_seconds);
 			}
 		}
 	}
