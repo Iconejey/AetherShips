@@ -102,6 +102,7 @@ class Game extends HTMLElement {
 		window.addEventListener(
 			'wheel',
 			event => {
+				if (document.body.classList.contains('start-menu')) return;
 				if (this.isUiWheelEvent(event)) return;
 
 				const zoom_delta = event.deltaY * -0.01;
