@@ -6,6 +6,15 @@ class Game extends HTMLElement {
 	static map_zoom = 0.5;
 	static max_zoom = 20;
 
+	static rng(seed) {
+		return function (n) {
+			const t = n !== undefined ? seed + Math.imul(n, 0x6d2b79f5) : (seed += 0x6d2b79f5);
+			t = Math.imul(t ^ (t >>> 15), t | 1);
+			t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+		};
+	}
+
 	static async createGalaxy(name, seed) {
 		const data = {
 			name,
