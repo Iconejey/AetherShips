@@ -67,7 +67,7 @@ user-terminal {
 		outline: none;
 		color: var(--primary);
 
-		&[type="number"] {
+		&[type='number'] {
 			-moz-appearance: textfield;
 			&::-webkit-outer-spin-button,
 			&::-webkit-inner-spin-button {

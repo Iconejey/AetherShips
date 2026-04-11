@@ -119,7 +119,7 @@ ipcMain.handle('save-list-galaxies', async () => {
 });
 
 // Create new Galaxy
-ipcMain.handle('save-create-galaxy', async (event, name) => {
+ipcMain.handle('save-create-galaxy', async (event, name, data) => {
 	if (!isValidName(name)) throw new Error('Invalid galaxy name');
 
 	// Get paths for the new galaxy
@@ -134,16 +134,6 @@ ipcMain.handle('save-create-galaxy', async (event, name) => {
 
 		// Create save directory
 		fs.mkdirSync(save_path);
-
-		// Initialize galaxy data
-		const data = {
-			name,
-			seed: Math.floor(Math.random() * 1e9),
-			player: {
-				position: { x: 0, y: 0, r: 0 },
-				driven_entity: null
-			}
-		};
 
 		fs.writeFileSync(galaxy_data_path, JSON.stringify(data, null, 2));
 		return true;

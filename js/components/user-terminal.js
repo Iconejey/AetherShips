@@ -245,8 +245,11 @@ class UserTerminal extends HTMLElement {
 		this.line();
 		this.line('Enter the name of this Galaxy...');
 		const name = await this.input('Galaxy name');
+
+		const seed = (await this.input('Seed (optional)', false, 'number')) || Math.floor(Math.random() * 0xffffffff);
+
 		try {
-			await window.saves.createGalaxy(name);
+			await Game.createGalaxy(name, seed);
 			this.startMenu(() => this.success(`Galaxy "${name}" created !`));
 		} catch (err) {
 			this.startMenu(() => this.error(`Failed to create Galaxy: ${err.message}`));

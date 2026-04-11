@@ -6,6 +6,20 @@ class Game extends HTMLElement {
 	static map_zoom = 0.5;
 	static max_zoom = 20;
 
+	static async createGalaxy(name, seed) {
+		const data = {
+			name,
+			seed,
+			stars,
+			player: {
+				position: { x: 0, y: 0, r: 0 },
+				driven_entity: null
+			}
+		};
+
+		return window.saves.createGalaxy(name, data);
+	}
+
 	/**
 	 * Creates a game instance
 	 */

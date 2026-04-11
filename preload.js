@@ -7,7 +7,7 @@ figlet.defaults({ fontPath: path.join(__dirname, 'node_modules', 'figlet', 'font
 
 contextBridge.exposeInMainWorld('saves', {
 	listGalaxies: () => ipc.invoke('save-list-galaxies'),
-	createGalaxy: galaxy_name => ipc.invoke('save-create-galaxy', galaxy_name),
+	createGalaxy: (galaxy_name, data) => ipc.invoke('save-create-galaxy', galaxy_name, data),
 	deleteGalaxy: galaxy_name => ipc.invoke('save-delete-galaxy', galaxy_name),
 	writeGalaxy: galaxy => ipc.invoke('save-write-galaxy', galaxy),
 	loadGalaxy: galaxy_name => ipc.invoke('save-load-galaxy', galaxy_name),
