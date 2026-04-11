@@ -2,7 +2,8 @@
  * Custom HTMLElement representing the game, which contains entities (ships, asteroids, planets, etc.)
  */
 class Game extends HTMLElement {
-	static min_zoom = 0.5;
+	static min_zoom = 0.05;
+	static map_zoom = 0.5;
 	static max_zoom = 20;
 
 	/**
@@ -575,6 +576,7 @@ class Game extends HTMLElement {
 	zoom(delta) {
 		this.scale = Math.min(Math.max(Game.min_zoom, this.scale + delta), Game.max_zoom);
 		this.style.setProperty('--game-scale', this.scale);
+		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 	}
 
 	/**
@@ -647,6 +649,7 @@ class Game extends HTMLElement {
 		// 6. Apply final scale to the state and CSS variable
 		this.scale = new_scale;
 		this.style.setProperty('--game-scale', this.scale);
+		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 	}
 
 	/**

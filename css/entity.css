@@ -6,6 +6,10 @@ entity-root {
 	top: 50%;
 	left: 50%;
 
+	body.map-mode & {
+		--game-scale: 1;
+	}
+
 	& entity-layer {
 		display: block;
 		position: absolute;
@@ -86,5 +90,22 @@ entity-root {
 				}
 			}
 		}
+
+		body.map-mode & {
+			display: none;
+		}
+	}
+
+	body.map-mode &::after {
+		content: 'rocket_launch';
+		font-family: 'Material Symbols Outlined';
+		font-size: 24px;
+		color: white;
+		position: absolute;
+		top: 50%;
+		left: 50%;
+		pointer-events: none;
+		text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+		transform: translate(-50%, -50%) rotate(-45deg);
 	}
 }
