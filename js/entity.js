@@ -126,7 +126,6 @@ class Layer {
 		canvas.style.zIndex = z_index_within_layer.toString();
 
 		// Position canvas for its chunk
-		canvas.style.position = 'absolute';
 		canvas.style.left = `${this.chunk_layer.chunk_x * 32}px`;
 		canvas.style.top = `${this.chunk_layer.chunk_y * 32}px`;
 
