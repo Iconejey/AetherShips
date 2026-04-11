@@ -12,5 +12,5 @@ The center of the Galaxy is (0, 0).
 
 The terminal shows the player the current sector and their position in the sector. That means :
 
-- The sector is \[x / 1024, y / 1024]
-- The position is (x % 1024, y % 1024)
+- The sector is \[x / 8192, y / 8192]
+- The position is (x % 8192, y % 8192)

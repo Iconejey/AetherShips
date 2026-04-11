@@ -349,7 +349,10 @@ class EditPreview extends HTMLElement {
 		const ctx = this.ctx;
 		ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		if (window.game?.mode !== 'edit') return;
+		const is_map_mode = document.body.classList.contains('map-mode');
+		const is_edit_mode = window.game?.mode === 'edit';
+
+		if (!is_edit_mode && !is_map_mode) return;
 		if (!game.camera?.followed_entity) return;
 
 		const info = this.getEntityInfo();
@@ -357,94 +360,127 @@ class EditPreview extends HTMLElement {
 
 		const { entity_left, entity_top, entity_rotation, scale } = info;
 
-		const preview_blocks = this.getPreviewBlocks();
-		if (preview_blocks.length === 0) return;
-
-		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-
-		let fill_color =
-			{
-				erase: '#ff3c3c4d',
-				paint: '#ffc83c4d',
-				place: '#ffffff4d'
-			}[edit_mode] ?? '#ffffff4d';
-
-		// Apply the same transform the entity-root CSS uses:
-		//   translate(entity_left, entity_top)  →  rotate(entity_rotation)  →  scale(game_scale)
-		// This maps entity block coord (bx, by) to screen pixel (bx * scale, by * scale) in the
-		// rotated canvas coordinate system.
+		// Apply the translation first
 		ctx.save();
 		ctx.translate(entity_left, entity_top);
-		ctx.rotate(entity_rotation);
 
 		// ── Grid ─────────────────────────────────────────────────────────────
-		// Compute the visible block range by inverse-projecting the canvas corners
-		// into entity space (no rotation needed here — we're already in the
-		// rotated ctx).  We over-extend by a few blocks to avoid clipping.
+		// Compute the visible block range by over-extending by a few blocks to avoid clipping.
 		const hw = this.canvas.width / 2 + entity_left;
 		const hh = this.canvas.height / 2 + entity_top;
 		const half_diag = Math.sqrt(hw * hw + hh * hh);
 		const block_radius = Math.ceil(half_diag / scale) + 32;
 
-		// Snap grid origin to entity block 0,0 — no manual offset needed because
-		// the ctx is already translated to entity_left/top.
 		const first = -block_radius;
 		const last = block_radius;
 
-		const { minor_step, major_step } = this.getGridSteps(scale);
+		// Map mode
+		if (is_map_mode) {
+			ctx.save();
+			// Map mode aligns to the world, rotating opposite to camera
+			ctx.rotate(-game.camera.r);
 
-		// Minor lines every `minor_step` blocks
-		ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-		ctx.lineWidth = 1;
-		ctx.beginPath();
-		for (let b = Math.ceil(first / minor_step) * minor_step; b <= last; b += minor_step) {
-			if (b % major_step === 0) continue; // drawn in major pass
-			ctx.moveTo(b * scale, first * scale);
-			ctx.lineTo(b * scale, last * scale);
-			ctx.moveTo(first * scale, b * scale);
-			ctx.lineTo(last * scale, b * scale);
+			const sector_size = 8192;
+
+			// Get world position of the entity we're currently aligned to
+			const entity = game.camera.followed_entity;
+
+			// Adjust sector grid offset based on entity's world position.
+			const entity_world_x = entity.position.x;
+			const entity_world_y = entity.position.y;
+
+			ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+			ctx.lineWidth = Math.min(3, 50 * scale);
+			ctx.beginPath();
+
+			for (let b = Math.ceil((first + entity_world_x) / sector_size) * sector_size; b <= last + entity_world_x; b += sector_size) {
+				const x = (b - entity_world_x) * scale;
+				ctx.moveTo(x, first * scale);
+				ctx.lineTo(x, last * scale);
+			}
+			for (let b = Math.ceil((first + entity_world_y) / sector_size) * sector_size; b <= last + entity_world_y; b += sector_size) {
+				const y = (b - entity_world_y) * scale;
+				ctx.moveTo(first * scale, y);
+				ctx.lineTo(last * scale, y);
+			}
+			ctx.stroke();
+			ctx.restore();
+
+			// Rotate block overlay previews with entity since they're attached to entity
+			ctx.rotate(entity_rotation);
 		}
-		ctx.stroke();
 
-		// Major lines every `major_step` blocks
-		ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-		ctx.beginPath();
-		for (let b = Math.ceil(first / major_step) * major_step; b <= last; b += major_step) {
-			ctx.moveTo(b * scale, first * scale);
-			ctx.lineTo(b * scale, last * scale);
-			ctx.moveTo(first * scale, b * scale);
-			ctx.lineTo(last * scale, b * scale);
+		// Edit mode
+		else {
+			ctx.rotate(entity_rotation);
+			const { minor_step, major_step } = this.getGridSteps(scale);
+
+			// Minor lines every `minor_step` blocks
+			ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+			ctx.lineWidth = 1;
+			ctx.beginPath();
+			for (let b = Math.ceil(first / minor_step) * minor_step; b <= last; b += minor_step) {
+				if (b % major_step === 0) continue; // drawn in major pass
+				ctx.moveTo(b * scale, first * scale);
+				ctx.lineTo(b * scale, last * scale);
+				ctx.moveTo(first * scale, b * scale);
+				ctx.lineTo(last * scale, b * scale);
+			}
+			ctx.stroke();
+
+			// Major lines every `major_step` blocks
+			ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+			ctx.beginPath();
+			for (let b = Math.ceil(first / major_step) * major_step; b <= last; b += major_step) {
+				ctx.moveTo(b * scale, first * scale);
+				ctx.lineTo(b * scale, last * scale);
+				ctx.moveTo(first * scale, b * scale);
+				ctx.lineTo(last * scale, b * scale);
+			}
+			ctx.stroke();
+			// ─────────────────────────────────────────────────────────────────────
+
+			// -x axis
+			ctx.save();
+			ctx.strokeStyle = '#d44141'; // red
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(-16, 0);
+			ctx.stroke();
+			ctx.restore();
+
+			// -y axis
+			ctx.save();
+			ctx.strokeStyle = '#45bc49'; // green
+			ctx.lineWidth = 2;
+			ctx.beginPath();
+			ctx.moveTo(0, 0);
+			ctx.lineTo(0, -16);
+			ctx.stroke();
+			ctx.restore();
 		}
-		ctx.stroke();
-		// ─────────────────────────────────────────────────────────────────────
-
-		// -x axis
-		ctx.save();
-		ctx.strokeStyle = '#d44141'; // red
-		ctx.lineWidth = 2;
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(-16, 0);
-		ctx.stroke();
-		ctx.restore();
-
-		// -y axis
-		ctx.save();
-		ctx.strokeStyle = '#45bc49'; // green
-		ctx.lineWidth = 2;
-		ctx.beginPath();
-		ctx.moveTo(0, 0);
-		ctx.lineTo(0, -16);
-		ctx.stroke();
-		ctx.restore();
 
 		// Fill pass — all preview blocks in one path for performance
-		ctx.fillStyle = fill_color;
-		ctx.beginPath();
-		for (const [bx, by] of preview_blocks) {
-			ctx.rect(bx * scale, by * scale, scale, scale);
+		if (is_edit_mode) {
+			const preview_blocks = this.getPreviewBlocks();
+			if (preview_blocks.length > 0) {
+				const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+				const fill_color =
+					{
+						erase: '#ff3c3c4d',
+						paint: '#ffc83c4d',
+						place: '#ffffff4d'
+					}[edit_mode] ?? '#ffffff4d';
+
+				ctx.fillStyle = fill_color;
+				ctx.beginPath();
+				for (const [bx, by] of preview_blocks) {
+					ctx.rect(bx * scale, by * scale, scale, scale);
+				}
+				ctx.fill();
+			}
 		}
-		ctx.fill();
 
 		ctx.restore();
 	}
