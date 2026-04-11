@@ -548,6 +548,13 @@ class Game extends HTMLElement {
 			// --- Synchronize view-overlay rendering ---
 			document.querySelector('view-overlay')?.draw();
 
+			// Update compass rotation
+			const compass_el = document.getElementById('compass');
+			if (compass_el && this.camera) {
+				compass_el.style.transform = `rotate(${-this.camera.r}rad)`;
+				compass_el.style.display = this.mode === 'navigation' && !document.body.classList.contains('map-mode') ? 'block' : 'none';
+			}
+
 			this.animation_frame_id = window.requestAnimationFrame(tick);
 		};
 

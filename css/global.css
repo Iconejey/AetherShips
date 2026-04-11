@@ -150,3 +150,13 @@ game-root {
 	line-height: 1;
 	pointer-events: none;
 }
+
+#compass {
+	position: fixed;
+	top: 40px;
+	right: 40px;
+	width: 32px;
+	height: 32px;
+	z-index: 100;
+	pointer-events: none;
+}
