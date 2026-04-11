@@ -88,25 +88,43 @@ class UserTerminal extends HTMLElement {
 		return line;
 	}
 
-	input(label) {
+	input(label, required = true, type = 'text') {
 		return new Promise(resolve => {
 			const line = this.line();
-			line.innerHTML = html`${label} : <input type="text" maxlength="32" />`;
+			line.innerHTML = html`${label} : <input type="${type}" maxlength="32" ${required ? 'required' : ''} />`;
 			const input = line.querySelector('input');
-			input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
-			input.setAttribute('title', 'No special characters: <>:"/\\|?*');
+			if (type === 'text') {
+				input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
+				input.setAttribute('title', 'No special characters: <>:"/\\|?*');
+			}
 			input.focus();
 			input.onkeydown = e => {
 				if (e.key === 'Enter') {
 					const value = input.value.trim();
-					const invalid = /[<>:"/\\|?*]/g;
-					if (!value || invalid.test(value)) {
-						input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+
+					if (required && !value) {
+						input.setCustomValidity('This field is required');
 						input.reportValidity();
 						return;
 					}
+
+					if (type === 'text') {
+						const invalid = /[<>:"/\\|?*]/g;
+						if (value && invalid.test(value)) {
+							input.setCustomValidity('Invalid name: no special characters <>:"/\\|?*');
+							input.reportValidity();
+							return;
+						}
+					}
+
 					input.disabled = true;
-					resolve(value);
+
+					if (!value && !required) {
+						resolve(null);
+						return;
+					}
+
+					resolve(type === 'number' ? Number(value) : value);
 				}
 			};
 		});

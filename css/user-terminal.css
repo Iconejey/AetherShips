@@ -66,5 +66,14 @@ user-terminal {
 		border: none;
 		outline: none;
 		color: var(--primary);
+
+		&[type="number"] {
+			-moz-appearance: textfield;
+			&::-webkit-outer-spin-button,
+			&::-webkit-inner-spin-button {
+				-webkit-appearance: none;
+				margin: 0;
+			}
+		}
 	}
 }
