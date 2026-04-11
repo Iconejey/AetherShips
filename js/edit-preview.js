@@ -18,10 +18,9 @@ class EditPreview extends HTMLElement {
 
 	connectedCallback() {
 		this.canvas = document.createElement('canvas');
-		this.canvas.width = window.innerWidth;
-		this.canvas.height = window.innerHeight;
 		this.appendChild(this.canvas);
 		this.ctx = this.canvas.getContext('2d');
+		this.onResize();
 
 		window.addEventListener('mousemove', e => this.onMouseMove(e));
 		window.addEventListener('mousedown', e => this.onMouseDown(e));
@@ -35,8 +34,9 @@ class EditPreview extends HTMLElement {
 	}
 
 	onResize() {
-		this.canvas.width = window.innerWidth;
-		this.canvas.height = window.innerHeight;
+		const dpr = window.devicePixelRatio || 1;
+		this.canvas.width = window.innerWidth * dpr;
+		this.canvas.height = window.innerHeight * dpr;
 	}
 
 	isUiPointerEvent(event) {
@@ -359,15 +359,17 @@ class EditPreview extends HTMLElement {
 		if (!info) return;
 
 		const { entity_left, entity_top, entity_rotation, scale } = info;
+		const dpr = window.devicePixelRatio || 1;
 
 		// Apply the translation first
 		ctx.save();
+		ctx.scale(dpr, dpr);
 		ctx.translate(entity_left, entity_top);
 
 		// ── Grid ─────────────────────────────────────────────────────────────
 		// Compute the visible block range by over-extending by a few blocks to avoid clipping.
-		const hw = this.canvas.width / 2 + entity_left;
-		const hh = this.canvas.height / 2 + entity_top;
+		const hw = window.innerWidth / 2 + entity_left;
+		const hh = window.innerHeight / 2 + entity_top;
 		const half_diag = Math.sqrt(hw * hw + hh * hh);
 		const block_radius = Math.ceil(half_diag / scale) + 32;
 
