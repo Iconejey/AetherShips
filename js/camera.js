@@ -97,20 +97,22 @@ class Camera {
 	 * @param {Entity} entity - The entity to focus on
 	 * @param {'navigation'|'inspect'} mode - Active game mode
 	 */
-	update(entity, scale = 1, free = false) {
+	update(entity, scale = 1, free = false, align_world = false) {
 		if (!entity) return;
+
+		const target_r = align_world ? 0 : entity.position.r;
 
 		if (free) {
 			// Convert inspect screen offset back into world-space using camera rotation.
-			const cos_r = Math.cos(entity.position.r);
-			const sin_r = Math.sin(entity.position.r);
+			const cos_r = Math.cos(target_r);
+			const sin_r = Math.sin(target_r);
 			const world_offset_x = (this.inspect_offset_screen_x * cos_r - this.inspect_offset_screen_y * sin_r) / scale;
 			const world_offset_y = (this.inspect_offset_screen_x * sin_r + this.inspect_offset_screen_y * cos_r) / scale;
 
-			this.moveTo(entity.position.x + world_offset_x, entity.position.y + world_offset_y, entity.position.r);
+			this.moveTo(entity.position.x + world_offset_x, entity.position.y + world_offset_y, target_r);
 		}
 
 		// Center camera on entity
-		else this.moveTo(entity.position.x, entity.position.y, entity.position.r);
+		else this.moveTo(entity.position.x, entity.position.y, target_r);
 	}
 }

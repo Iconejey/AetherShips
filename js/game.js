@@ -32,6 +32,7 @@ class Game extends HTMLElement {
 		this.space_double_press_window_ms = 300;
 		this.start_menu_camera_rotation_offset_radians = -Math.PI / 4;
 		this.scale = 1;
+		this.camera_align_world = false;
 
 		// Player instance
 		this.player = null;
@@ -180,6 +181,14 @@ class Game extends HTMLElement {
 			this.pressed_keys[event.key] = false;
 			if (event.key === ' ' || event.key === 'Space') this.has_prev_mouse_position = false;
 		});
+
+		// Compass click toggle
+		const compass_el = document.getElementById('compass');
+		if (compass_el) {
+			compass_el.addEventListener('click', () => {
+				this.camera_align_world = !this.camera_align_world;
+			});
+		}
 
 		this.fps_timer = 0;
 		this.fps_frame_count = 0;
@@ -523,7 +532,7 @@ class Game extends HTMLElement {
 			if (is_start_menu_camera) {
 				this.camera.moveTo(followed_entity.position.x, followed_entity.position.y, followed_entity.position.r + this.start_menu_camera_rotation_offset_radians);
 			} else {
-				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation');
+				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation', this.camera_align_world);
 			}
 		}
 	}
@@ -615,7 +624,7 @@ class Game extends HTMLElement {
 		this.has_prev_mouse_position = false;
 
 		if (this.camera.followed_entity && this.mode !== 'navigation') {
-			this.camera.update(this.camera.followed_entity, this.scale, true);
+			this.camera.update(this.camera.followed_entity, this.scale, true, this.camera_align_world);
 		}
 	}
 
