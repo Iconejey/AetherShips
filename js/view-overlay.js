@@ -3,7 +3,7 @@
  * Each block that would be affected by the active tool is highlighted on screen,
  * aligned to the followed entity's block grid using the camera transform.
  */
-class EditPreview extends HTMLElement {
+class ViewOverlay extends HTMLElement {
 	constructor() {
 		super();
 		this.canvas = null;
@@ -488,4 +488,4 @@ class EditPreview extends HTMLElement {
 	}
 }
 
-customElements.define('edit-preview', EditPreview);
+customElements.define('view-overlay', ViewOverlay);

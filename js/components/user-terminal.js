@@ -256,13 +256,13 @@ class UserTerminal extends HTMLElement {
 
 		this.tick = () => {
 			const followed_entity = game?.camera?.followed_entity;
-			const edit_preview = $('edit-preview');
-			if (!followed_entity || !edit_preview) {
+			const view_overlay = $('view-overlay');
+			if (!followed_entity || !view_overlay) {
 				block_type_line.textContent = 'Block : -';
 				return;
 			}
 
-			const hovered_block = edit_preview.screenToBlock(edit_preview.mouse_x, edit_preview.mouse_y);
+			const hovered_block = view_overlay.screenToBlock(view_overlay.mouse_x, view_overlay.mouse_y);
 			if (!hovered_block) {
 				block_type_line.textContent = 'Block : -';
 				return;
