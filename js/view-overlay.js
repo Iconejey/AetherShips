@@ -383,6 +383,9 @@ class ViewOverlay extends HTMLElement {
 			ctx.rotate(-game.camera.r);
 
 			const sector_size = 8192;
+			const galaxy_size_sectors = 32;
+			const galaxy_max = (galaxy_size_sectors / 2) * sector_size;
+			const galaxy_min = -galaxy_max;
 
 			// Get world position of the entity we're currently aligned to
 			const entity = game.camera.followed_entity;
@@ -396,14 +399,28 @@ class ViewOverlay extends HTMLElement {
 			ctx.beginPath();
 
 			for (let b = Math.ceil((first + entity_world_x) / sector_size) * sector_size; b <= last + entity_world_x; b += sector_size) {
-				const x = (b - entity_world_x) * scale;
-				ctx.moveTo(x, first * scale);
-				ctx.lineTo(x, last * scale);
+				if (b >= galaxy_min && b <= galaxy_max) {
+					const x = (b - entity_world_x) * scale;
+					const start_y = (Math.max(galaxy_min, first + entity_world_y) - entity_world_y) * scale;
+					const end_y = (Math.min(galaxy_max, last + entity_world_y) - entity_world_y) * scale;
+
+					if (start_y <= end_y) {
+						ctx.moveTo(x, start_y);
+						ctx.lineTo(x, end_y);
+					}
+				}
 			}
 			for (let b = Math.ceil((first + entity_world_y) / sector_size) * sector_size; b <= last + entity_world_y; b += sector_size) {
-				const y = (b - entity_world_y) * scale;
-				ctx.moveTo(first * scale, y);
-				ctx.lineTo(last * scale, y);
+				if (b >= galaxy_min && b <= galaxy_max) {
+					const y = (b - entity_world_y) * scale;
+					const start_x = (Math.max(galaxy_min, first + entity_world_x) - entity_world_x) * scale;
+					const end_x = (Math.min(galaxy_max, last + entity_world_x) - entity_world_x) * scale;
+
+					if (start_x <= end_x) {
+						ctx.moveTo(start_x, y);
+						ctx.lineTo(end_x, y);
+					}
+				}
 			}
 			ctx.stroke();
 			ctx.restore();
