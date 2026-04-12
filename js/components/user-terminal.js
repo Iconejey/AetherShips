@@ -260,6 +260,7 @@ class UserTerminal extends HTMLElement {
 		this.clear();
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
 		const position_line = this.line();
+		const speed_line = this.line();
 
 		this.tick = () => {
 			const followed = window.game?.camera?.followed_entity;
@@ -267,6 +268,12 @@ class UserTerminal extends HTMLElement {
 
 			const { sector, chunk } = Entity.globalPosition(followed.position);
 			if (position_line) position_line.textContent = `Sector [${sector.sx}, ${sector.sy}] position (${chunk.cx}, ${chunk.cy})`;
+			if (speed_line) {
+				const speed = Math.sqrt((followed.velocity?.vx || 0) ** 2 + (followed.velocity?.vy || 0) ** 2);
+				const sectors_per_min = (speed * 60 * 60) / (32 * 256);
+				if (speed > 0.001) speed_line.textContent = `Speed: ${sectors_per_min.toFixed(2)} s/m`;
+				else speed_line.textContent = `Speed: 0.00 s/m`;
+			}
 		};
 	}
 
