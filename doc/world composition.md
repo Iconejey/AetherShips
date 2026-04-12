@@ -2,7 +2,7 @@
 
 ## Galaxy and Sectors
 
-The game takes place in a galaxy divided into a 32x32 grid of sectors (1024 total). Each sector can contain a star system, these being procedurally distributed in a spiral pattern on the grid with greater density at the center. Each star system contains a star and a random number of planets.
+The game takes place in a galaxy divided into a 32x32 grid of sectors (1024 total). Each sector can contain a star system, these being procedurally distributed in a spiral pattern on the grid with greater density at the center using combined RNG, spiral algorithm and distance to center. Each star system contains a star and a random number of planets.
 
 ## Sector stars
 

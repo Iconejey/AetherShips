@@ -34,7 +34,7 @@ class ViewOverlay extends HTMLElement {
 	}
 
 	onResize() {
-		const dpr = window.devicePixelRatio || 1;
+		const dpr = Math.min(1.5, window.devicePixelRatio) || 1;
 		this.canvas.width = window.innerWidth * dpr;
 		this.canvas.height = window.innerHeight * dpr;
 	}
@@ -360,7 +360,7 @@ class ViewOverlay extends HTMLElement {
 		if (!info) return;
 
 		const { entity_left, entity_top, entity_rotation, scale } = info;
-		const dpr = window.devicePixelRatio || 1;
+		const dpr = Math.min(1.5, window.devicePixelRatio) || 1;
 
 		// Apply the translation first
 		ctx.save();
@@ -376,6 +376,7 @@ class ViewOverlay extends HTMLElement {
 
 		const first = -block_radius;
 		const last = block_radius;
+		const sector_size = 8192;
 
 		// Map mode
 		if (is_map_mode) {
@@ -383,7 +384,6 @@ class ViewOverlay extends HTMLElement {
 			// Map mode aligns to the world, rotating opposite to camera
 			ctx.rotate(-game.camera.r);
 
-			const sector_size = 8192;
 			const galaxy_size_sectors = 32;
 			const galaxy_max = (galaxy_size_sectors / 2) * sector_size;
 			const galaxy_min = -galaxy_max;
@@ -424,61 +424,133 @@ class ViewOverlay extends HTMLElement {
 				}
 			}
 			ctx.stroke();
+
+			if (game?.galaxy?.stars) {
+				const star_radius_base = 500;
+				for (const star of game.galaxy.stars) {
+					const star_world_x = star.sx * sector_size + sector_size / 2;
+					const star_world_y = star.sy * sector_size + sector_size / 2;
+
+					// Culling
+					if (
+						star_world_x >= first + entity_world_x - star_radius_base &&
+						star_world_x <= last + entity_world_x + star_radius_base &&
+						star_world_y >= first + entity_world_y - star_radius_base &&
+						star_world_y <= last + entity_world_y + star_radius_base
+					) {
+						const screen_x = (star_world_x - entity_world_x) * scale;
+						const screen_y = (star_world_y - entity_world_y) * scale;
+						const radius = star_radius_base * scale;
+
+						ctx.fillStyle = 'rgba(255, 255, 220, 0.8)';
+						ctx.beginPath();
+						ctx.arc(screen_x, screen_y, radius, 0, Math.PI * 2);
+						ctx.fill();
+					}
+				}
+			}
+
 			ctx.restore();
 
 			// Rotate block overlay previews with entity since they're attached to entity
 			ctx.rotate(entity_rotation);
 		}
 
-		// Edit mode
-		else if (is_edit_mode) {
-			ctx.rotate(entity_rotation);
-			const { minor_step, major_step } = this.getGridSteps(scale);
+		// Non-map mode: render current sector's star in background (e.g. edit mode, nav mode)
+		else {
+			if (game?.galaxy?.stars) {
+				const entity = game.camera.followed_entity;
+				const entity_world_x = entity.position.x;
+				const entity_world_y = entity.position.y;
 
-			// Minor lines every `minor_step` blocks
-			ctx.strokeStyle = 'rgba(255,255,255,0.08)';
-			ctx.lineWidth = 1;
-			ctx.beginPath();
-			for (let b = Math.ceil(first / minor_step) * minor_step; b <= last; b += minor_step) {
-				if (b % major_step === 0) continue; // drawn in major pass
-				ctx.moveTo(b * scale, first * scale);
-				ctx.lineTo(b * scale, last * scale);
-				ctx.moveTo(first * scale, b * scale);
-				ctx.lineTo(last * scale, b * scale);
+				const current_sx = Math.floor(entity_world_x / sector_size);
+				const current_sy = Math.floor(entity_world_y / sector_size);
+
+				const star = game.galaxy.stars.find(s => s.sx === current_sx && s.sy === current_sy);
+				if (star) {
+					ctx.save();
+					ctx.rotate(-game.camera.r);
+
+					const star_world_x = star.sx * sector_size + sector_size / 2;
+					const star_world_y = star.sy * sector_size + sector_size / 2;
+					const star_radius_base = 500;
+
+					if (
+						star_world_x >= first + entity_world_x - star_radius_base &&
+						star_world_x <= last + entity_world_x + star_radius_base &&
+						star_world_y >= first + entity_world_y - star_radius_base &&
+						star_world_y <= last + entity_world_y + star_radius_base
+					) {
+						const screen_x = (star_world_x - entity_world_x) * scale;
+						const screen_y = (star_world_y - entity_world_y) * scale;
+						const radius = star_radius_base * scale;
+
+						const grad = ctx.createRadialGradient(screen_x, screen_y, 0, screen_x, screen_y, radius);
+						grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
+						grad.addColorStop(0.2, 'rgba(255, 255, 220, 0.8)');
+						grad.addColorStop(1, 'rgba(255, 255, 220, 0)');
+
+						ctx.globalCompositeOperation = 'destination-over';
+						ctx.fillStyle = grad;
+						ctx.beginPath();
+						ctx.arc(screen_x, screen_y, radius, 0, Math.PI * 2);
+						ctx.fill();
+					}
+
+					ctx.restore();
+				}
 			}
-			ctx.stroke();
 
-			// Major lines every `major_step` blocks
-			ctx.strokeStyle = 'rgba(255,255,255,0.22)';
-			ctx.beginPath();
-			for (let b = Math.ceil(first / major_step) * major_step; b <= last; b += major_step) {
-				ctx.moveTo(b * scale, first * scale);
-				ctx.lineTo(b * scale, last * scale);
-				ctx.moveTo(first * scale, b * scale);
-				ctx.lineTo(last * scale, b * scale);
+			// Edit mode
+			if (is_edit_mode) {
+				ctx.rotate(entity_rotation);
+				const { minor_step, major_step } = this.getGridSteps(scale);
+
+				// Minor lines every `minor_step` blocks
+				ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+				ctx.lineWidth = 1;
+				ctx.beginPath();
+				for (let b = Math.ceil(first / minor_step) * minor_step; b <= last; b += minor_step) {
+					if (b % major_step === 0) continue; // drawn in major pass
+					ctx.moveTo(b * scale, first * scale);
+					ctx.lineTo(b * scale, last * scale);
+					ctx.moveTo(first * scale, b * scale);
+					ctx.lineTo(last * scale, b * scale);
+				}
+				ctx.stroke();
+
+				// Major lines every `major_step` blocks
+				ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+				ctx.beginPath();
+				for (let b = Math.ceil(first / major_step) * major_step; b <= last; b += major_step) {
+					ctx.moveTo(b * scale, first * scale);
+					ctx.lineTo(b * scale, last * scale);
+					ctx.moveTo(first * scale, b * scale);
+					ctx.lineTo(last * scale, b * scale);
+				}
+				ctx.stroke();
+				// ─────────────────────────────────────────────────────────────────────
+
+				// -x axis
+				ctx.save();
+				ctx.strokeStyle = '#d44141'; // red
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(0, 0);
+				ctx.lineTo(-16, 0);
+				ctx.stroke();
+				ctx.restore();
+
+				// -y axis
+				ctx.save();
+				ctx.strokeStyle = '#45bc49'; // green
+				ctx.lineWidth = 2;
+				ctx.beginPath();
+				ctx.moveTo(0, 0);
+				ctx.lineTo(0, -16);
+				ctx.stroke();
+				ctx.restore();
 			}
-			ctx.stroke();
-			// ─────────────────────────────────────────────────────────────────────
-
-			// -x axis
-			ctx.save();
-			ctx.strokeStyle = '#d44141'; // red
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			ctx.moveTo(0, 0);
-			ctx.lineTo(-16, 0);
-			ctx.stroke();
-			ctx.restore();
-
-			// -y axis
-			ctx.save();
-			ctx.strokeStyle = '#45bc49'; // green
-			ctx.lineWidth = 2;
-			ctx.beginPath();
-			ctx.moveTo(0, 0);
-			ctx.lineTo(0, -16);
-			ctx.stroke();
-			ctx.restore();
 		}
 
 		// Fill pass — all preview blocks in one path for performance

@@ -15,7 +15,60 @@ class Game extends HTMLElement {
 		};
 	}
 
+	static generateStars(seed) {
+		const stars = [];
+		const seen = new Set();
+		const rng = Game.rng(seed);
+
+		const arms = 3;
+		const twist = 0.4; // controls how curled the spiral is
+		const center_width = 1.5; // width of the arm at the center
+		const width_decay = 0.5; // how fast the width decays towards the edge
+		const radius = 16; // controls the maximum radius of the galaxy
+
+		for (let arm = 0; arm < arms; arm++) {
+			const angle_offset = ((Math.PI * 2) / arms) * arm;
+
+			// small steps to ensure no gaps
+			for (let dist = 0; dist <= radius; dist += 0.2) {
+				const angle = angle_offset + dist * twist;
+				const cx = Math.cos(angle) * dist;
+				const cy = Math.sin(angle) * dist;
+
+				// Width of the arm at this distance (wider at center, thinner at ends)
+				const width = center_width * Math.pow(1 - dist / radius, width_decay);
+
+				const min_x = Math.floor(cx - width);
+				const max_x = Math.ceil(cx + width);
+				const min_y = Math.floor(cy - width);
+				const max_y = Math.ceil(cy + width);
+
+				for (let x = min_x; x <= max_x; x++) {
+					for (let y = min_y; y <= max_y; y++) {
+						const dist_to_arm_center = Math.sqrt((x - cx) ** 2 + (y - cy) ** 2);
+						if (dist_to_arm_center <= width) {
+							// Higher probability of stars at the center of the arm, lower near the edge of the arm
+							const probability = width === 0 ? 1 : 1 - (dist_to_arm_center / width) * 0.9;
+
+							if (rng() <= probability) {
+								const key = `${x},${y}`;
+								if (!seen.has(key)) {
+									seen.add(key);
+									stars.push({ sx: x - 1, sy: y - 1 });
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+
+		return stars.filter(s => -16 <= s.sx && s.sx <= 15 && -16 <= s.sy && s.sy <= 15);
+	}
+
 	static async createGalaxy(name, seed) {
+		const stars = Game.generateStars(seed);
+
 		const data = {
 			name,
 			seed,
