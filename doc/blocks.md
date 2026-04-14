@@ -46,6 +46,9 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 53. **Alloy Hull - Tier 4**
 54. **Glass Window**
 55. **Lamp**
+56. **Solar shield**
+57. **Door**
+58. **Control Panel**
 
 ## Energy & Transformation (80-109)
 
@@ -58,7 +61,9 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 86. **Industrial Refinery**
 87. **Uranium Refinery**
 88. **Bio-Refinery**
-89. **Greenhouse**
+89. **Bio-Fuel Electric Generator**
+90. **Uranium Electric Generator**
+91. **Greenhouse**
 
 ## Propulsion (110-139)
 
@@ -66,6 +71,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 111. **Bio-Fuel Thruster**
 112. **Uranium Thruster**
 113. **Warp Drive**
+114. **Warp Gate**
 
 ## Combat & Defense (140-169)
 
@@ -82,13 +88,20 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 150. **Missile Launcher - Tier 1**
 151. **Missile Launcher - Tier 2**
 152. **Missile Launcher - Tier 3**
+153. **Guided Missile Launcher - Tier 1**
+154. **Guided Missile Launcher - Tier 2**
+155. **Guided Missile Launcher - Tier 3**
+156. **Flare Launcher**
 
 ## Logistics & Automation (170-199)
 
 170. **Industrial Container**
 171. **Bio-Fuel Container**
 172. **Uranium Container**
-173. **Conveyor**
-174. **Sorter**
-175. **Rack**
-176. **Module**
+173. **Pipe**
+174. **Rack**
+
+## Detection & Communication (200-209)
+
+200. **Radar**
+201. **Antenna**
