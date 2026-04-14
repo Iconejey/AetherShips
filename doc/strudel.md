@@ -1,5 +1,7 @@
 # Strudel
 
+> IMPORTANT : This feature has been implemented and is functional, but not the best sounding. It will soon be replaced (disabled but not removed) by ogg/wav files for better sound quality.
+
 This project uses Strudel.js, a JavaScript library created for music live coding. We will use this library for the background music in the game as it allows :
 
 - **Ultra-light-weight** : The library itself is not heavy and the music is just a few Kbs of code using a few lazy-loaded samples (noting that mathematical sounds like sine waves litterally take no space at all). Compared to .wav or .mp3 files, this is a factor of 10x to 100x smaller (bye bye Gbs of music files !).
