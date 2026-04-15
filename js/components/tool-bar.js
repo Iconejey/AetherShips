@@ -5,7 +5,7 @@ class ToolBar extends HTMLElement {
 		const multi_select = this.$('multi-select');
 
 		multi_select.add('navigation', 'navigation', 'Switch to navigation mode', 'Ctrl+N');
-		multi_select.add('inspect', 'gesture_select', 'Switch to inspect mode', 'Ctrl+I');
+		multi_select.add('management', 'handyman', 'Switch to management mode', 'Ctrl+M');
 		multi_select.add('edit', 'edit', 'Switch to edit mode', 'Ctrl+E');
 
 		multi_select.onchange = value => {
@@ -15,7 +15,7 @@ class ToolBar extends HTMLElement {
 
 			// Reset camera offset when switching to navigation
 			if (window.game && value === 'navigation') {
-				window.game.resetInspectOffset();
+				window.game.resetPanOffset();
 			}
 
 			// Open sidebar with edit tools when switching to edit mode

@@ -1,4 +1,4 @@
-# Inspect mode
+# Management mode
 
 This game mode allows the player to check and configure various aspects of their ship.
 
@@ -10,7 +10,7 @@ Entities (such as ships) have a group object that contains groups (arrays) of re
 
 When user places blocks of a utility type (e.g. thrusters, capacitors, weapons) in a rectangular shape in editor mode, the game automatically detects and adds the rectangle coordinates to the corresponding group.
 
-When the player enters inspect mode, these groups appear highlighted on the ship with icons and color coding to indicate their type.
+When the player enters management mode, these groups appear highlighted on the ship with icons and color coding to indicate their type.
 
 When the player hovers over a group, a tooltip appears with various information and controls :
 
@@ -98,7 +98,7 @@ When the player hovers over a group, a tooltip appears with various information 
 
 Pipes and racks are not grouped in rectangles. Instead, they are grouped in 2-block wide lines. A conveyor or rack line group is defined as the array of coordinates where the line starts, bends, and ends.
 
-When the player enters inspect mode, these line groups appear highlighted on the ship with icons and color coding to indicate their type.
+When the player enters management mode, these line groups appear highlighted on the ship with icons and color coding to indicate their type.
 
 ## Antennas
 

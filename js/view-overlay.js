@@ -179,7 +179,7 @@ class ViewOverlay extends HTMLElement {
 	/**
 	 * Returns the entity-space info needed to project between block and screen coords.
 	 * Uses entity.style.left/top (set each frame by updateEntityPositions) so the
-	 * inspect_offset is already baked in — no separate modulo bookkeeping required.
+	 * pan_offset is already baked in — no separate modulo bookkeeping required.
 	 * @returns {{ entity_left: number, entity_top: number, entity_rotation: number, scale: number }|null}
 	 */
 	getEntityInfo() {
@@ -199,7 +199,7 @@ class ViewOverlay extends HTMLElement {
 	/**
 	 * Converts viewport screen coordinates to the entity's integer block coordinates.
 	 * To keep the grid aligned with the rendered pixels, `entity_left` already carries
-	 * `inspect_offset_screen_x % scale` worth of subpixel shift from the camera update.
+	 * `pan_offset_screen_x % scale` worth of subpixel shift from the camera update.
 	 * @param {number} sx
 	 * @param {number} sy
 	 * @returns {{ bx: number, by: number }|null}

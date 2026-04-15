@@ -25,8 +25,8 @@ class Camera {
 		this.x = x;
 		this.y = y;
 		this.r = r;
-		this.inspect_offset_screen_x = 0;
-		this.inspect_offset_screen_y = 0;
+		this.pan_offset_screen_x = 0;
+		this.pan_offset_screen_y = 0;
 		this.is_transitioning = false;
 	}
 
@@ -123,7 +123,7 @@ class Camera {
 	/**
 	 * Updates camera position based on mode and entity focus
 	 * @param {Entity} entity - The entity to focus on
-	 * @param {'navigation'|'inspect'} mode - Active game mode
+	 * @param {'navigation'|'management'} mode - Active game mode
 	 */
 	update(entity, scale = 1, free = false, align_world = false, delta_seconds = 0.016) {
 		if (!entity) return;
@@ -133,11 +133,11 @@ class Camera {
 		let target_y = entity.position.y;
 
 		if (free) {
-			// Convert inspect screen offset back into world-space using camera rotation.
+			// Convert pan screen offset back into world-space using camera rotation.
 			const cos_r = Math.cos(target_r);
 			const sin_r = Math.sin(target_r);
-			const world_offset_x = (this.inspect_offset_screen_x * cos_r - this.inspect_offset_screen_y * sin_r) / scale;
-			const world_offset_y = (this.inspect_offset_screen_x * sin_r + this.inspect_offset_screen_y * cos_r) / scale;
+			const world_offset_x = (this.pan_offset_screen_x * cos_r - this.pan_offset_screen_y * sin_r) / scale;
+			const world_offset_y = (this.pan_offset_screen_x * sin_r + this.pan_offset_screen_y * cos_r) / scale;
 
 			target_x += world_offset_x;
 			target_y += world_offset_y;

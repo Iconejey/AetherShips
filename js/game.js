@@ -186,7 +186,7 @@ class Game extends HTMLElement {
 
 				if (this.mode !== 'navigation') {
 					event.preventDefault();
-					return this.zoomInspectAtCursor(zoom_delta, event.clientX, event.clientY);
+					return this.zoomPanAtCursor(zoom_delta, event.clientX, event.clientY);
 				}
 
 				// Navigation mode: always zoom
@@ -195,7 +195,7 @@ class Game extends HTMLElement {
 			{ passive: false }
 		);
 
-		// Add mouse move controls for inspect mode (active while Space is held)
+		// Add mouse move controls for pan mode (active while Space is held)
 		window.addEventListener('mousemove', event => {
 			if (this.mode === 'navigation' || !this.isSpacePressed()) {
 				this.has_prev_mouse_position = false;
@@ -212,8 +212,8 @@ class Game extends HTMLElement {
 			const delta_x = event.clientX - this.prev_mouse_x;
 			const delta_y = event.clientY - this.prev_mouse_y;
 			// Apply offset opposite to mouse movement
-			this.camera.inspect_offset_screen_x -= delta_x;
-			this.camera.inspect_offset_screen_y -= delta_y;
+			this.camera.pan_offset_screen_x -= delta_x;
+			this.camera.pan_offset_screen_y -= delta_y;
 			this.prev_mouse_x = event.clientX;
 			this.prev_mouse_y = event.clientY;
 		});
@@ -245,7 +245,7 @@ class Game extends HTMLElement {
 				const within_double_press_window = now - this.last_space_keydown_at <= this.space_double_press_window_ms;
 
 				if (this.mode !== 'navigation' && within_double_press_window) {
-					this.resetInspectOffset();
+					this.resetPanOffset();
 					this.last_space_keydown_at = 0;
 				} else {
 					this.last_space_keydown_at = now;
@@ -470,7 +470,7 @@ class Game extends HTMLElement {
 		this.prev_camera_r = this.camera.r;
 
 		// Convert camera world movement back into the current screen basis.
-		// This keeps parallax aligned with inspect-mode panning after rotation.
+		// This keeps parallax aligned with pan-mode panning after rotation.
 		const scaled_delta_x = delta_x * this.scale;
 		const scaled_delta_y = delta_y * this.scale;
 		const cos_r = Math.cos(-prev_camera_rotation);
@@ -724,11 +724,11 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Resets inspect camera offset and re-centers the followed entity
+	 * Resets pan camera offset and re-centers the followed entity
 	 */
-	resetInspectOffset() {
-		this.camera.inspect_offset_screen_x = 0;
-		this.camera.inspect_offset_screen_y = 0;
+	resetPanOffset() {
+		this.camera.pan_offset_screen_x = 0;
+		this.camera.pan_offset_screen_y = 0;
 		this.has_prev_mouse_position = false;
 
 		if (this.camera.followed_entity && this.mode !== 'navigation') {
@@ -737,12 +737,12 @@ class Game extends HTMLElement {
 	}
 
 	/**
-	 * Zooms while keeping cursor world focus stable by updating inspect screen offset. Zoomin in makes the world appear to move towards the cursor, zooming out makes it move away. It's like using the pointer as the scale transform origin.
+	 * Zooms while keeping cursor world focus stable by updating pan screen offset. Zoomin in makes the world appear to move towards the cursor, zooming out makes it move away. It's like using the pointer as the scale transform origin.
 	 * @param {number} delta - Wheel-based zoom delta
 	 * @param {number} client_x - Mouse x position in viewport
 	 * @param {number} client_y - Mouse y position in viewport
 	 */
-	zoomInspectAtCursor(delta, client_x, client_y) {
+	zoomPanAtCursor(delta, client_x, client_y) {
 		// 1. Normalize zoom speed for consistent feel
 		const zoom_speed = 0.15;
 
@@ -762,13 +762,13 @@ class Game extends HTMLElement {
 		const rel_y = -(client_y - this.viewport_center_y);
 
 		// 4. Current screen offsets
-		const ox = this.camera.inspect_offset_screen_x || 0;
-		const oy = this.camera.inspect_offset_screen_y || 0;
+		const ox = this.camera.pan_offset_screen_x || 0;
+		const oy = this.camera.pan_offset_screen_y || 0;
 
 		// 5. Update offset using the pivot transformation formula
 		// This anchors the point under the cursor during the scale change
-		this.camera.inspect_offset_screen_x = rel_x - (rel_x - ox) * ratio;
-		this.camera.inspect_offset_screen_y = rel_y - (rel_y - oy) * ratio;
+		this.camera.pan_offset_screen_x = rel_x - (rel_x - ox) * ratio;
+		this.camera.pan_offset_screen_y = rel_y - (rel_y - oy) * ratio;
 
 		// 6. Apply final scale to the state and CSS variable
 		this.scale = new_scale;
