@@ -11,15 +11,18 @@ class ToolBar extends HTMLElement {
 		multi_select.onchange = value => {
 			const sidebar = $('side-bar');
 			sidebar.classList.remove('open');
-			document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
+
+			if (value !== 'edit' && value !== 'management') {
+				document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
+			}
 
 			// Reset camera offset when switching to navigation
 			if (window.game && value === 'navigation') {
 				window.game.resetPanOffset();
 			}
 
-			// Open sidebar with edit tools when switching to edit mode
-			if (value === 'edit') sidebar.showEditTools();
+			// Open sidebar with appropriate tools
+			if (value === 'edit' || value === 'management') sidebar.showTools(value);
 		};
 
 		window.addEventListener('keydown', e => this.handleShortcut(e));

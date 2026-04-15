@@ -365,19 +365,21 @@ class Game extends HTMLElement {
 	}
 
 	get selected_paint_color() {
-		return $('side-bar #paint-color-picker').value;
+		return $('side-bar #paint-color-picker')?.value;
 	}
 
 	set selected_paint_color(new_color) {
-		$('side-bar #paint-color-picker').value = new_color;
+		const picker = $('side-bar #paint-color-picker');
+		if (picker) picker.value = new_color;
 	}
 
 	get selected_tool() {
-		return $('side-bar multi-select#edit-tools').value;
+		return $('side-bar multi-select#edit-tools')?.value;
 	}
 
 	set selected_tool(tool_name) {
-		$('side-bar multi-select#edit-tools').value = tool_name;
+		const tools = $('side-bar multi-select#edit-tools');
+		if (tools) tools.value = tool_name;
 	}
 
 	get edit_mode() {

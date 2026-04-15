@@ -5,7 +5,7 @@ class SideBar extends HTMLElement {
 	}
 
 	handleShortcut(event) {
-		if (game.mode !== 'edit') return;
+		if (game.mode !== 'edit' && game.mode !== 'management') return;
 
 		const ctrl = event.ctrlKey || event.metaKey;
 		const alt = event.altKey;
@@ -15,7 +15,7 @@ class SideBar extends HTMLElement {
 		// Ctrl+L to toggle non-selected layer visibility
 		if (ctrl && !alt && key === 'l') {
 			event.preventDefault();
-			return this.$('#toggle-layer-visibility').toggle();
+			return this.$('#toggle-layer-visibility')?.toggle();
 		}
 
 		// Ctrl+F to focus block search
@@ -40,19 +40,21 @@ class SideBar extends HTMLElement {
 			return;
 		}
 
-		const edit_tools_select = this.$('#edit-tools');
-		const tool_value = edit_tools_select?.getValueForEvent(event);
-		if (tool_value) {
-			event.preventDefault();
-			edit_tools_select.value = tool_value;
-			return;
-		}
+		if (game.mode === 'edit') {
+			const edit_tools_select = this.$('#edit-tools');
+			const tool_value = edit_tools_select?.getValueForEvent(event);
+			if (tool_value) {
+				event.preventDefault();
+				edit_tools_select.value = tool_value;
+				return;
+			}
 
-		const edit_mode_select = this.$('#edit-mode');
-		const mode_value = edit_mode_select?.getValueForEvent(event);
-		if (mode_value) {
-			event.preventDefault();
-			edit_mode_select.value = mode_value;
+			const edit_mode_select = this.$('#edit-mode');
+			const mode_value = edit_mode_select?.getValueForEvent(event);
+			if (mode_value) {
+				event.preventDefault();
+				edit_mode_select.value = mode_value;
+			}
 		}
 	}
 
@@ -69,7 +71,9 @@ class SideBar extends HTMLElement {
 		}
 	}
 
-	showEditTools() {
+	showTools(mode) {
+		const is_edit = mode === 'edit';
+
 		this.innerHTML = html`
 			<div class="round-button-group">
 				<multi-select id="edit-layer" type="round"></multi-select>
@@ -79,11 +83,13 @@ class SideBar extends HTMLElement {
 				<input id="block-search" type="search" placeholder="Search blocks" aria-label="Search blocks" />
 			</div>
 			<div id="block-list"></div>
-			<div id="paint-panel" class="round-button-group paint-panel">
-				<color-picker id="paint-color-picker"></color-picker>
-			</div>
-			<multi-select class="round-button-group reverse" id="edit-tools" type="round"></multi-select>
-			<multi-select class="round-button-group" id="edit-mode" type="round"></multi-select>
+			${is_edit
+				? html`<div id="paint-panel" class="round-button-group paint-panel">
+							<color-picker id="paint-color-picker"></color-picker>
+						</div>
+						<multi-select class="round-button-group reverse" id="edit-tools" type="round"></multi-select>
+						<multi-select class="round-button-group" id="edit-mode" type="round"></multi-select>`
+				: ''}
 		`;
 
 		// Layers
@@ -130,7 +136,9 @@ class SideBar extends HTMLElement {
 				const block_button = cat_select.lastElementChild;
 				block_button.setAttribute('data-search', `${formatted_label} ${block.name}`.toLowerCase());
 				block_button.onclick = () => {
-					game.selected_paint_color = rgba8888ToHex(block.colors[0]);
+					if (game.selected_paint_color !== undefined) {
+						game.selected_paint_color = rgba8888ToHex(block.colors[0]);
+					}
 				};
 			}
 
@@ -147,20 +155,22 @@ class SideBar extends HTMLElement {
 		const block_search = this.$('#block-search');
 		block_search?.addEventListener('input', () => this.filterBlockList(block_search.value));
 
-		// Tools
-		const edit_tools_select = this.$('#edit-tools');
-		edit_tools_select.add('ellipse', 'radio_button_unchecked', 'Select ellipse tool', 'C');
-		edit_tools_select.add('rectangle', 'crop_square', 'Select rectangle tool', 'R');
-		edit_tools_select.add('line', 'diagonal_line', 'Select line tool', 'L');
-		edit_tools_select.add('pen', 'draw', 'Select pen tool', 'P');
-		edit_tools_select.value = 'pen';
+		if (is_edit) {
+			// Tools
+			const edit_tools_select = this.$('#edit-tools');
+			edit_tools_select.add('ellipse', 'radio_button_unchecked', 'Select ellipse tool', 'C');
+			edit_tools_select.add('rectangle', 'crop_square', 'Select rectangle tool', 'R');
+			edit_tools_select.add('line', 'diagonal_line', 'Select line tool', 'L');
+			edit_tools_select.add('pen', 'draw', 'Select pen tool', 'P');
+			edit_tools_select.value = 'pen';
 
-		// Modes
-		const edit_mode_select = this.$('#edit-mode');
-		edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+A');
-		edit_mode_select.add('erase', 'ink_eraser', 'Select erase mode', 'Alt+E');
-		edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+P');
-		edit_mode_select.value = 'place';
+			// Modes
+			const edit_mode_select = this.$('#edit-mode');
+			edit_mode_select.add('place', 'add_box', 'Select placing mode', 'Alt+A');
+			edit_mode_select.add('erase', 'ink_eraser', 'Select erase mode', 'Alt+E');
+			edit_mode_select.add('paint', 'format_paint', 'Select paint mode', 'Alt+P');
+			edit_mode_select.value = 'place';
+		}
 
 		// Open sidebar
 		this.classList.add('open');

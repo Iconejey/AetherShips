@@ -352,8 +352,9 @@ class ViewOverlay extends HTMLElement {
 		const is_map_mode = document.body.classList.contains('map-mode');
 		const is_edit_mode = window.game?.mode === 'edit';
 		const is_nav_mode = window.game?.mode === 'navigation';
+		const is_management_mode = window.game?.mode === 'management';
 
-		if (!is_edit_mode && !is_map_mode && !is_nav_mode) return;
+		if (!is_edit_mode && !is_map_mode && !is_nav_mode && !is_management_mode) return;
 		if (!game.camera?.followed_entity) return;
 
 		const info = this.getEntityInfo();
