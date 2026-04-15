@@ -16,9 +16,15 @@ class ToolBar extends HTMLElement {
 				document.body.classList.remove('edit-layer-0', 'edit-layer-1', 'edit-layer-2');
 			}
 
+			document.body.classList.toggle('management-mode', value === 'management');
+
 			// Reset camera offset when switching to navigation
 			if (window.game && value === 'navigation') {
 				window.game.resetPanOffset();
+			}
+
+			if (window.game && value === 'management') {
+				window.game.player?.driven_entity?.updateUtilityGroups();
 			}
 
 			// Open sidebar with appropriate tools

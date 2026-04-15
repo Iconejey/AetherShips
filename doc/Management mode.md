@@ -6,9 +6,24 @@ This game mode allows the player to check and configure various aspects of their
 
 A thruster block is not a thruster. It is a part that can be used to create a thruster. A thruster is defined as a group of thurster blocks arranged in a rectangle. Same goes for capacitors, weapons and other utility blocks.
 
+Utility block types are distinguished using a "utility" boolean in `blocks.json`.
+
 Entities (such as ships) have a group object that contains groups (arrays) of rectangle coordinates for utility block types.
 
-When user places blocks of a utility type (e.g. thrusters, capacitors, weapons) in a rectangular shape in editor mode, the game automatically detects and adds the rectangle coordinates to the corresponding group.
+When a utility block is added to or removed from an entity, the entity gets flagged for groups update. When user enters management mode, and the driven entity is flagged for groups update, the game runs a rectangle detection algorithm to find all valid rectangles of utility blocks and updates the entity's group object accordingly.
+
+The following rules apply for rectangle validation :
+
+- The rectangle must be at least 2 blocks wide and 2 blocks tall
+- The rectangle must be fully filled with blocks of the same utility type (no holes or different block types allowed)
+- The rectangle must be surrounded by empty space or non-utility blocks (to prevent overlapping groups)
+
+The old rectangles are compared to the new ones of the same type :
+
+- If a new rectangle matches an old one (same coordinates), no update is needed
+- If a new rectangle does not match any old one, it is added to the groups
+- If an old rectangle does not match any new one, it is removed from the groups
+- If a new rectangle overlaps with one or more old rectangles, the new rectangle's data is merged with the overlapping old rectangles' data, the old rectangles are removed from the groups, and the merged rectangle is added to the groups.
 
 When the player enters management mode, these groups appear highlighted on the ship with icons and color coding to indicate their type.
 

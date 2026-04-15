@@ -349,6 +349,7 @@ class Game extends HTMLElement {
 
 	set mode(new_mode) {
 		$('tool-bar multi-select').value = new_mode;
+		if (new_mode === 'management') this.player?.driven_entity?.updateUtilityGroups();
 	}
 
 	get selected_layer() {
@@ -680,7 +681,6 @@ class Game extends HTMLElement {
 				const sectors_per_minute = (speed * 60 * 60) / (32 * 256);
 
 				const max_expected_speed = 0.8; // Sectors per minute
-				console.log({ sectors_per_minute, max_expected_speed });
 				speed_ratio = Math.min(sectors_per_minute / max_expected_speed, 1);
 			}
 

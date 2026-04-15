@@ -575,6 +575,43 @@ class ViewOverlay extends HTMLElement {
 			}
 		}
 
+		if (is_management_mode) {
+			const entity = window.game?.player?.driven_entity;
+			if (entity?.utility_groups) {
+				ctx.save();
+				ctx.rotate(entity_rotation);
+				ctx.lineWidth = 2;
+
+				for (const group of entity.utility_groups) {
+					ctx.beginPath();
+					const block_def = blocks_by_type[group.type];
+					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
+
+					const r = (color_val >>> 24) & 0xff;
+					const g = (color_val >>> 16) & 0xff;
+					const b = (color_val >>> 8) & 0xff;
+
+					// Slightly lighter background
+					const br = Math.round(r + (255 - r) * 0.4);
+					const bg = Math.round(g + (255 - g) * 0.4);
+					const bb = Math.round(b + (255 - b) * 0.4);
+
+					// Very light border
+					const sr = Math.round(r + (255 - r) * 0.8);
+					const sg = Math.round(g + (255 - g) * 0.8);
+					const sb = Math.round(b + (255 - b) * 0.8);
+
+					ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, 0.3)`;
+					ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, 0.9)`;
+
+					ctx.rect(group.x * scale, group.y * scale, group.w * scale, group.h * scale);
+					ctx.fill();
+					ctx.stroke();
+				}
+				ctx.restore();
+			}
+		}
+
 		ctx.restore();
 	}
 }

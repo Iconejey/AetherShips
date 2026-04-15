@@ -159,7 +159,7 @@ class Layer {
 	 * @param {number} [fields.color] - (Optional) The RGBA8888 color value to assign to the block color buffer.
 	 * @return {boolean} True if the block state was changed
 	 */
-	setBlock(x, y, fields) {
+	setBlock(x, y, fields, skip_events = false) {
 		if (fields.type === 0 && fields.state === undefined) throw new Error('Cannot set block type to 0 (empty) using setBlock, use deleteBlock instead');
 		const layer_blocks = this.block_states;
 		const index = y * 32 + x;
@@ -194,8 +194,14 @@ class Layer {
 			this.block_colors[index] = fields.color;
 		}
 
+		if (changed && !skip_events) {
+			const had_utility = blocks_by_type[old_type]?.utility ?? false;
+			const has_utility = blocks_by_type[new_type]?.utility ?? false;
+			if (had_utility || has_utility) this.entity.flagGroupUpdate();
+		}
+
 		this.drawPixel(x, y);
-		game.planSave(1000);
+		if (!skip_events) game.planSave(1000);
 		return changed;
 	}
 
@@ -204,7 +210,7 @@ class Layer {
 	 * @param {number} x - The x-coordinate of the block to delete (0-31).
 	 * @param {number} y - The y-coordinate of the block to delete (0-31).
 	 */
-	deleteBlock(x, y) {
+	deleteBlock(x, y, skip_events = false) {
 		const index = y * 32 + x;
 		const old_type = state_struct.type.get(this.block_states, index);
 		const empty = old_type === 0;
@@ -226,7 +232,12 @@ class Layer {
 		// If layer still has blocks but no glow, keep main canvas
 		// If layer is completely empty, remove main canvas (handled by Entity)
 		if (this.block_count > 0) this.drawPixel(x, y);
-		game.planSave(1000);
+
+		if (!skip_events) {
+			const had_utility = blocks_by_type[old_type]?.utility ?? false;
+			if (had_utility) this.entity.flagGroupUpdate();
+			game.planSave(1000);
+		}
 	}
 
 	clearGlowPixel(x, y) {
@@ -537,6 +548,154 @@ class Entity extends HTMLElement {
 		this.velocity = { vx: 0, vy: 0, vr: 0 };
 		this.mass = { cx: 0, cy: 0, total: 0 };
 		this.dirty_layers = [];
+		this.groups_need_update = true;
+		this.utility_groups = [];
+	}
+
+	flagGroupUpdate() {
+		this.groups_need_update = true;
+		console.log('Entity flagged for utility group update');
+	}
+
+	updateUtilityGroups(force = false) {
+		if (!this.groups_need_update && !force) return;
+		console.log('Updating utility groups');
+
+		const new_groups = [];
+		const visited = new Set();
+		const utility_blocks = [];
+
+		const getUtilityType = (l, x, y) => {
+			const info = this.getBlockInfo(l, x, y);
+			if (info.is_empty) return null;
+			return blocks_by_type[info.type]?.utility ? info.type : null;
+		};
+
+		// Collect all utility blocks across all layers
+		for (const entity_layer of this.querySelectorAll('entity-layer')) {
+			const l = Number(entity_layer.dataset.layer);
+			for (const chunk_layer of entity_layer.chunk_layers.values()) {
+				const layer = chunk_layer.layer;
+				if (!layer) continue;
+
+				const cx = chunk_layer.chunk_x;
+				const cy = chunk_layer.chunk_y;
+
+				for (let i = 0; i < 1024; i++) {
+					const type = state_struct.type.get(layer.block_states, i);
+					if (type && blocks_by_type[type] && blocks_by_type[type].utility) {
+						const local_x = i % 32;
+						const local_y = Math.floor(i / 32);
+						const x = cx * 32 + local_x;
+						const y = cy * 32 + local_y;
+						utility_blocks.push({ l, x, y, type });
+					}
+				}
+			}
+		}
+
+		for (const block of utility_blocks) {
+			const { l, x, y, type } = block;
+			const key = `${l},${x},${y}`;
+			if (visited.has(key)) continue;
+
+			// Flood fill to find all connected utility blocks of the SAME type
+			const group_blocks = [];
+			const queue = [{ x, y }];
+			visited.add(key);
+
+			let min_x = x,
+				max_x = x,
+				min_y = y,
+				max_y = y;
+			let head = 0;
+
+			while (head < queue.length) {
+				const curr = queue[head++];
+				group_blocks.push(curr);
+
+				if (curr.x < min_x) min_x = curr.x;
+				if (curr.x > max_x) max_x = curr.x;
+				if (curr.y < min_y) min_y = curr.y;
+				if (curr.y > max_y) max_y = curr.y;
+
+				const neighbors = [
+					{ dx: 1, dy: 0 },
+					{ dx: -1, dy: 0 },
+					{ dx: 0, dy: 1 },
+					{ dx: 0, dy: -1 }
+				];
+
+				for (const n of neighbors) {
+					const nx = curr.x + n.dx;
+					const ny = curr.y + n.dy;
+					const n_key = `${l},${nx},${ny}`;
+
+					if (!visited.has(n_key)) {
+						if (getUtilityType(l, nx, ny) === type) {
+							visited.add(n_key);
+							queue.push({ x: nx, y: ny });
+						}
+					} // else already visited or not matching
+				}
+			}
+
+			const w = max_x - min_x + 1;
+			const h = max_y - min_y + 1;
+
+			// Validate
+			if (w < 2 || h < 2 || group_blocks.length !== w * h) continue;
+
+			// Surrounded by empty or non-utility blocks?
+			let surrounded = true;
+			for (let sy = min_y - 1; sy <= max_y + 1; sy++) {
+				for (let sx = min_x - 1; sx <= max_x + 1; sx++) {
+					// Ignore inner blocks (the rectangle itself)
+					if (sx >= min_x && sx <= max_x && sy >= min_y && sy <= max_y) continue;
+					if (getUtilityType(l, sx, sy) !== null) {
+						surrounded = false;
+						break;
+					}
+				}
+				if (!surrounded) break;
+			}
+
+			if (surrounded) {
+				// We have a valid new simple rectangle group.
+				new_groups.push({ l, type, x: min_x, y: min_y, w, h, data: {} });
+			}
+		}
+
+		// Merge data from old arrays (as requested in Management mode.md)
+		// - exact match: copy old
+		// - overlaps: merge
+		const final_groups = [];
+		for (const ng of new_groups) {
+			const overlaps = this.utility_groups.filter(og => og.l === ng.l && og.type === ng.type && Math.max(og.x, ng.x) <= Math.min(og.x + og.w - 1, ng.x + ng.w - 1) && Math.max(og.y, ng.y) <= Math.min(og.y + og.h - 1, ng.y + ng.h - 1));
+
+			// Exact match
+			if (overlaps.length === 1 && overlaps[0].x === ng.x && overlaps[0].y === ng.y && overlaps[0].w === ng.w && overlaps[0].h === ng.h) {
+				final_groups.push(overlaps[0]);
+			}
+
+			// Overlaps, merge data
+			else if (overlaps.length > 0) {
+				let merged_data = {};
+				for (const og of overlaps) merged_data = { ...merged_data, ...og.data };
+
+				ng.data = merged_data;
+				final_groups.push(ng);
+			}
+
+			// No overlap, just brand new
+			else {
+				final_groups.push(ng);
+			}
+		}
+
+		this.utility_groups = final_groups;
+		this.groups_need_update = false;
+		console.log('Utility groups updated:', this.utility_groups);
 	}
 
 	createEntityLayer(layer_index) {
@@ -807,7 +966,7 @@ class Entity extends HTMLElement {
 	 */
 	serialize() {
 		const obj = {};
-		const keys = ['id', 'position', 'velocity', 'mass'];
+		const keys = ['id', 'position', 'velocity', 'mass', 'utility_groups'];
 		for (const key of keys) obj[key] = this[key];
 		return obj;
 	}
@@ -851,18 +1010,28 @@ class Entity extends HTMLElement {
 				}
 
 				for (let i = 0; i < 1024; i++) {
-					if (states_array[i] === 0) continue;
 					const x = i % 32;
 					const y = Math.floor(i / 32);
 
-					layer.setBlock(x, y, {
-						state: states_array[i],
-						color: colors_array[i]
-					});
+					if (states_array[i] === 0) {
+						layer.deleteBlock(x, y, true /* skip_events */);
+						continue;
+					}
+
+					layer.setBlock(
+						x,
+						y,
+						{
+							state: states_array[i],
+							color: colors_array[i]
+						},
+						true /* skip_events */
+					);
 				}
 			}
 		}
 
+		this.groups_need_update = false;
 		this.render();
 	}
 
