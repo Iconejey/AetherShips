@@ -66,6 +66,10 @@ class Game extends HTMLElement {
 		return stars.filter(s => -16 <= s.sx && s.sx <= 15 && -16 <= s.sy && s.sy <= 15);
 	}
 
+	static sfx(file_name) {
+		window.audio?.sfx(file_name);
+	}
+
 	static async createGalaxy(name, seed) {
 		const stars = Game.generateStars(seed);
 
@@ -163,10 +167,6 @@ class Game extends HTMLElement {
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
-
-		// Start background music
-		window.audio?.setGalaxyLoaded(false);
-		window.audio?.playTrack('passing into shadow.strudel');
 
 		if (!this.fps_counter) {
 			this.fps_counter = document.createElement('div');
@@ -317,7 +317,6 @@ class Game extends HTMLElement {
 			this.resetStars();
 			this.loading = false;
 			document.body.classList.remove('start-menu');
-			window.audio?.setGalaxyLoaded(true);
 		} catch (err) {
 			console.error('Failed to load galaxy:', err);
 			$('user-terminal').startMenu(() => $('user-terminal').error(`Failed to load galaxy: ${err.message}`));
@@ -641,6 +640,8 @@ class Game extends HTMLElement {
 				compass_el.style.display = this.mode === 'navigation' && !document.body.classList.contains('map-mode') && !document.body.classList.contains('start-menu') ? 'block' : 'none';
 			}
 
+			this.updateAudio();
+
 			this.animation_frame_id = window.requestAnimationFrame(tick);
 		};
 
@@ -658,6 +659,36 @@ class Game extends HTMLElement {
 			this.animation_frame_id = null;
 		}
 		this.last_frame_time = null;
+	}
+
+	/**
+	 * Updates the audio muffle based on game state
+	 */
+	updateAudio() {
+		this.audio_muffle = this.audio_muffle ?? 0;
+		let target_muffle = 0;
+
+		if (!document.body.classList.contains('start-menu')) {
+			let speed_ratio = 0;
+			const driven_entity = this.player?.driven_entity;
+			if (driven_entity) {
+				const vx = driven_entity.velocity.vx;
+				const vy = driven_entity.velocity.vy;
+				const speed = Math.sqrt(vx * vx + vy * vy);
+				const sectors_per_minute = (speed * 60 * 60) / (32 * 256);
+
+				const max_expected_speed = 0.8; // Sectors per minute
+				console.log({ sectors_per_minute, max_expected_speed });
+				speed_ratio = Math.min(sectors_per_minute / max_expected_speed, 1);
+			}
+
+			target_muffle = 100 - speed_ratio * 100;
+		}
+
+		// Smoothly interpolate current muffle towards the target to prevent abrupt audio changes
+		this.audio_muffle += (target_muffle - this.audio_muffle) * 0.01;
+
+		window.audio?.setMuffle(this.audio_muffle);
 	}
 
 	/**

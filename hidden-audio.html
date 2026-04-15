@@ -1,105 +1,97 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-    <head>
-        <meta charset="UTF-8" />
-        <meta http-equiv="Content-Security-Policy" content="default-src 'self' 'unsafe-eval' https: http: data: blob: media:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https: http: 'unsafe-hashes' blob: data:; worker-src * blob: data: https: http: 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https: http:;" />
-        <script>
-            // Polyfill process environment so nanostores does not crash checking process.env.NODE_ENV
-            window.process = { env: { NODE_ENV: 'production' } };
-        </script>
-    </head>
-    <body>
-        <script type="importmap">
-            {
-                "imports": {
-                    "@strudel/web": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/soundfonts": "./node_modules/@strudel/soundfonts/dist/index.mjs",
-                    "@strudel/core": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/webaudio": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/draw": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/tonal": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/mini": "./node_modules/@strudel/web/dist/index.mjs",
-                    "@strudel/transpiler": "./node_modules/@strudel/web/dist/index.mjs",
-                    "sfumato": "./node_modules/sfumato/dist/sfumato.js",
-                    "soundfont2": "./shim-soundfont2.mjs"
-                }
-            }
-        </script>
-        <script type="module">
-            import * as strudel from '@strudel/web';
-            import { registerSoundfonts } from '@strudel/soundfonts';
+	<head>
+		<meta charset="UTF-8" />
+		<meta
+			http-equiv="Content-Security-Policy"
+			content="default-src 'self' 'unsafe-eval' 'unsafe-inline' https: http: data: blob: media:; script-src 'self' 'unsafe-eval' 'unsafe-inline' https: http: 'unsafe-hashes' blob: data:; media-src 'self' blob: data:; worker-src * blob: data: https: http: 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https: http:;"
+		/>
+	</head>
+	<body>
+		<script type="module">
+			const audio_ctx = new window.AudioContext();
 
-            // Attach ALL strudel exports to window so eval works properly natively
-            for (const [key, value] of Object.entries(strudel)) {
-                window[key] = value;
-            }
+			const main_bus = audio_ctx.createGain();
+			main_bus.connect(audio_ctx.destination);
 
-            // Initialize strudel engine
-            const repl = await strudel.initStrudel({
-                prebake: async () => {
-                    await registerSoundfonts();
-                    
-                    const ds = 'https://raw.githubusercontent.com/felixroos/dough-samples/main';
-                    const tc = 'https://raw.githubusercontent.com/tidalcycles/uzu-drumkit/main';
-                    const ts = 'https://raw.githubusercontent.com/todepond/samples/main';
-                    
-                    await Promise.all([
-                        strudel.samples(`${ds}/tidal-drum-machines.json`),
-                        strudel.samples(`${ds}/piano.json`),
-                        strudel.samples(`${ds}/Dirt-Samples.json`),
-                        strudel.samples(`${ds}/vcsl.json`),
-                        strudel.samples(`${ds}/mridangam.json`),
-                        strudel.samples(`${tc}/strudel.json`)
-                    ]);
-                    
-                    strudel.aliasBank?.(`${ts}/tidal-drum-machines-alias.json`);
+			const music_bus = audio_ctx.createGain();
+			const music_filter = audio_ctx.createBiquadFilter();
+			music_filter.type = 'lowpass';
+			music_filter.frequency.value = 20000;
+			music_bus.connect(music_filter);
+			music_filter.connect(main_bus);
 
-                    await strudel.defaultPrebake();
-                }
-            });
-            window.strudelRepl = repl;
+			const sfx_bus = audio_ctx.createGain();
+			sfx_bus.connect(main_bus);
 
-            // Force initialization of the audio context and worklet
-            // By default Strudel waits for the first mouse click, but we are a hidden background window!
-            await strudel.initAudio();
+			// Music Player logic
+			const music_tracks = [];
+			let current_music_source = null;
 
-            window.audioController.notifyReady();
+			async function playNextTrack() {
+				if (music_tracks.length === 0) return;
+				const track_path = music_tracks[Math.floor(Math.random() * music_tracks.length)];
 
-            window.strudelGlobalParams = { isGalaxyLoaded: false, currentTrack: null };
-            window.audioController.onSetGalaxyLoaded((val) => {
-                if (window.strudelGlobalParams.isGalaxyLoaded === val) return;
-                window.strudelGlobalParams.isGalaxyLoaded = val;
-                
-                if (window.strudelGlobalParams.currentTrack) {
-                    const src = window.audioController.getTrackSource(window.strudelGlobalParams.currentTrack);
-                    if (src) {
-                        try {
-                            const evaluate = window.strudelRepl?.evaluate ?? strudel.evaluate ?? window.evaluate;
-                            evaluate(src);
-                        } catch (e) { console.error(e); }
-                    }
-                }
-            });
+				try {
+					const response = await fetch(track_path);
+					const array_buffer = await response.arrayBuffer();
+					const audio_buffer = await audio_ctx.decodeAudioData(array_buffer);
 
-            window.audioController.onPlayTrack((trackName) => {
-                window.strudelGlobalParams.currentTrack = trackName;
-                const src = window.audioController.getTrackSource(trackName);
-                if (src) {
-                    try {
-                        const evaluate = window.strudelRepl?.evaluate ?? strudel.evaluate ?? window.evaluate;
-                        if (!evaluate) throw new Error("No evaluate function found");
-                        evaluate(src);
-                    } catch (e) {
-                        console.error("Strudel evaluation error:", e);
-                    }
-                } else {
-                    console.warn("Track not found:", trackName);
-                }
-            });
+					if (current_music_source) {
+						current_music_source.stop();
+						current_music_source.disconnect();
+					}
 
-            window.audioController.onStopTrack(() => {
-                (window.hush ?? strudel.hush ?? window.strudelRepl?.hush)?.();
-            });
-        </script>
-    </body>
+					current_music_source = audio_ctx.createBufferSource();
+					current_music_source.buffer = audio_buffer;
+					current_music_source.connect(music_bus);
+					current_music_source.onended = () => {
+						playNextTrack();
+					};
+					current_music_source.start();
+				} catch (e) {
+					console.error('Error playing track:', track_path, e);
+					setTimeout(playNextTrack, 1000);
+				}
+			}
+
+			window.audioController.onSetMusicTracks(tracks => {
+				const was_empty = music_tracks.length === 0;
+				music_tracks.length = 0;
+				music_tracks.push(...tracks);
+				if (was_empty && music_tracks.length > 0) {
+					playNextTrack();
+				}
+			});
+
+			window.audioController.onSetMuffle(muffle_level => {
+				const normalized = Math.max(0, Math.min(100, muffle_level)) / 100;
+
+				const min_freq = 300;
+				const max_freq = 20000;
+				music_filter.frequency.value = min_freq + (max_freq - min_freq) * Math.pow(1 - normalized, 2);
+
+				const min_gain = 0.2;
+				const max_gain = 1.0;
+				music_bus.gain.value = min_gain + (max_gain - min_gain) * (1 - normalized);
+			});
+
+			window.audioController.onPlaySfx(async sfx_path => {
+				try {
+					const response = await fetch(sfx_path);
+					const array_buffer = await response.arrayBuffer();
+					const audio_buffer = await audio_ctx.decodeAudioData(array_buffer);
+
+					const source = audio_ctx.createBufferSource();
+					source.buffer = audio_buffer;
+					source.connect(sfx_bus);
+					source.start();
+				} catch (e) {
+					console.error('Error playing sfx:', sfx_path, e);
+				}
+			});
+
+			window.audioController.notifyReady();
+		</script>
+	</body>
 </html>

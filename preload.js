@@ -49,7 +49,6 @@ contextBridge.exposeInMainWorld('figlet', (text, options) => {
 });
 
 contextBridge.exposeInMainWorld('audio', {
-	playTrack: track_name => ipc.send('audio-play', track_name),
-	stopTrack: () => ipc.send('audio-stop'),
-	setGalaxyLoaded: val => ipc.send('audio-set-galaxy-loaded', val)
+	setMuffle: level => ipc.send('audio-set-muffle', level),
+	sfx: sfx_name => ipc.send('audio-play-sfx', sfx_name)
 });

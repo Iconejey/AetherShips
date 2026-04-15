@@ -1,17 +1,8 @@
 const { contextBridge, ipcRenderer } = require('electron');
-const path = require('path');
-const fs = require('fs');
 
 contextBridge.exposeInMainWorld('audioController', {
 	notifyReady: () => ipcRenderer.send('audio-ready'),
-	onSetGalaxyLoaded: callback => ipcRenderer.on('set-galaxy-loaded', (e, val) => callback(val)),
-	onPlayTrack: callback => ipcRenderer.on('play-track', (e, trackName) => callback(trackName)),
-	onStopTrack: callback => ipcRenderer.on('stop-track', () => callback()),
-	getTrackSource: trackName => {
-		const trackPath = path.join(__dirname, 'js', 'strudel', `${trackName}.js`);
-		if (fs.existsSync(trackPath)) {
-			return fs.readFileSync(trackPath, 'utf8');
-		}
-		return null;
-	}
+	onSetMusicTracks: callback => ipcRenderer.on('set-music-tracks', (e, tracks) => callback(tracks)),
+	onSetMuffle: callback => ipcRenderer.on('set-muffle', (e, muffle_level) => callback(muffle_level)),
+	onPlaySfx: callback => ipcRenderer.on('play-sfx', (e, sfx_path) => callback(sfx_path))
 });

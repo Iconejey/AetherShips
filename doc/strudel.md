@@ -1,6 +1,6 @@
 # Strudel
 
-> IMPORTANT : This feature has been implemented and is functional, but not the best sounding. It will soon be replaced (disabled but not removed) by ogg/wav files for better sound quality.
+> **Note :** This feature has been removed and replaced with a more traditional music system.
 
 This project uses Strudel.js, a JavaScript library created for music live coding. We will use this library for the background music in the game as it allows :
 

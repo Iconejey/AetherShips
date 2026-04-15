@@ -300,10 +300,10 @@ ipcMain.handle('save-finalize', async (event, galaxy_name) => {
 app.commandLine.appendSwitch('force-color-profile', 'srgb');
 app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 
-let audioWin;
+let audio_win;
 
 function createAudioWindow() {
-	audioWin = new BrowserWindow({
+	audio_win = new BrowserWindow({
 		show: false,
 		webPreferences: {
 			nodeIntegration: false,
@@ -313,36 +313,33 @@ function createAudioWindow() {
 		}
 	});
 
-	audioWin.loadFile('hidden-audio.html');
+	audio_win.loadFile('hidden-audio.html');
 }
 
-let audioWinReady = false;
-let pendingTrack = null;
+let audio_win_ready = false;
 
 ipcMain.on('audio-ready', () => {
-	audioWinReady = true;
-	if (pendingTrack && audioWin) {
-		audioWin.webContents.send('play-track', pendingTrack);
-		pendingTrack = null;
+	audio_win_ready = true;
+	if (audio_win) {
+		const music_dir = path.join(__dirname, 'audio', 'music');
+		if (fs.existsSync(music_dir)) {
+			const files = fs.readdirSync(music_dir).filter(f => f.endsWith('.mp3') || f.endsWith('.wav') || f.endsWith('.ogg'));
+			const tags = files.map(f => `./audio/music/${f}`);
+			audio_win.webContents.send('set-music-tracks', tags);
+		}
 	}
 });
 
-ipcMain.on('audio-play', (event, trackName) => {
-	if (audioWin && audioWinReady) {
-		audioWin.webContents.send('play-track', trackName);
-	} else {
-		pendingTrack = trackName;
+ipcMain.on('audio-set-muffle', (event, muffle_level) => {
+	if (audio_win && audio_win_ready) {
+		audio_win.webContents.send('set-muffle', muffle_level);
 	}
 });
 
-ipcMain.on('audio-stop', event => {
-	if (audioWin) {
-		audioWin.webContents.send('stop-track');
+ipcMain.on('audio-play-sfx', (event, sfx_file_name) => {
+	if (audio_win && audio_win_ready) {
+		audio_win.webContents.send('play-sfx', `./audio/sfx/${sfx_file_name}`);
 	}
-});
-
-ipcMain.on('audio-set-galaxy-loaded', (event, val) => {
-	audioWin?.webContents.send('set-galaxy-loaded', val);
 });
 
 function createWindow() {
