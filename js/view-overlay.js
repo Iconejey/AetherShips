@@ -582,27 +582,35 @@ class ViewOverlay extends HTMLElement {
 				ctx.rotate(entity_rotation);
 				ctx.lineWidth = 2;
 
+				const hovered_block = this.screenToBlock(this.mouse_x, this.mouse_y);
+
 				for (const group of entity.utility_groups) {
 					ctx.beginPath();
 					const block_def = blocks_by_type[group.type];
 					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
 
+					const is_hovered = hovered_block && hovered_block.bx >= group.x && hovered_block.bx < group.x + group.w && hovered_block.by >= group.y && hovered_block.by < group.y + group.h;
+
 					const r = (color_val >>> 24) & 0xff;
 					const g = (color_val >>> 16) & 0xff;
 					const b = (color_val >>> 8) & 0xff;
 
-					// Slightly lighter background
-					const br = Math.round(r + (255 - r) * 0.4);
-					const bg = Math.round(g + (255 - g) * 0.4);
-					const bb = Math.round(b + (255 - b) * 0.4);
+					const bg_mix = is_hovered ? 0.7 : 0.4;
+					const bg_alpha = is_hovered ? 0.6 : 0.3;
+					const stroke_alpha = is_hovered ? 1.0 : 0.9;
+
+					// Slightly lighter background, even lighter when hovered
+					const br = Math.round(r + (255 - r) * bg_mix);
+					const bg = Math.round(g + (255 - g) * bg_mix);
+					const bb = Math.round(b + (255 - b) * bg_mix);
 
 					// Very light border
 					const sr = Math.round(r + (255 - r) * 0.8);
 					const sg = Math.round(g + (255 - g) * 0.8);
 					const sb = Math.round(b + (255 - b) * 0.8);
 
-					ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, 0.3)`;
-					ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, 0.9)`;
+					ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, ${bg_alpha})`;
+					ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${stroke_alpha})`;
 
 					ctx.rect(group.x * scale, group.y * scale, group.w * scale, group.h * scale);
 					ctx.fill();
