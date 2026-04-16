@@ -544,6 +544,30 @@ class Entity extends HTMLElement {
 		};
 	}
 
+	get sunlight() {
+		const stars = window.game?.galaxy?.stars;
+		if (!stars) return 0;
+
+		const sector_size = 32 * 256;
+		const half_sector = sector_size / 2;
+		const { sector } = Entity.globalPosition(this.position);
+
+		const star = stars.find(s => s.sx === sector.sx && s.sy === sector.sy);
+		if (!star) return 0;
+
+		const star_world_x = star.sx * sector_size + half_sector;
+		const star_world_y = star.sy * sector_size + half_sector;
+
+		const dx = this.position.x - star_world_x;
+		const dy = this.position.y - star_world_y;
+		const distance = Math.sqrt(dx * dx + dy * dy);
+
+		const max_distance = sector_size / 4;
+		if (distance >= max_distance) return 0;
+
+		return Math.floor((1 - distance / max_distance) * 100);
+	}
+
 	constructor() {
 		super();
 		this.position = { x: 0, y: 0, r: 0 };
