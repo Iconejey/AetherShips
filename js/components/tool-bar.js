@@ -25,6 +25,7 @@ class ToolBar extends HTMLElement {
 
 			if (window.game && value === 'management') {
 				window.game.player?.driven_entity?.updateUtilityGroups();
+				window.game.player?.driven_entity?.updateMass();
 			}
 
 			// Open sidebar with appropriate tools

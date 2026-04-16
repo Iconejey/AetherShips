@@ -114,3 +114,34 @@ entity-root {
 		transform: translate(-50%, -50%) rotate(-45deg);
 	}
 }
+
+.center-of-mass {
+	position: absolute;
+	border-radius: 50%;
+	z-index: 100;
+	pointer-events: none;
+	overflow: hidden;
+	transform: translate(-50%, -50%) scale(calc(1 / var(--game-scale)));
+	opacity: 0.8;
+
+	& > div {
+		display: flex;
+
+		& .square {
+			width: calc((10px + 1px * var(--game-scale)) / 2);
+			height: calc((10px + 1px * var(--game-scale)) / 2);
+
+			&.yellow {
+				background-color: #ecc52d;
+			}
+
+			&.dark {
+				background-color: #222222;
+			}
+		}
+	}
+}
+
+body:not(.management-mode) .center-of-mass {
+	display: none;
+}

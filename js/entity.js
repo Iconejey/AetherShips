@@ -195,6 +195,7 @@ class Layer {
 		}
 
 		if (changed && !skip_events) {
+			this.entity.flagMassUpdate();
 			const had_utility = blocks_by_type[old_type]?.utility ?? false;
 			const has_utility = blocks_by_type[new_type]?.utility ?? false;
 			if (had_utility || has_utility) this.entity.flagGroupUpdate();
@@ -234,6 +235,7 @@ class Layer {
 		if (this.block_count > 0) this.drawPixel(x, y);
 
 		if (!skip_events) {
+			this.entity.flagMassUpdate();
 			const had_utility = blocks_by_type[old_type]?.utility ?? false;
 			if (had_utility) this.entity.flagGroupUpdate();
 			game.planSave(1000);
@@ -549,12 +551,85 @@ class Entity extends HTMLElement {
 		this.mass = { cx: 0, cy: 0, total: 0 };
 		this.dirty_layers = [];
 		this.groups_need_update = true;
+		this.mass_needs_update = true;
 		this.utility_groups = [];
+	}
+
+	flagMassUpdate() {
+		this.mass_needs_update = true;
 	}
 
 	flagGroupUpdate() {
 		this.groups_need_update = true;
 		console.log('Entity flagged for utility group update');
+	}
+
+	updateMass(force = false) {
+		if (!this.mass_needs_update && !force) return;
+		console.log('Mass update');
+
+		let total_mass = 0;
+		let sum_x = 0;
+		let sum_y = 0;
+
+		for (const entity_layer of this.querySelectorAll('entity-layer')) {
+			for (const chunk_layer of entity_layer.chunk_layers.values()) {
+				const layer = chunk_layer.layer;
+				if (!layer) continue;
+
+				const cx = chunk_layer.chunk_x;
+				const cy = chunk_layer.chunk_y;
+
+				for (let i = 0; i < 1024; i++) {
+					const type = state_struct.type.get(layer.block_states, i);
+					if (type) {
+						const mass = blocks_by_type[type]?.mass || 10;
+						const local_x = i % 32;
+						const local_y = Math.floor(i / 32);
+						const x = cx * 32 + local_x;
+						const y = cy * 32 + local_y;
+
+						total_mass += mass;
+						sum_x += (x + 0.5) * mass;
+						sum_y += (y + 0.5) * mass;
+					}
+				}
+			}
+		}
+
+		if (total_mass > 0) {
+			this.mass.cx = sum_x / total_mass;
+			this.mass.cy = sum_y / total_mass;
+			this.mass.total = total_mass;
+		} else {
+			this.mass.cx = 0;
+			this.mass.cy = 0;
+			this.mass.total = 0;
+		}
+
+		let com_el = this.querySelector('.center-of-mass');
+		if (!com_el) {
+			com_el = document.createElement('div');
+			com_el.className = 'center-of-mass';
+			com_el.innerHTML = html`
+				<div>
+					<div class="yellow square"></div>
+					<div class="dark square"></div>
+				</div>
+				<div>
+					<div class="dark square"></div>
+					<div class="yellow square"></div>
+				</div>
+			`;
+
+			this.appendChild(com_el);
+		}
+
+		// CSS position mapping
+		com_el.style.left = `${this.mass.cx}px`;
+		com_el.style.top = `${this.mass.cy}px`;
+
+		this.mass_needs_update = false;
 	}
 
 	updateUtilityGroups(force = false) {
@@ -952,6 +1027,7 @@ class Entity extends HTMLElement {
 	render() {
 		for (const dirty_layer of this.dirty_layers) dirty_layer?.render();
 		this.dirty_layers.length = 0;
+		this.updateMass();
 	}
 
 	/**
@@ -1032,6 +1108,7 @@ class Entity extends HTMLElement {
 		}
 
 		this.groups_need_update = false;
+		this.flagMassUpdate();
 		this.render();
 	}
 
