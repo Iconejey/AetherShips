@@ -142,6 +142,7 @@ entity-root {
 	}
 }
 
-body:not(.management-mode) .center-of-mass {
+body:not(.management-mode) .center-of-mass,
+body.map-mode .center-of-mass {
 	display: none;
 }

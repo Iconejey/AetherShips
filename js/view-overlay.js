@@ -575,7 +575,7 @@ class ViewOverlay extends HTMLElement {
 			}
 		}
 
-		if (is_management_mode) {
+		if (is_management_mode && !is_map_mode) {
 			const entity = window.game?.player?.driven_entity;
 			if (entity?.utility_groups) {
 				ctx.save();
