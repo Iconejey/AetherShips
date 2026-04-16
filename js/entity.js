@@ -561,12 +561,10 @@ class Entity extends HTMLElement {
 
 	flagGroupUpdate() {
 		this.groups_need_update = true;
-		console.log('Entity flagged for utility group update');
 	}
 
 	updateMass(force = false) {
 		if (!this.mass_needs_update && !force) return;
-		console.log('Mass update');
 
 		let total_mass = 0;
 		let sum_x = 0;
@@ -632,9 +630,77 @@ class Entity extends HTMLElement {
 		this.mass_needs_update = false;
 	}
 
+	getGroup(x, y) {
+		for (const group of this.utility_groups) {
+			if (x >= group.x && x < group.x + group.w && y >= group.y && y < group.y + group.h) {
+				return group;
+			}
+		}
+		return null;
+	}
+
+	getGroupInfo(target_group) {
+		if (!target_group) return null;
+
+		const total_blocks = target_group.w * target_group.h;
+		const block_def = blocks_by_type[target_group.type];
+		const block_mass = block_def?.mass || 10;
+		const total_mass = block_mass * total_blocks;
+
+		const result = {
+			type: block_def?.name,
+			size: `${target_group.w}x${target_group.h} (${total_blocks} blocks)`,
+			mass: total_mass
+		};
+
+		const process = (types, callback) => {
+			if (types.includes(block_def?.name)) {
+				const new_attrs = callback(block_def);
+				Object.assign(result, new_attrs);
+			}
+		};
+
+		// Solar panels
+		process(['solar_panel_tier_1', 'solar_panel_tier_2', 'solar_panel_tier_3', 'solar_panel_tier_4'], def => ({}));
+
+		// Capacitors
+		process(['basic_capacitor', 'high_density_capacitor'], def => ({}));
+
+		// Refineries
+		process(['industrial_refinery', 'uranium_refinery', 'bio_refinery'], def => ({}));
+
+		// Generators
+		process(['bio_fuel_electric_generator', 'uranium_electric_generator'], def => ({}));
+
+		// Greenhouse
+		process(['greenhouse'], def => ({}));
+
+		// Thrusters
+		process(['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'], def => ({}));
+
+		// Warp drive and gate
+		process(['warp_drive', 'warp_gate'], def => ({}));
+
+		// Cannons
+		process(['cannon_tier_1', 'cannon_tier_2', 'cannon_tier_3', 'cannon_tier_4'], def => ({}));
+
+		// Missiles and guided missiles
+		process(['missile_launcher_tier_1', 'missile_launcher_tier_2', 'missile_launcher_tier_3', 'guided_missile_launcher_tier_1', 'guided_missile_launcher_tier_2', 'guided_missile_launcher_tier_3'], def => ({}));
+
+		// Flare launcher
+		process(['flare_launcher'], def => ({}));
+
+		// Containers
+		process(['industrial_container', 'bio_fuel_container', 'uranium_container'], def => ({}));
+
+		// Radars
+		process(['radar'], def => ({}));
+
+		return result;
+	}
+
 	updateUtilityGroups(force = false) {
 		if (!this.groups_need_update && !force) return;
-		console.log('Updating utility groups');
 
 		const new_groups = [];
 		const visited = new Set();
@@ -770,7 +836,6 @@ class Entity extends HTMLElement {
 
 		this.utility_groups = final_groups;
 		this.groups_need_update = false;
-		console.log('Utility groups updated:', this.utility_groups);
 	}
 
 	createEntityLayer(layer_index) {

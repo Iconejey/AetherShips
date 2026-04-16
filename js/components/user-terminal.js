@@ -6,7 +6,7 @@ class UserTerminal extends HTMLElement {
 		this.tick_interval_id = window.setInterval(() => {
 			if (this.current_mode !== 'start_menu' && game?.mode !== this.current_mode) this.mode = game?.mode;
 			this.tick?.();
-		}, 250);
+		}, 100);
 	}
 
 	/**
@@ -155,6 +155,7 @@ class UserTerminal extends HTMLElement {
 		if (mode === 'start_menu') return this.startMenu();
 		if (mode === 'navigation') return this.navigation();
 		if (mode === 'edit') return this.edit();
+		if (mode === 'management') return this.management();
 	}
 
 	async startMenu(message_callback) {
@@ -265,9 +266,6 @@ class UserTerminal extends HTMLElement {
 		this.tick = () => {
 			const followed = window.game?.camera?.followed_entity;
 			if (!followed) return;
-
-			const { sector, chunk } = Entity.globalPosition(followed.position);
-			if (position_line) position_line.textContent = `Sector [${sector.sx}, ${sector.sy}] position (${chunk.cx}, ${chunk.cy})`;
 			if (speed_line) {
 				const speed = Math.sqrt((followed.velocity?.vx || 0) ** 2 + (followed.velocity?.vy || 0) ** 2);
 				const sectors_per_min = (speed * 60 * 60) / (32 * 256);
@@ -283,22 +281,71 @@ class UserTerminal extends HTMLElement {
 		const block_type_line = this.line('Block : -');
 
 		this.tick = () => {
-			const followed_entity = game?.camera?.followed_entity;
+			const entity = window.game.player?.driven_entity;
 			const view_overlay = $('view-overlay');
-			if (!followed_entity || !view_overlay) {
-				block_type_line.textContent = 'Block : -';
-				return;
-			}
 
 			const hovered_block = view_overlay.screenToBlock(view_overlay.mouse_x, view_overlay.mouse_y);
-			if (!hovered_block) {
+			if (!hovered_block || !entity) {
 				block_type_line.textContent = 'Block : -';
 				return;
 			}
 
-			const block_info = followed_entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
+			const block_info = entity.getBlockInfo(game.selected_layer, hovered_block.bx, hovered_block.by);
 			const block_name = block_info.is_empty ? 'empty' : block_info.name;
 			block_type_line.textContent = `Block : ${block_name} (${hovered_block.bx}, ${hovered_block.by})`;
+		};
+	}
+
+	management() {
+		this.clear();
+		this.line(`U.R.A. OS version ${this.version} - Day 1`);
+		const mass_line = this.line();
+		this.line();
+
+		let ui_lines = {}; // dynamically created DOM lines
+		let target_info_line = null; // single line to show 'Hover over a utility group...'
+
+		this.tick = () => {
+			const entity = window.game.player?.driven_entity;
+			const view_overlay = $('view-overlay');
+
+			if (!entity || !view_overlay) return;
+
+			if (mass_line) mass_line.textContent = `Ship Mass: ${entity.mass?.total || 0}`;
+
+			const hovered_block = view_overlay.screenToBlock(view_overlay.mouse_x, view_overlay.mouse_y);
+			const target_group = entity.getGroup(hovered_block?.bx, hovered_block?.by);
+			const group_info = entity.getGroupInfo(target_group);
+
+			if (group_info) {
+				if (target_info_line) {
+					target_info_line.remove();
+					target_info_line = null;
+				}
+
+				// Rebuild UI if structure has changed
+				const keys = Object.keys(group_info);
+				const has_all_keys = keys.every(k => ui_lines[k]);
+				const has_same_count = Object.keys(ui_lines).length === keys.length;
+
+				if (!has_all_keys || !has_same_count) {
+					Object.values(ui_lines).forEach(l => l?.remove());
+					ui_lines = {};
+					for (const key of keys) ui_lines[key] = this.line('');
+				}
+
+				for (const key of keys) {
+					const display_key = key.charAt(0).toUpperCase() + key.slice(1).replace(/_/g, ' ');
+					ui_lines[key].innerHTML = `${display_key.padEnd(10, ' ')} : ${group_info[key]}`;
+				}
+			} else {
+				Object.values(ui_lines).forEach(l => l?.remove());
+				ui_lines = {};
+
+				if (!target_info_line) {
+					target_info_line = this.line('Hover over a utility group to see information.');
+				}
+			}
 		};
 	}
 }
