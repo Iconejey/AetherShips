@@ -315,7 +315,7 @@ class UserTerminal extends HTMLElement {
 
 			const hovered_block = view_overlay.screenToBlock(view_overlay.mouse_x, view_overlay.mouse_y);
 			const target_group = entity.getGroup(hovered_block?.bx, hovered_block?.by);
-			const group_info = entity.getGroupInfo(target_group);
+			const group_info = entity.getGroupInfo(target_group, true);
 
 			if (group_info) {
 				if (target_info_line) {

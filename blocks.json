@@ -253,7 +253,8 @@
 			"health": 8,
 			"colors": ["#2f5265ff"],
 			"utility": true,
-			"mass": 8
+			"mass": 8,
+			"generation": 0.02
 		},
 		{
 			"name": "solar_panel_tier_2",
@@ -261,7 +262,8 @@
 			"health": 9,
 			"colors": ["#345d74ff"],
 			"utility": true,
-			"mass": 9
+			"mass": 9,
+			"generation": 0.03
 		},
 		{
 			"name": "solar_panel_tier_3",
@@ -269,7 +271,8 @@
 			"health": 10,
 			"colors": ["#386885ff"],
 			"utility": true,
-			"mass": 10
+			"mass": 10,
+			"generation": 0.04
 		},
 		{
 			"name": "solar_panel_tier_4",
@@ -277,7 +280,8 @@
 			"health": 11,
 			"colors": ["#3d7396ff"],
 			"utility": true,
-			"mass": 11
+			"mass": 11,
+			"generation": 0.05
 		},
 		{
 			"name": "basic_capacitor",
@@ -286,7 +290,8 @@
 			"colors": ["#4f6f90ff"],
 			"can_be_painted": true,
 			"utility": true,
-			"mass": 8
+			"mass": 8,
+			"capacity": 1
 		},
 		{
 			"name": "high_density_capacitor",
@@ -295,7 +300,8 @@
 			"colors": ["#3f5f80ff"],
 			"can_be_painted": true,
 			"utility": true,
-			"mass": 10
+			"mass": 10,
+			"capacity": 2
 		},
 		{
 			"name": "industrial_refinery",

@@ -663,7 +663,7 @@ class Entity extends HTMLElement {
 		return null;
 	}
 
-	getGroupInfo(target_group) {
+	getGroupInfo(target_group, formatted = false) {
 		if (!target_group) return null;
 
 		const total_blocks = target_group.w * target_group.h;
@@ -685,10 +685,24 @@ class Entity extends HTMLElement {
 		};
 
 		// Solar panels
-		process(['solar_panel_tier_1', 'solar_panel_tier_2', 'solar_panel_tier_3', 'solar_panel_tier_4'], def => ({}));
+		process(['solar_panel_tier_1', 'solar_panel_tier_2', 'solar_panel_tier_3', 'solar_panel_tier_4'], def => {
+			const max_generation = def.generation * total_blocks;
+			const generation = max_generation * (this.sunlight / 100);
+			return {
+				sunlight: formatted ? `${this.sunlight}%` : this.sunlight,
+				generation: formatted ? `${generation.toFixed(2)}/${max_generation} u/s` : generation
+			};
+		});
 
 		// Capacitors
-		process(['basic_capacitor', 'high_density_capacitor'], def => ({}));
+		process(['basic_capacitor', 'high_density_capacitor'], def => {
+			const max_capacity = def.capacity * total_blocks;
+			const charge = target_group.data.charge ?? 0;
+
+			return {
+				charge: formatted ? `${charge}/${max_capacity} u` : charge
+			};
+		});
 
 		// Refineries
 		process(['industrial_refinery', 'uranium_refinery', 'bio_refinery'], def => ({}));
