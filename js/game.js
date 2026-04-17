@@ -16,6 +16,23 @@ class Game extends HTMLElement {
 		};
 	}
 
+	static kelvinToRGB(kelvin) {
+		let temp = kelvin / 100;
+		let r, g, b;
+
+		if (temp <= 66) {
+			r = 255;
+			g = Math.max(0, Math.min(255, 99.4708025861 * Math.log(temp) - 161.1195681661));
+			b = temp <= 19 ? 0 : Math.max(0, Math.min(255, 138.5177312231 * Math.log(temp - 10) - 305.0447927307));
+		} else {
+			r = Math.max(0, Math.min(255, 329.698727446 * Math.pow(temp - 60, -0.1332047592)));
+			g = Math.max(0, Math.min(255, 288.1221695283 * Math.pow(temp - 60, -0.0755148492)));
+			b = 255;
+		}
+
+		return `${Math.round(r)}, ${Math.round(g)}, ${Math.round(b)}`;
+	}
+
 	static generateStars(seed) {
 		const stars = [];
 		const seen = new Set();
@@ -55,7 +72,8 @@ class Game extends HTMLElement {
 								const key = `${x},${y}`;
 								if (!seen.has(key)) {
 									seen.add(key);
-									stars.push({ sx: x - 1, sy: y - 1 });
+									const kelvin = 4000 + Math.floor(rng() * rng() * 20000);
+									stars.push({ sx: x - 1, sy: y - 1, color: Game.kelvinToRGB(kelvin) });
 								}
 							}
 						}

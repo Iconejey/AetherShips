@@ -445,7 +445,9 @@ class ViewOverlay extends HTMLElement {
 						const screen_y = (star_world_y - entity_world_y) * scale;
 						const radius = star_radius_base * scale;
 
-						ctx.fillStyle = 'rgba(255, 255, 220, 0.8)';
+						const color = star.color ?? '255, 255, 220';
+
+						ctx.fillStyle = `rgba(${color}, 1)`;
 						ctx.beginPath();
 						ctx.arc(screen_x, screen_y, radius, 0, Math.PI * 2);
 						ctx.fill();
@@ -488,10 +490,14 @@ class ViewOverlay extends HTMLElement {
 						const screen_y = (star_world_y - entity_world_y) * scale;
 						const radius = star_radius_base * scale;
 
+						const color = star.color ?? '255, 255, 220';
+						const color_mid = `rgba(${color}, 0.8)`;
+						const color_edge = `rgba(${color}, 0)`;
+
 						const grad = ctx.createRadialGradient(screen_x, screen_y, 0, screen_x, screen_y, radius);
 						grad.addColorStop(0, 'rgba(255, 255, 255, 1)');
-						grad.addColorStop(0.2, 'rgba(255, 255, 220, 0.8)');
-						grad.addColorStop(1, 'rgba(255, 255, 220, 0)');
+						grad.addColorStop(0.2, color_mid);
+						grad.addColorStop(1, color_edge);
 
 						ctx.globalCompositeOperation = 'destination-over';
 						ctx.fillStyle = grad;
