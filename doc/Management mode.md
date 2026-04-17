@@ -6,7 +6,7 @@ This game mode allows the player to check and configure various aspects of their
 
 A thruster block is not a thruster. It is a part that can be used to create a thruster. A thruster is defined as a group of thurster blocks arranged in a rectangle. Same goes for capacitors, weapons and other utility blocks.
 
-Utility block types are distinguished using a "utility" boolean in `blocks.json`.
+Utility block types are distinguished using a `"utility": "rect"` or `"utility": "line"` string in `blocks.json`.
 
 Entities (such as ships) have a group object that contains groups (arrays) of rectangle coordinates for utility block types.
 
@@ -16,7 +16,7 @@ The following rules apply for rectangle validation :
 
 - The rectangle must be at least 2 blocks wide and 2 blocks tall
 - The rectangle must be fully filled with blocks of the same utility type (no holes or different block types allowed)
-- The rectangle must be surrounded by empty space or non-utility blocks (to prevent overlapping groups)
+- The rectangle must not be in contact with another rectangle group (even with the same block type)
 
 The old rectangles are compared to the new ones of the same type :
 
@@ -111,9 +111,29 @@ When the player hovers over a group, a tooltip appears with various information 
 
 ## Line groups
 
-Pipes and racks are not grouped in rectangles. Instead, they are grouped in 2-block wide lines. A conveyor or rack line group is defined as the array of coordinates where the line starts, bends, and ends.
+Connectors and racks are not grouped in rectangles. Instead, they are grouped in 1-block wide lines. A line group is defined as an optimized array of node coordinates (we skip intermediate nodes in straight lines).
 
-When the player enters management mode, these line groups appear highlighted on the ship with icons and color coding to indicate their type.
+For example, connector blocks in `(0, 0)`, `(0, 1)`, `(0, 2)`, `(1, 2)`, `(2, 2)` are defined as the following array of nodes :
+
+```js
+[
+	{ x: 0, y: 0 },
+	{ x: 0, y: 2 },
+	{ x: 2, y: 2 }
+];
+```
+
+Unlike rectangle groups, line groups are memory-less constructs in the codebase. They don't carry logic values or data attributes between updates. Instead, they are used for their gragh structure and connectivity properties.
+
+When the player enters management mode, these line groups appear highlighted with circles on nodes and lines connecting them. The circles are color coded to indicate the type of line group (connector or rack).
+
+### Connectors
+
+Connectors act as links between rectangle groups in the game logic. After a connector line group update, we traverse the node coordinates to find all connected rectangle groups. Every rect group will have the list of target IDs of the rect groups it is connected to via connectors.
+
+### Racks
+
+Racks are used to connect other entities to the current one. We'll handle this later.
 
 ## Antennas
 

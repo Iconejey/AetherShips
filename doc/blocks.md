@@ -98,7 +98,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 170. **Industrial Container**
 171. **Bio-Fuel Container**
 172. **Uranium Container**
-173. **Pipe**
+173. **Connector**
 174. **Rack**
 
 ## Detection & Communication (200-209)

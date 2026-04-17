@@ -742,7 +742,8 @@ class Entity extends HTMLElement {
 
 		const new_groups = [];
 		const visited = new Set();
-		const utility_blocks = [];
+		const utility_rect_blocks = [];
+		const utility_line_blocks = []; // TODO
 
 		const getUtilityType = (l, x, y) => {
 			const info = this.getBlockInfo(l, x, y);
@@ -762,18 +763,22 @@ class Entity extends HTMLElement {
 
 				for (let i = 0; i < 1024; i++) {
 					const type = state_struct.type.get(layer.block_states, i);
-					if (type && blocks_by_type[type] && blocks_by_type[type].utility) {
+					const def = blocks_by_type[type];
+					if (def?.utility) {
 						const local_x = i % 32;
 						const local_y = Math.floor(i / 32);
 						const x = cx * 32 + local_x;
 						const y = cy * 32 + local_y;
-						utility_blocks.push({ l, x, y, type });
+						const obj = { l, x, y, type };
+						if (def.utility === 'line') utility_line_blocks.push(obj);
+						else utility_rect_blocks.push(obj);
 					}
 				}
 			}
 		}
 
-		for (const block of utility_blocks) {
+		// Group utility rect blocks
+		for (const block of utility_rect_blocks) {
 			const { l, x, y, type } = block;
 			const key = `${l},${x},${y}`;
 			if (visited.has(key)) continue;
@@ -867,9 +872,7 @@ class Entity extends HTMLElement {
 			}
 
 			// No overlap, just brand new
-			else {
-				final_groups.push(ng);
-			}
+			else final_groups.push(ng);
 		}
 
 		this.utility_groups = final_groups;
