@@ -94,7 +94,7 @@ class UserTerminal extends HTMLElement {
 			line.innerHTML = html`${label} : <input type="${type}" maxlength="32" ${required ? 'required' : ''} />`;
 			const input = line.querySelector('input');
 			if (type === 'text') {
-				input.setAttribute('pattern', '[^<>:"/\\|?*]+$');
+				input.setAttribute('pattern', '[^<>{}"/\\\\|?*]+');
 				input.setAttribute('title', 'No special characters: <>:"/\\|?*');
 			}
 			input.focus();
