@@ -51,7 +51,7 @@ class ViewOverlay extends HTMLElement {
 
 		if (this.pen_is_down) {
 			if (this.isUiPointerEvent(e)) return;
-			const edit_mode = game.edit_mode;
+			const edit_mode = this.override_edit_mode || game.edit_mode;
 			if (edit_mode === 'place' || edit_mode === 'erase' || edit_mode === 'paint') this.applyEdit();
 		}
 	}
@@ -75,7 +75,7 @@ class ViewOverlay extends HTMLElement {
 		if (game?.mode !== 'edit') return;
 		if (game.isSpacePressed()) return;
 		if (this.isUiPointerEvent(e)) return;
-		const edit_mode = game.edit_mode;
+		let edit_mode = game.edit_mode;
 
 		// Pick action
 		if (e.button === 1 || (e.button === 0 && e.ctrlKey)) {
@@ -83,7 +83,12 @@ class ViewOverlay extends HTMLElement {
 			return this.copyBlockUnderCursor(edit_mode === 'paint');
 		}
 
-		if (e.button !== 0) return;
+		if (e.button === 2 && edit_mode === 'place') {
+			this.override_edit_mode = 'erase';
+			edit_mode = 'erase';
+		}
+
+		if (e.button !== 0 && !(e.button === 2 && this.override_edit_mode === 'erase')) return;
 
 		const tool = game.selected_tool;
 
@@ -112,13 +117,13 @@ class ViewOverlay extends HTMLElement {
 		if (this.isUiPointerEvent(e)) return;
 
 		const edit_mode = $('side-bar multi-select#edit-mode')?.value;
-		const is_pick_action = [1, 2, 3, 4].includes(e.button);
+		const is_pick_action = [1, 3, 4].includes(e.button);
 		if (edit_mode !== 'paint' || !is_pick_action) return;
 
 		e.preventDefault();
 		this.mouse_x = e.clientX;
 		this.mouse_y = e.clientY;
-		this.copyBlockColorUnderCursor();
+		this.copyBlockUnderCursor(true);
 	}
 
 	onKeyDown(e) {
@@ -141,13 +146,14 @@ class ViewOverlay extends HTMLElement {
 		this.pen_is_down = false;
 		this.drag_start_block_x = null;
 		this.drag_start_block_y = null;
+		this.override_edit_mode = null;
 	}
 
 	applyEdit() {
 		const entity = game?.camera?.followed_entity;
 		if (!entity) return;
 
-		const edit_mode = game.edit_mode;
+		const edit_mode = this.override_edit_mode || game.edit_mode;
 		const layer = game.selected_layer;
 		const block_name = game.selected_block;
 		const selected_paint_color = hexToRgba8888(game.selected_paint_color);
@@ -566,7 +572,7 @@ class ViewOverlay extends HTMLElement {
 		if (is_edit_mode) {
 			const preview_blocks = this.getPreviewBlocks();
 			if (preview_blocks.length > 0) {
-				const edit_mode = $('side-bar multi-select#edit-mode')?.value;
+				const edit_mode = this.override_edit_mode || $('side-bar multi-select#edit-mode')?.value;
 				const fill_color =
 					{
 						erase: '#ff3c3c4d',
