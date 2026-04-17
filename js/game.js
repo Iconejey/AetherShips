@@ -5,6 +5,7 @@ class Game extends HTMLElement {
 	static min_zoom = 0.001;
 	static map_zoom = 0.5;
 	static max_zoom = 20;
+	static default_zoom = 8;
 
 	static rng(seed) {
 		return function (n) {
@@ -162,7 +163,7 @@ class Game extends HTMLElement {
 	async connectedCallback() {
 		await this.loadBlocks();
 
-		this.scale = 8;
+		this.scale = Game.default_zoom;
 		this.style.setProperty('--game-scale', this.scale);
 
 		// Initialize stars first (so they're behind other elements)
@@ -236,6 +237,29 @@ class Game extends HTMLElement {
 				const should_reload = window.confirm('Reload the page? Unsaved changes may be lost.');
 				if (should_reload) window.location.reload();
 				return;
+			}
+
+			if (event.key === 'Escape' || event.code === 'Escape') {
+				// Exit map mode
+				if (this.scale < Game.map_zoom) {
+					// Smoothly transition scale back to default
+					const zoom_transition = () => {
+						this.scale += (Game.default_zoom - this.scale) * 0.15;
+						this.style.setProperty('--game-scale', this.scale);
+						document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
+
+						if (Math.abs(this.scale - Game.default_zoom) > 0.01) requestAnimationFrame(zoom_transition);
+						else {
+							this.scale = Game.default_zoom;
+							this.style.setProperty('--game-scale', this.scale);
+							document.body.classList.toggle('map-mode', false);
+						}
+					};
+					requestAnimationFrame(zoom_transition);
+				}
+
+				// Exit management mode
+				else if (this.mode === 'management') this.mode = 'navigation';
 			}
 
 			this.pressed_keys[event.key] = true;

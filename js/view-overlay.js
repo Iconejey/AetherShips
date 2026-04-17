@@ -122,7 +122,7 @@ class ViewOverlay extends HTMLElement {
 	}
 
 	onKeyDown(e) {
-		if (e.key === 'Escape') {
+		if (e.key === 'Escape' && game?.mode === 'edit') {
 			const edit_mode_select = $('side-bar multi-select#edit-mode');
 
 			// Cancel dragging tool
@@ -131,6 +131,8 @@ class ViewOverlay extends HTMLElement {
 			else if (game.edit_mode === 'erase') edit_mode_select.value = 'place';
 			// Go back to pen tool
 			else if (game.selected_tool !== 'pen') game.selected_tool = 'pen';
+			// Go back to navigation mode
+			else game.mode = 'navigation';
 		}
 	}
 
