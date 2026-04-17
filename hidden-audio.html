@@ -15,22 +15,40 @@
 			main_bus.connect(audio_ctx.destination);
 
 			const music_bus = audio_ctx.createGain();
-			const music_filter = audio_ctx.createBiquadFilter();
-			music_filter.type = 'lowpass';
-			music_filter.frequency.value = 20000;
-			music_bus.connect(music_filter);
-			music_filter.connect(main_bus);
+			const lowpass_filter = audio_ctx.createBiquadFilter();
+			lowpass_filter.type = 'lowpass';
+			lowpass_filter.frequency.value = 20000;
+
+			const highpass_filter = audio_ctx.createBiquadFilter();
+			highpass_filter.type = 'highpass';
+			highpass_filter.frequency.value = 0;
+
+			music_bus.connect(lowpass_filter);
+			lowpass_filter.connect(highpass_filter);
+			highpass_filter.connect(main_bus);
 
 			const sfx_bus = audio_ctx.createGain();
 			sfx_bus.connect(main_bus);
 
 			// Music Player logic
 			const music_tracks = [];
+			const recent_tracks = [];
 			let current_music_source = null;
 
 			async function playNextTrack() {
 				if (music_tracks.length === 0) return;
-				const track_path = music_tracks[Math.floor(Math.random() * music_tracks.length)];
+
+				let available_tracks = music_tracks;
+				if (music_tracks.length > 2) {
+					available_tracks = music_tracks.filter(t => !recent_tracks.includes(t));
+					// Fallback in case of some weird state
+					if (available_tracks.length === 0) available_tracks = music_tracks;
+				}
+
+				const track_path = available_tracks[Math.floor(Math.random() * available_tracks.length)];
+
+				recent_tracks.push(track_path);
+				if (recent_tracks.length > 2) recent_tracks.shift();
 
 				try {
 					const response = await fetch(track_path);
@@ -67,9 +85,13 @@
 			window.audioController.onSetMuffle(muffle_level => {
 				const normalized = Math.max(0, Math.min(100, muffle_level)) / 100;
 
-				const min_freq = 300;
-				const max_freq = 20000;
-				music_filter.frequency.value = min_freq + (max_freq - min_freq) * Math.pow(1 - normalized, 2);
+				const lp_base = 20000;
+				const lp_muffled = 500;
+				lowpass_filter.frequency.value = lp_muffled + (lp_base - lp_muffled) * Math.pow(1 - normalized, 2);
+
+				const hp_base = 0;
+				const hp_muffled = 100;
+				highpass_filter.frequency.value = hp_base + (hp_muffled - hp_base) * normalized;
 
 				const min_gain = 0.2;
 				const max_gain = 1.0;
