@@ -989,7 +989,8 @@ class Entity extends HTMLElement {
 
 		// Map connectedness for connectors
 		for (const lg of line_groups) {
-			if (lg.type !== 'connector') continue;
+			const def = blocks_by_type[lg.type];
+			if (def?.name !== 'connector') continue;
 			lg.connected_rects = new Set();
 
 			for (const node of lg.nodes) {
@@ -1017,7 +1018,8 @@ class Entity extends HTMLElement {
 			final_groups[i].connected_targets = [];
 		}
 		for (const lg of line_groups) {
-			if (lg.type === 'connector') {
+			const def = blocks_by_type[lg.type];
+			if (def?.name === 'connector') {
 				const arr = Array.from(lg.connected_rects);
 				for (const a of arr) {
 					for (const b of arr) {
