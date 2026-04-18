@@ -260,12 +260,19 @@ class UserTerminal extends HTMLElement {
 	navigation() {
 		this.clear();
 		this.line(`U.R.A. OS version ${this.version} - Day 1`);
+		this.line();
 		const position_line = this.line();
 		const speed_line = this.line();
 
 		this.tick = () => {
 			const followed = window.game?.camera?.followed_entity;
 			if (!followed) return;
+
+			if (position_line) {
+				const { sector, chunk } = Entity.globalPosition(followed.position);
+				position_line.textContent = `Sector [${sector.sx}, ${sector.sy}] position (${chunk.cx}, ${chunk.cy})`;
+			}
+
 			if (speed_line) {
 				const speed = Math.sqrt((followed.velocity?.vx || 0) ** 2 + (followed.velocity?.vy || 0) ** 2);
 				const sectors_per_min = (speed * 60 * 60) / (32 * 256);
