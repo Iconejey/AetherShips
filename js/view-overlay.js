@@ -591,14 +591,17 @@ class ViewOverlay extends HTMLElement {
 
 		if (is_management_mode && !is_map_mode) {
 			const entity = window.game?.player?.driven_entity;
-			if (entity?.utility_groups) {
+
+			if (entity?.utility_rect_groups || entity?.utility_line_groups) {
 				ctx.save();
 				ctx.rotate(entity_rotation);
 				ctx.lineWidth = 2;
+			}
 
+			if (entity?.utility_rect_groups) {
 				const hovered_block = this.screenToBlock(this.mouse_x, this.mouse_y);
 
-				for (const group of entity.utility_groups) {
+				for (const group of entity.utility_rect_groups) {
 					ctx.beginPath();
 					const block_def = blocks_by_type[group.type];
 					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
@@ -630,6 +633,48 @@ class ViewOverlay extends HTMLElement {
 					ctx.fill();
 					ctx.stroke();
 				}
+			}
+
+			if (entity?.utility_line_groups) {
+				for (const group of entity.utility_line_groups) {
+					ctx.beginPath();
+					const block_def = blocks_by_type[group.type];
+					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
+
+					const r = (color_val >>> 24) & 0xff;
+					const g = (color_val >>> 16) & 0xff;
+					const b = (color_val >>> 8) & 0xff;
+
+					const sr = Math.round(r + (255 - r) * 0.8);
+					const sg = Math.round(g + (255 - g) * 0.8);
+					const sb = Math.round(b + (255 - b) * 0.8);
+
+					ctx.strokeStyle = `rgb(${sr}, ${sg}, ${sb})`;
+					ctx.fillStyle = `rgb(${sr}, ${sg}, ${sb})`;
+					ctx.lineWidth = 4; // Fixed line width for consistency
+
+					if (group.segments) {
+						for (const seg of group.segments) {
+							ctx.moveTo(seg.x1 * scale + scale / 2, seg.y1 * scale + scale / 2);
+							ctx.lineTo(seg.x2 * scale + scale / 2, seg.y2 * scale + scale / 2);
+						}
+					}
+					ctx.stroke();
+
+					for (const node of group.nodes) {
+						ctx.beginPath();
+						if (node.n_count !== undefined && node.n_count > 1) {
+							const size = ctx.lineWidth;
+							ctx.rect(node.x * scale + scale / 2 - size / 2, node.y * scale + scale / 2 - size / 2, size, size);
+						} else {
+							ctx.arc(node.x * scale + scale / 2, node.y * scale + scale / 2, scale / 3, 0, Math.PI * 2);
+						}
+						ctx.fill();
+					}
+				}
+			}
+
+			if (entity?.utility_rect_groups || entity?.utility_line_groups) {
 				ctx.restore();
 			}
 		}

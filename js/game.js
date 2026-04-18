@@ -392,7 +392,6 @@ class Game extends HTMLElement {
 	set mode(new_mode) {
 		$('tool-bar multi-select').value = new_mode;
 		if (new_mode === 'management') {
-			this.player?.driven_entity?.updateUtilityGroups();
 			this.player?.driven_entity?.updateMass();
 		}
 	}

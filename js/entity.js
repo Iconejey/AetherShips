@@ -574,9 +574,10 @@ class Entity extends HTMLElement {
 		this.velocity = { vx: 0, vy: 0, vr: 0 };
 		this.mass = { cx: 0, cy: 0, total: 0 };
 		this.dirty_layers = [];
-		this.groups_need_update = true;
 		this.mass_needs_update = true;
-		this.utility_groups = [];
+		this.utility_rect_groups = [];
+		this.utility_line_groups = [];
+		this.groups_update_timeout = null;
 	}
 
 	flagMassUpdate() {
@@ -584,7 +585,10 @@ class Entity extends HTMLElement {
 	}
 
 	flagGroupUpdate() {
-		this.groups_need_update = true;
+		clearTimeout(this.groups_update_timeout);
+		this.groups_update_timeout = setTimeout(() => {
+			this.updateUtilityGroups();
+		}, 500);
 	}
 
 	updateMass(force = false) {
@@ -655,7 +659,7 @@ class Entity extends HTMLElement {
 	}
 
 	getGroup(x, y) {
-		for (const group of this.utility_groups) {
+		for (const group of this.utility_rect_groups) {
 			if (x >= group.x && x < group.x + group.w && y >= group.y && y < group.y + group.h) {
 				return group;
 			}
@@ -737,9 +741,7 @@ class Entity extends HTMLElement {
 		return result;
 	}
 
-	updateUtilityGroups(force = false) {
-		if (!this.groups_need_update && !force) return;
-
+	updateUtilityGroups() {
 		const new_groups = [];
 		const visited = new Set();
 		const utility_rect_blocks = [];
@@ -830,13 +832,15 @@ class Entity extends HTMLElement {
 			// Validate
 			if (w < 2 || h < 2 || group_blocks.length !== w * h) continue;
 
-			// Surrounded by empty or non-utility blocks?
+			// Surrounded by empty or non-utility rect blocks?
 			let surrounded = true;
 			for (let sy = min_y - 1; sy <= max_y + 1; sy++) {
 				for (let sx = min_x - 1; sx <= max_x + 1; sx++) {
 					// Ignore inner blocks (the rectangle itself)
 					if (sx >= min_x && sx <= max_x && sy >= min_y && sy <= max_y) continue;
-					if (getUtilityType(l, sx, sy) !== null) {
+
+					const type = getUtilityType(l, sx, sy);
+					if (type !== null && blocks_by_type[type]?.utility !== 'line') {
 						surrounded = false;
 						break;
 					}
@@ -855,7 +859,9 @@ class Entity extends HTMLElement {
 		// - overlaps: merge
 		const final_groups = [];
 		for (const ng of new_groups) {
-			const overlaps = this.utility_groups.filter(og => og.l === ng.l && og.type === ng.type && Math.max(og.x, ng.x) <= Math.min(og.x + og.w - 1, ng.x + ng.w - 1) && Math.max(og.y, ng.y) <= Math.min(og.y + og.h - 1, ng.y + ng.h - 1));
+			const overlaps = this.utility_rect_groups.filter(
+				og => og.l === ng.l && og.type === ng.type && og.w !== undefined && Math.max(og.x, ng.x) <= Math.min(og.x + og.w - 1, ng.x + ng.w - 1) && Math.max(og.y, ng.y) <= Math.min(og.y + og.h - 1, ng.y + ng.h - 1)
+			);
 
 			// Exact match
 			if (overlaps.length === 1 && overlaps[0].x === ng.x && overlaps[0].y === ng.y && overlaps[0].w === ng.w && overlaps[0].h === ng.h) {
@@ -875,8 +881,156 @@ class Entity extends HTMLElement {
 			else final_groups.push(ng);
 		}
 
-		this.utility_groups = final_groups;
-		this.groups_need_update = false;
+		// Process line groups
+		const line_visited = new Set();
+		const line_groups = [];
+
+		for (const block of utility_line_blocks) {
+			const { l, x, y, type } = block;
+			const key = `${l},${x},${y}`;
+			if (line_visited.has(key)) continue;
+
+			// Find connected component
+			const group_blocks = [];
+			const queue = [{ x, y }];
+			line_visited.add(key);
+
+			let head = 0;
+			while (head < queue.length) {
+				const curr = queue[head++];
+				group_blocks.push(curr);
+
+				const neighbors = [
+					{ dx: 1, dy: 0 },
+					{ dx: -1, dy: 0 },
+					{ dx: 0, dy: 1 },
+					{ dx: 0, dy: -1 }
+				];
+				for (const n of neighbors) {
+					const nx = curr.x + n.dx;
+					const ny = curr.y + n.dy;
+					const n_key = `${l},${nx},${ny}`;
+
+					if (!line_visited.has(n_key)) {
+						if (getUtilityType(l, nx, ny) === type) {
+							line_visited.add(n_key);
+							queue.push({ x: nx, y: ny });
+						}
+					}
+				}
+			}
+
+			// Build nodes logic (simplified points for visualization graph)
+			// A line group is just an array of node coordinates
+			const nodes = [];
+			for (const b of group_blocks) {
+				// Count neighbors in group
+				let n_count = 0;
+				let dx_sum = 0,
+					dy_sum = 0;
+				for (const n of [
+					{ dx: 1, dy: 0 },
+					{ dx: -1, dy: 0 },
+					{ dx: 0, dy: 1 },
+					{ dx: 0, dy: -1 }
+				]) {
+					if (group_blocks.some(gb => gb.x === b.x + n.dx && gb.y === b.y + n.dy)) {
+						n_count++;
+						dx_sum += n.dx;
+						dy_sum += Math.abs(n.dy) > 0 ? 1 : 0; // check for straight line
+					}
+				}
+				// 1 (end), >2 (intersection), or 2 but not straight (corner)
+				const is_straight = n_count === 2 && (dx_sum === 0 || dy_sum === 0);
+				if (n_count !== 2 || (!is_straight && n_count === 2)) {
+					nodes.push({ x: b.x, y: b.y, n_count });
+				}
+			}
+
+			const segments = [];
+			for (let i = 0; i < nodes.length; i++) {
+				for (let j = i + 1; j < nodes.length; j++) {
+					const n1 = nodes[i];
+					const n2 = nodes[j];
+					if (n1.x === n2.x || n1.y === n2.y) {
+						const is_clear = !nodes.some(n3 => {
+							if (n3 === n1 || n3 === n2) return false;
+							if (n1.x === n2.x && n3.x === n1.x) {
+								return n3.y > Math.min(n1.y, n2.y) && n3.y < Math.max(n1.y, n2.y);
+							}
+							if (n1.y === n2.y && n3.y === n1.y) {
+								return n3.x > Math.min(n1.x, n2.x) && n3.x < Math.max(n1.x, n2.x);
+							}
+							return false;
+						});
+
+						if (is_clear) {
+							let path_valid = true;
+							const dx = Math.sign(n2.x - n1.x);
+							const dy = Math.sign(n2.y - n1.y);
+							let cx = n1.x + dx;
+							let cy = n1.y + dy;
+							while (cx !== n2.x || cy !== n2.y) {
+								if (!group_blocks.some(gb => gb.x === cx && gb.y === cy)) {
+									path_valid = false;
+									break;
+								}
+								cx += dx;
+								cy += dy;
+							}
+							if (path_valid) segments.push({ x1: n1.x, y1: n1.y, x2: n2.x, y2: n2.y });
+						}
+					}
+				}
+			}
+
+			line_groups.push({ l, type, nodes, segments });
+		}
+
+		// Map connectedness for connectors
+		for (const lg of line_groups) {
+			if (lg.type !== 'connector') continue;
+			lg.connected_rects = new Set();
+
+			for (const node of lg.nodes) {
+				for (const n of [
+					{ dx: 1, dy: 0 },
+					{ dx: -1, dy: 0 },
+					{ dx: 0, dy: 1 },
+					{ dx: 0, dy: -1 }
+				]) {
+					const nx = node.x + n.dx;
+					const ny = node.y + n.dy;
+					// check if inside any rect group
+					for (let i = 0; i < final_groups.length; i++) {
+						const rg = final_groups[i];
+						if (rg.l === lg.l && nx >= rg.x && nx < rg.x + rg.w && ny >= rg.y && ny < rg.y + rg.h) {
+							lg.connected_rects.add(i);
+						}
+					}
+				}
+			}
+		}
+
+		// Set connected target IDs inside rect groups
+		for (let i = 0; i < final_groups.length; i++) {
+			final_groups[i].connected_targets = [];
+		}
+		for (const lg of line_groups) {
+			if (lg.type === 'connector') {
+				const arr = Array.from(lg.connected_rects);
+				for (const a of arr) {
+					for (const b of arr) {
+						if (a !== b && !final_groups[a].connected_targets.includes(b)) {
+							final_groups[a].connected_targets.push(b);
+						}
+					}
+				}
+			}
+		}
+
+		this.utility_rect_groups = final_groups;
+		this.utility_line_groups = line_groups;
 	}
 
 	createEntityLayer(layer_index) {
@@ -1148,7 +1302,7 @@ class Entity extends HTMLElement {
 	 */
 	serialize() {
 		const obj = {};
-		const keys = ['id', 'position', 'velocity', 'mass', 'utility_groups'];
+		const keys = ['id', 'position', 'velocity', 'mass', 'utility_rect_groups', 'utility_line_groups'];
 		for (const key of keys) obj[key] = this[key];
 		return obj;
 	}
@@ -1213,7 +1367,6 @@ class Entity extends HTMLElement {
 			}
 		}
 
-		this.groups_need_update = false;
 		this.flagMassUpdate();
 		this.render();
 	}
