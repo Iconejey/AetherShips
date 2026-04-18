@@ -578,6 +578,38 @@ class Entity extends HTMLElement {
 		this.utility_rect_groups = [];
 		this.utility_line_groups = [];
 		this.groups_update_timeout = null;
+		this.tick_interval_id = null;
+	}
+
+	connectedCallback() {
+		// Start energy loop
+		this.tick_interval_id = setInterval(() => this.tick(), 1000);
+	}
+
+	disconnectedCallback() {
+		// Stop energy loop
+		clearInterval(this.tick_interval_id);
+	}
+
+	tick() {
+		for (const group of this.utility_rect_groups) {
+			const group_info = this.getGroupInfo(group);
+
+			const listConnectedByTypes = (...types) => group.connected_targets.map(idx => this.utility_rect_groups[idx]).filter(target_group => types.includes(blocks_by_type[target_group.type]?.name));
+
+			// Electric output
+			if (group_info.electric_output) {
+				const connected_capacitors = listConnectedByTypes('basic_capacitor', 'high_density_capacitor');
+
+				if (connected_capacitors.length > 0) {
+					const charge_per_capacitor = group_info.electric_output / connected_capacitors.length;
+					for (const cap of connected_capacitors) {
+						const cap_info = this.getGroupInfo(cap);
+						cap.data.charge = Math.min((cap.data.charge ?? 0) + charge_per_capacitor, cap_info.max_capacity);
+					}
+				}
+			}
+		}
 	}
 
 	flagMassUpdate() {
@@ -690,11 +722,11 @@ class Entity extends HTMLElement {
 
 		// Solar panels
 		process(['solar_panel_tier_1', 'solar_panel_tier_2', 'solar_panel_tier_3', 'solar_panel_tier_4'], def => {
-			const max_generation = def.generation * total_blocks;
-			const generation = max_generation * (this.sunlight / 100);
+			const max_electric_output = def.electric_output * total_blocks;
+			const electric_output = max_electric_output * (this.sunlight / 100);
 			return {
 				sunlight: formatted ? `${this.sunlight}%` : this.sunlight,
-				generation: formatted ? `${generation.toFixed(2)}/${max_generation} u/s` : generation
+				electric_output: formatted ? `${electric_output.toFixed(2)}/${max_electric_output} u/s` : electric_output
 			};
 		});
 
@@ -704,7 +736,8 @@ class Entity extends HTMLElement {
 			const charge = target_group.data.charge ?? 0;
 
 			return {
-				charge: formatted ? `${charge}/${max_capacity} u` : charge
+				charge: formatted ? `${charge.toFixed(2)}/${max_capacity} u` : charge,
+				max_capacity: formatted ? null : max_capacity
 			};
 		});
 

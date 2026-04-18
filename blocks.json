@@ -254,7 +254,7 @@
 			"colors": ["#2f5265ff"],
 			"utility": "rect",
 			"mass": 8,
-			"generation": 0.02
+			"electric_output": 0.02
 		},
 		{
 			"name": "solar_panel_tier_2",
@@ -263,7 +263,7 @@
 			"colors": ["#345d74ff"],
 			"utility": "rect",
 			"mass": 9,
-			"generation": 0.03
+			"electric_output": 0.03
 		},
 		{
 			"name": "solar_panel_tier_3",
@@ -272,7 +272,7 @@
 			"colors": ["#386885ff"],
 			"utility": "rect",
 			"mass": 10,
-			"generation": 0.04
+			"electric_output": 0.04
 		},
 		{
 			"name": "solar_panel_tier_4",
@@ -281,7 +281,7 @@
 			"colors": ["#3d7396ff"],
 			"utility": "rect",
 			"mass": 11,
-			"generation": 0.05
+			"electric_output": 0.05
 		},
 		{
 			"name": "basic_capacitor",
