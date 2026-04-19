@@ -11,7 +11,7 @@ entity-root {
 	}
 
 	body.management-mode & {
-		opacity: 0.8;
+		opacity: 0.2;
 		transition: opacity 0.2s;
 	}
 

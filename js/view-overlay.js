@@ -628,10 +628,53 @@ class ViewOverlay extends HTMLElement {
 
 					ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, ${bg_alpha})`;
 					ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${stroke_alpha})`;
+					ctx.lineWidth = 2;
 
 					ctx.rect(group.x * scale, group.y * scale, group.w * scale, group.h * scale);
 					ctx.fill();
 					ctx.stroke();
+
+					if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
+						const direction = group.data?.direction ?? 'forward';
+						let startX, startY, endX, endY;
+						const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+						const arrow_len = thrust_power * 20 * scale;
+						const head_len = scale * 1;
+
+						if (direction === 'forward') {
+							startX = (group.x + group.w / 2) * scale;
+							startY = (group.y + group.h) * scale;
+							endX = startX;
+							endY = startY + arrow_len;
+						} else if (direction === 'backward') {
+							startX = (group.x + group.w / 2) * scale;
+							startY = group.y * scale;
+							endX = startX;
+							endY = startY - arrow_len;
+						} else if (direction === 'left') {
+							startX = (group.x + group.w) * scale;
+							startY = (group.y + group.h / 2) * scale;
+							endX = startX + arrow_len;
+							endY = startY;
+						} else if (direction === 'right') {
+							startX = group.x * scale;
+							startY = (group.y + group.h / 2) * scale;
+							endX = startX - arrow_len;
+							endY = startY;
+						}
+
+						if (startX !== undefined) {
+							ctx.beginPath();
+							ctx.moveTo(startX, startY);
+							ctx.lineTo(endX, endY);
+
+							const angle = Math.atan2(endY - startY, endX - startX);
+							ctx.moveTo(endX - head_len * Math.cos(angle - Math.PI / 6), endY - head_len * Math.sin(angle - Math.PI / 6));
+							ctx.lineTo(endX, endY);
+							ctx.lineTo(endX - head_len * Math.cos(angle + Math.PI / 6), endY - head_len * Math.sin(angle + Math.PI / 6));
+							ctx.stroke();
+						}
+					}
 				}
 			}
 
@@ -651,7 +694,7 @@ class ViewOverlay extends HTMLElement {
 
 					ctx.strokeStyle = `rgb(${sr}, ${sg}, ${sb})`;
 					ctx.fillStyle = `rgb(${sr}, ${sg}, ${sb})`;
-					ctx.lineWidth = 4; // Fixed line width for consistency
+					ctx.lineWidth = 2; // Fixed line width for consistency
 
 					if (group.segments) {
 						for (const seg of group.segments) {
@@ -667,7 +710,7 @@ class ViewOverlay extends HTMLElement {
 							const size = ctx.lineWidth;
 							ctx.rect(node.x * scale + scale / 2 - size / 2, node.y * scale + scale / 2 - size / 2, size, size);
 						} else {
-							ctx.arc(node.x * scale + scale / 2, node.y * scale + scale / 2, scale / 3, 0, Math.PI * 2);
+							ctx.arc(node.x * scale + scale / 2, node.y * scale + scale / 2, Math.min(3, scale / 4), 0, Math.PI * 2);
 						}
 						ctx.fill();
 					}

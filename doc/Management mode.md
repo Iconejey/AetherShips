@@ -33,7 +33,7 @@ When the player hovers over a group, a tooltip appears with various information 
 
 - **Mass** (info) - The total mass
 - **Sunlight** (info) - The percentage of sunlight received
-- **Generation** (info) - The current and max electricity generated per second
+- **Electric Output** (info) - The current and max electricity generated per second
 
 ### Capacitors
 
@@ -49,7 +49,7 @@ When the player hovers over a group, a tooltip appears with various information 
 ### Electric Generators
 
 - **Mass** (info) - The total mass
-- **Generation** (info) - The current and max electricity generated per second
+- **Electric Output** (info) - The current and max electricity generated per second
 - **Consumption** (info) - The Bio-fuel or Uranium consumed per minute
 
 ### Greenhouse
@@ -61,7 +61,7 @@ When the player hovers over a group, a tooltip appears with various information 
 ### Thrusters
 
 - **Mass** (info) - The total mass
-- **Power** (info) - The total power
+- **Thrust Power** (info) - The total power
 - **Consumption** (info) - The total energy consumed per second at full power (Electricity, Biofuel and/or Uranium)
 - **Direction** (control) - An arrow indicating where the thruster points at
 

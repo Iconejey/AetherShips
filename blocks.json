@@ -365,7 +365,9 @@
 			"colors": ["#6687a7ff"],
 			"can_be_painted": true,
 			"utility": "rect",
-			"mass": 12
+			"mass": 12,
+			"thrust_power": 0.02,
+			"electric_consumption": 0.01
 		},
 		{
 			"name": "bio_fuel_thruster",
@@ -374,7 +376,8 @@
 			"colors": ["#846247ff"],
 			"can_be_painted": true,
 			"utility": "rect",
-			"mass": 11
+			"mass": 11,
+			"thrust_power": 0.03
 		},
 		{
 			"name": "uranium_thruster",
@@ -383,7 +386,8 @@
 			"colors": ["#6f8750ff"],
 			"can_be_painted": true,
 			"utility": "rect",
-			"mass": 13
+			"mass": 13,
+			"thrust_power": 0.04
 		},
 		{
 			"name": "warp_drive",

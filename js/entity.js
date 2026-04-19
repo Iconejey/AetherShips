@@ -605,7 +605,7 @@ class Entity extends HTMLElement {
 					const charge_per_capacitor = group_info.electric_output / connected_capacitors.length;
 					for (const cap of connected_capacitors) {
 						const cap_info = this.getGroupInfo(cap);
-						cap.data.charge = Math.min((cap.data.charge ?? 0) + charge_per_capacitor, cap_info.max_capacity);
+						cap.data.charge = Math.min(cap.data.charge + charge_per_capacitor, cap_info.max_capacity);
 					}
 				}
 			}
@@ -751,7 +751,21 @@ class Entity extends HTMLElement {
 		process(['greenhouse'], def => ({}));
 
 		// Thrusters
-		process(['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'], def => ({}));
+		process(['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'], def => {
+			const thrust_power = def.thrust_power * total_blocks;
+
+			const info = {
+				direction: target_group.data.direction ?? 'forward',
+				thrust_power: formatted ? `${thrust_power.toFixed(2)} N` : thrust_power
+			};
+
+			if (def.type === 'electric_thruster') {
+				const electric_consumption = def.electric_consumption * total_blocks;
+				info.electric_consumption = formatted ? `${electric_consumption.toFixed(2)} u/s` : electric_consumption;
+			}
+
+			return info;
+		});
 
 		// Warp drive and gate
 		process(['warp_drive', 'warp_gate'], def => ({}));
