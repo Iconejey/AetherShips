@@ -10,7 +10,7 @@ entity-root {
 		--game-scale: 1;
 	}
 
-	body.management-mode & {
+	body.management-mode & > entity-layer {
 		opacity: 0.2;
 		transition: opacity 0.2s;
 	}
@@ -145,4 +145,63 @@ entity-root {
 body:not(.management-mode) .center-of-mass,
 body.map-mode .center-of-mass {
 	display: none;
+}
+
+body:not(.management-mode) svg.management-overlay,
+body.map-mode svg.management-overlay {
+	display: none;
+}
+
+svg.management-overlay {
+	pointer-events: none; /* allow clicks to passthrough empty space */
+}
+
+/* Base style for rectangles */
+svg.management-overlay .management-rect {
+	pointer-events: auto; /* enable hover here */
+	/* Background mix: bg_mix=0.4 => 0.4 * 255 = 102 */
+	fill: rgba(calc(var(--r) + (255 - var(--r)) * 0.4), calc(var(--g) + (255 - var(--g)) * 0.4), calc(var(--b) + (255 - var(--b)) * 0.4), 0.3);
+	/* Stroke mix: 0.8 */
+	stroke: rgba(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8), 0.9);
+	stroke-width: calc(2px / var(--game-scale));
+	transition:
+		fill 0.1s,
+		stroke-width 0.1s;
+}
+
+svg.management-overlay .management-rect:hover {
+	/* Hover mix: bg_mix=0.7 */
+	fill: rgba(calc(var(--r) + (255 - var(--r)) * 0.7), calc(var(--g) + (255 - var(--g)) * 0.7), calc(var(--b) + (255 - var(--b)) * 0.7), 0.6);
+	stroke: rgba(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8), 1);
+}
+
+/* Arrows for thrusters */
+svg.management-overlay .management-arrow {
+	fill: none;
+	stroke: rgba(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8), 0.9);
+	stroke-width: calc(2px / var(--game-scale));
+}
+
+svg.management-overlay .management-arrow:hover {
+	stroke: rgba(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8), 1);
+}
+
+svg.management-overlay .management-line-group * {
+	stroke: rgb(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8));
+	fill: rgb(calc(var(--r) + (255 - var(--r)) * 0.8), calc(var(--g) + (255 - var(--g)) * 0.8), calc(var(--b) + (255 - var(--b)) * 0.8));
+	stroke-width: calc(2px / var(--game-scale));
+}
+
+svg.management-overlay .management-node-circle {
+	r: max(0.15px, min(calc(3px / var(--game-scale)), 0.25px));
+}
+
+svg.management-overlay .management-node-rect {
+	width: calc(3px / var(--game-scale));
+	height: calc(3px / var(--game-scale));
+	transform-origin: center;
+	transform-box: fill-box;
+	/* Center it dynamically */
+	x: calc(var(--node-x) - 1.5px / var(--game-scale));
+	y: calc(var(--node-y) - 1.5px / var(--game-scale));
 }

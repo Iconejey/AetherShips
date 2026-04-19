@@ -1080,6 +1080,143 @@ class Entity extends HTMLElement {
 
 		this.utility_rect_groups = final_groups;
 		this.utility_line_groups = line_groups;
+
+		if (window.game?.mode === 'management' && this === window.game?.player?.driven_entity) {
+			this.renderManagementOverlay();
+		}
+	}
+
+	removeManagementOverlay() {
+		const overlay = this.querySelector(':scope > svg.management-overlay');
+		if (overlay) overlay.remove();
+	}
+
+	renderManagementOverlay() {
+		this.removeManagementOverlay();
+
+		const svg_ns = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(svg_ns, 'svg');
+		svg.classList.add('management-overlay');
+		svg.style.position = 'absolute';
+		svg.style.top = '0';
+		svg.style.left = '0';
+		svg.style.width = '1px';
+		svg.style.height = '1px';
+		svg.style.overflow = 'visible';
+		svg.style.zIndex = '100';
+
+		if (this.utility_rect_groups) {
+			for (const group of this.utility_rect_groups) {
+				const block_def = blocks_by_type[group.type];
+				const color_val = block_def?.colors?.[0] ?? 0xffffffff;
+
+				const r = (color_val >>> 24) & 0xff;
+				const g = (color_val >>> 16) & 0xff;
+				const b = (color_val >>> 8) & 0xff;
+
+				const rect = document.createElementNS(svg_ns, 'rect');
+				rect.setAttribute('x', group.x);
+				rect.setAttribute('y', group.y);
+				rect.setAttribute('width', group.w);
+				rect.setAttribute('height', group.h);
+				rect.classList.add('management-rect');
+
+				// Pass color variables to CSS for hover manipulation
+				rect.style.setProperty('--r', r);
+				rect.style.setProperty('--g', g);
+				rect.style.setProperty('--b', b);
+
+				svg.appendChild(rect);
+
+				// Direction arrow for thrusters
+				if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
+					const direction = group.data?.direction ?? 'forward';
+					let startX, startY, endX, endY;
+					const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+					const arrow_len = thrust_power * 20; // 1 unit = 1 block
+					const head_len = 1;
+
+					if (direction === 'forward') {
+						startX = group.x + group.w / 2;
+						startY = group.y + group.h;
+						endX = startX;
+						endY = startY + arrow_len;
+					} else if (direction === 'backward') {
+						startX = group.x + group.w / 2;
+						startY = group.y;
+						endX = startX;
+						endY = startY - arrow_len;
+					} else if (direction === 'left') {
+						startX = group.x + group.w;
+						startY = group.y + group.h / 2;
+						endX = startX + arrow_len;
+						endY = startY;
+					} else if (direction === 'right') {
+						startX = group.x;
+						startY = group.y + group.h / 2;
+						endX = startX - arrow_len;
+						endY = startY;
+					}
+
+					if (startX !== undefined) {
+						const path = document.createElementNS(svg_ns, 'path');
+						const angle = Math.atan2(endY - startY, endX - startX);
+						const p1x = endX - head_len * Math.cos(angle - Math.PI / 6);
+						const p1y = endY - head_len * Math.sin(angle - Math.PI / 6);
+						const p2x = endX - head_len * Math.cos(angle + Math.PI / 6);
+						const p2y = endY - head_len * Math.sin(angle + Math.PI / 6);
+
+						path.setAttribute('d', `M ${startX} ${startY} L ${endX} ${endY} M ${p1x} ${p1y} L ${endX} ${endY} L ${p2x} ${p2y}`);
+						path.classList.add('management-arrow');
+						path.style.setProperty('--r', r);
+						path.style.setProperty('--g', g);
+						path.style.setProperty('--b', b);
+						svg.appendChild(path);
+					}
+				}
+			}
+		}
+
+		if (this.utility_line_groups) {
+			for (const group of this.utility_line_groups) {
+				const block_def = blocks_by_type[group.type];
+				const color_val = block_def?.colors?.[0] ?? 0xffffffff;
+
+				const r = (color_val >>> 24) & 0xff;
+				const g = (color_val >>> 16) & 0xff;
+				const b = (color_val >>> 8) & 0xff;
+
+				const lg_group = document.createElementNS(svg_ns, 'g');
+				lg_group.classList.add('management-line-group');
+				lg_group.style.setProperty('--r', r);
+				lg_group.style.setProperty('--g', g);
+				lg_group.style.setProperty('--b', b);
+
+				if (group.segments) {
+					for (const seg of group.segments) {
+						const line = document.createElementNS(svg_ns, 'line');
+						line.setAttribute('x1', seg.x1 + 0.5);
+						line.setAttribute('y1', seg.y1 + 0.5);
+						line.setAttribute('x2', seg.x2 + 0.5);
+						line.setAttribute('y2', seg.y2 + 0.5);
+						lg_group.appendChild(line);
+					}
+				}
+
+				for (const node of group.nodes) {
+					if (!node.n_count || node.n_count <= 1) {
+						const circle = document.createElementNS(svg_ns, 'circle');
+						circle.setAttribute('cx', node.x + 0.5);
+						circle.setAttribute('cy', node.y + 0.5);
+						circle.classList.add('management-node-circle');
+						lg_group.appendChild(circle);
+					}
+				}
+				svg.appendChild(lg_group);
+			}
+		}
+
+		this.appendChild(svg);
 	}
 
 	createEntityLayer(layer_index) {

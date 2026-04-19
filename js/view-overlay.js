@@ -360,9 +360,8 @@ class ViewOverlay extends HTMLElement {
 		const is_map_mode = document.body.classList.contains('map-mode');
 		const is_edit_mode = window.game?.mode === 'edit';
 		const is_nav_mode = window.game?.mode === 'navigation';
-		const is_management_mode = window.game?.mode === 'management';
 
-		if (!is_edit_mode && !is_map_mode && !is_nav_mode && !is_management_mode) return;
+		if (!is_edit_mode && !is_map_mode && !is_nav_mode) return;
 		if (!game.camera?.followed_entity) return;
 
 		const info = this.getEntityInfo();
@@ -586,139 +585,6 @@ class ViewOverlay extends HTMLElement {
 					ctx.rect(bx * scale, by * scale, scale, scale);
 				}
 				ctx.fill();
-			}
-		}
-
-		if (is_management_mode && !is_map_mode) {
-			const entity = window.game?.player?.driven_entity;
-
-			if (entity?.utility_rect_groups || entity?.utility_line_groups) {
-				ctx.save();
-				ctx.rotate(entity_rotation);
-				ctx.lineWidth = 2;
-			}
-
-			if (entity?.utility_rect_groups) {
-				const hovered_block = this.screenToBlock(this.mouse_x, this.mouse_y);
-
-				for (const group of entity.utility_rect_groups) {
-					ctx.beginPath();
-					const block_def = blocks_by_type[group.type];
-					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
-
-					const is_hovered = hovered_block && hovered_block.bx >= group.x && hovered_block.bx < group.x + group.w && hovered_block.by >= group.y && hovered_block.by < group.y + group.h;
-
-					const r = (color_val >>> 24) & 0xff;
-					const g = (color_val >>> 16) & 0xff;
-					const b = (color_val >>> 8) & 0xff;
-
-					const bg_mix = is_hovered ? 0.7 : 0.4;
-					const bg_alpha = is_hovered ? 0.6 : 0.3;
-					const stroke_alpha = is_hovered ? 1.0 : 0.9;
-
-					// Slightly lighter background, even lighter when hovered
-					const br = Math.round(r + (255 - r) * bg_mix);
-					const bg = Math.round(g + (255 - g) * bg_mix);
-					const bb = Math.round(b + (255 - b) * bg_mix);
-
-					// Very light border
-					const sr = Math.round(r + (255 - r) * 0.8);
-					const sg = Math.round(g + (255 - g) * 0.8);
-					const sb = Math.round(b + (255 - b) * 0.8);
-
-					ctx.fillStyle = `rgba(${br}, ${bg}, ${bb}, ${bg_alpha})`;
-					ctx.strokeStyle = `rgba(${sr}, ${sg}, ${sb}, ${stroke_alpha})`;
-					ctx.lineWidth = 2;
-
-					ctx.rect(group.x * scale, group.y * scale, group.w * scale, group.h * scale);
-					ctx.fill();
-					ctx.stroke();
-
-					if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
-						const direction = group.data?.direction ?? 'forward';
-						let startX, startY, endX, endY;
-						const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
-						const arrow_len = thrust_power * 20 * scale;
-						const head_len = scale * 1;
-
-						if (direction === 'forward') {
-							startX = (group.x + group.w / 2) * scale;
-							startY = (group.y + group.h) * scale;
-							endX = startX;
-							endY = startY + arrow_len;
-						} else if (direction === 'backward') {
-							startX = (group.x + group.w / 2) * scale;
-							startY = group.y * scale;
-							endX = startX;
-							endY = startY - arrow_len;
-						} else if (direction === 'left') {
-							startX = (group.x + group.w) * scale;
-							startY = (group.y + group.h / 2) * scale;
-							endX = startX + arrow_len;
-							endY = startY;
-						} else if (direction === 'right') {
-							startX = group.x * scale;
-							startY = (group.y + group.h / 2) * scale;
-							endX = startX - arrow_len;
-							endY = startY;
-						}
-
-						if (startX !== undefined) {
-							ctx.beginPath();
-							ctx.moveTo(startX, startY);
-							ctx.lineTo(endX, endY);
-
-							const angle = Math.atan2(endY - startY, endX - startX);
-							ctx.moveTo(endX - head_len * Math.cos(angle - Math.PI / 6), endY - head_len * Math.sin(angle - Math.PI / 6));
-							ctx.lineTo(endX, endY);
-							ctx.lineTo(endX - head_len * Math.cos(angle + Math.PI / 6), endY - head_len * Math.sin(angle + Math.PI / 6));
-							ctx.stroke();
-						}
-					}
-				}
-			}
-
-			if (entity?.utility_line_groups) {
-				for (const group of entity.utility_line_groups) {
-					ctx.beginPath();
-					const block_def = blocks_by_type[group.type];
-					const color_val = block_def?.colors?.[0] ?? 0xffffffff;
-
-					const r = (color_val >>> 24) & 0xff;
-					const g = (color_val >>> 16) & 0xff;
-					const b = (color_val >>> 8) & 0xff;
-
-					const sr = Math.round(r + (255 - r) * 0.8);
-					const sg = Math.round(g + (255 - g) * 0.8);
-					const sb = Math.round(b + (255 - b) * 0.8);
-
-					ctx.strokeStyle = `rgb(${sr}, ${sg}, ${sb})`;
-					ctx.fillStyle = `rgb(${sr}, ${sg}, ${sb})`;
-					ctx.lineWidth = 2; // Fixed line width for consistency
-
-					if (group.segments) {
-						for (const seg of group.segments) {
-							ctx.moveTo(seg.x1 * scale + scale / 2, seg.y1 * scale + scale / 2);
-							ctx.lineTo(seg.x2 * scale + scale / 2, seg.y2 * scale + scale / 2);
-						}
-					}
-					ctx.stroke();
-
-					for (const node of group.nodes) {
-						ctx.beginPath();
-						if (node.n_count !== undefined && node.n_count > 1) {
-							const size = ctx.lineWidth;
-							ctx.rect(node.x * scale + scale / 2 - size / 2, node.y * scale + scale / 2 - size / 2, size, size);
-						} else {
-							ctx.arc(node.x * scale + scale / 2, node.y * scale + scale / 2, Math.min(3, scale / 4), 0, Math.PI * 2);
-						}
-						ctx.fill();
-					}
-				}
-			}
-
-			if (entity?.utility_rect_groups || entity?.utility_line_groups) {
-				ctx.restore();
 			}
 		}
 

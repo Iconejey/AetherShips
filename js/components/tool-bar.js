@@ -25,6 +25,9 @@ class ToolBar extends HTMLElement {
 
 			if (window.game && value === 'management') {
 				window.game.player?.driven_entity?.updateMass();
+				window.game.player?.driven_entity?.renderManagementOverlay();
+			} else if (window.game) {
+				window.game.player?.driven_entity?.removeManagementOverlay();
 			}
 
 			// Open sidebar with appropriate tools
