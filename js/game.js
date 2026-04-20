@@ -564,41 +564,27 @@ class Game extends HTMLElement {
 		if (this.mode !== 'navigation') return;
 		if (document.body.classList.contains('start-menu')) return;
 
-		const thrust_force = 0.02;
-		const rotation_speed = 0.001;
-		const angle = this.camera.followed_entity.position.r;
-
 		// Rotation controls
 		if (this.pressed_keys['q'] || this.pressed_keys['Q']) {
-			this.camera.followed_entity.velocity.vr -= rotation_speed * delta_frames * 0.5;
 			this.camera.followed_entity.active_maneuvers.add('turn_left');
 		}
 		if (this.pressed_keys['d'] || this.pressed_keys['D']) {
-			this.camera.followed_entity.velocity.vr += rotation_speed * delta_frames * 0.5;
 			this.camera.followed_entity.active_maneuvers.add('turn_right');
 		}
 
 		// Forward/backward movement
 		if (this.pressed_keys['z'] || this.pressed_keys['Z']) {
-			this.camera.followed_entity.velocity.vx += Math.sin(angle) * thrust_force * delta_frames;
-			this.camera.followed_entity.velocity.vy -= Math.cos(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.active_maneuvers.add('forward');
 		}
 		if (this.pressed_keys['s'] || this.pressed_keys['S']) {
-			this.camera.followed_entity.velocity.vx -= Math.sin(angle) * thrust_force * delta_frames;
-			this.camera.followed_entity.velocity.vy += Math.cos(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.active_maneuvers.add('backward');
 		}
 
 		// Left/right strafing
 		if (this.pressed_keys['a'] || this.pressed_keys['A']) {
-			this.camera.followed_entity.velocity.vx -= Math.cos(angle) * thrust_force * delta_frames;
-			this.camera.followed_entity.velocity.vy -= Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.active_maneuvers.add('strafe_left');
 		}
 		if (this.pressed_keys['e'] || this.pressed_keys['E']) {
-			this.camera.followed_entity.velocity.vx += Math.cos(angle) * thrust_force * delta_frames;
-			this.camera.followed_entity.velocity.vy += Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.active_maneuvers.add('strafe_right');
 		}
 	}
@@ -624,23 +610,10 @@ class Game extends HTMLElement {
 			}
 
 			if (entity.classList.contains('auto-thrust')) {
-				const angle = entity.position.r;
-				entity.velocity.vx += Math.sin(angle) * auto_thrust_force * delta_frames;
-				entity.velocity.vy -= Math.cos(angle) * auto_thrust_force * delta_frames;
 				entity.active_maneuvers.add('forward');
 			}
 
-			entity.position.x += entity.velocity.vx * delta_frames;
-			entity.position.y += entity.velocity.vy * delta_frames;
-			entity.position.r += entity.velocity.vr * delta_frames;
-
-			entity.velocity.vx *= friction_factor;
-			entity.velocity.vy *= friction_factor;
-			entity.velocity.vr *= friction_factor;
-
-			if (Math.abs(entity.velocity.vx) < 0.0001) entity.velocity.vx = 0;
-			if (Math.abs(entity.velocity.vy) < 0.0001) entity.velocity.vy = 0;
-			if (Math.abs(entity.velocity.vr) < 0.0001) entity.velocity.vr = 0;
+			entity.applyNewtonianPhysics(delta_frames, friction_factor);
 		}
 
 		// If the player is driving an entity, update player position to match the entity
@@ -655,7 +628,12 @@ class Game extends HTMLElement {
 			const is_start_menu_camera = document.body.classList.contains('start-menu') && followed_entity.classList.contains('auto-thrust');
 
 			if (is_start_menu_camera) {
-				this.camera.moveTo(followed_entity.position.x, followed_entity.position.y, followed_entity.position.r + this.start_menu_camera_rotation_offset_radians);
+				const cos_a = Math.cos(followed_entity.position.r);
+				const sin_a = Math.sin(followed_entity.position.r);
+				const com_world_x = followed_entity.position.x + cos_a * (followed_entity.mass?.cx || 0) - sin_a * (followed_entity.mass?.cy || 0);
+				const com_world_y = followed_entity.position.y + sin_a * (followed_entity.mass?.cx || 0) + cos_a * (followed_entity.mass?.cy || 0);
+
+				this.camera.moveTo(com_world_x, com_world_y, followed_entity.position.r + this.start_menu_camera_rotation_offset_radians);
 			} else {
 				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation', this.camera_align_world, delta_seconds);
 			}

@@ -572,7 +572,7 @@ class Entity extends HTMLElement {
 		super();
 		this.position = { x: 0, y: 0, r: 0 };
 		this.velocity = { vx: 0, vy: 0, vr: 0 };
-		this.mass = { cx: 0, cy: 0, total: 0 };
+		this.mass = { cx: 0, cy: 0, total: 0, moment_of_inertia: 1 };
 		this.dirty_layers = [];
 		this.mass_needs_update = true;
 		this.utility_rect_groups = [];
@@ -634,6 +634,8 @@ class Entity extends HTMLElement {
 		let total_mass = 0;
 		let sum_x = 0;
 		let sum_y = 0;
+		let sum_sq_x = 0;
+		let sum_sq_y = 0;
 
 		for (const entity_layer of this.querySelectorAll('entity-layer')) {
 			for (const chunk_layer of entity_layer.chunk_layers.values()) {
@@ -655,6 +657,8 @@ class Entity extends HTMLElement {
 						total_mass += mass;
 						sum_x += (x + 0.5) * mass;
 						sum_y += (y + 0.5) * mass;
+						sum_sq_x += (x + 0.5) * (x + 0.5) * mass;
+						sum_sq_y += (y + 0.5) * (y + 0.5) * mass;
 					}
 				}
 			}
@@ -664,10 +668,14 @@ class Entity extends HTMLElement {
 			this.mass.cx = sum_x / total_mass;
 			this.mass.cy = sum_y / total_mass;
 			this.mass.total = total_mass;
+			let I_0 = sum_sq_x + sum_sq_y;
+			let I_com = I_0 - total_mass * (this.mass.cx * this.mass.cx + this.mass.cy * this.mass.cy);
+			this.mass.moment_of_inertia = Math.max(I_com, total_mass * 0.1);
 		} else {
 			this.mass.cx = 0;
 			this.mass.cy = 0;
 			this.mass.total = 0;
+			this.mass.moment_of_inertia = 1;
 		}
 
 		let com_el = this.querySelector('.center-of-mass');
@@ -1281,6 +1289,110 @@ class Entity extends HTMLElement {
 		};
 
 		if (this._flame_elements.length > 0) animate();
+	}
+
+	applyNewtonianPhysics(delta_frames, friction_factor) {
+		let force_x_local = 0;
+		let force_y_local = 0;
+		let torque_total = 0;
+
+		const com_x = this.mass.cx;
+		const com_y = this.mass.cy;
+
+		if (this.utility_rect_groups && this.active_maneuvers && this.active_maneuvers.size > 0) {
+			for (const group of this.utility_rect_groups) {
+				const block_def = blocks_by_type[group.type];
+				if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
+					const direction = group.data?.direction ?? 'forward';
+
+					const cx = group.x + group.w / 2;
+					const cy = group.y + group.h / 2;
+					const rx = cx - com_x;
+					const ry = cy - com_y;
+
+					let structural_torque = 0;
+					if (direction === 'forward') structural_torque = -rx;
+					else if (direction === 'backward') structural_torque = rx;
+					else if (direction === 'left') structural_torque = ry;
+					else if (direction === 'right') structural_torque = -ry;
+
+					let is_active = false;
+					if (direction === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
+					if (direction === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
+					if (direction === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
+					if (direction === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
+					if (this.active_maneuvers.has('turn_left') && structural_torque < -0.1) is_active = true;
+					if (this.active_maneuvers.has('turn_right') && structural_torque > 0.1) is_active = true;
+
+					if (is_active) {
+						// Thrust power per unit block area
+						let thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+
+						// Scale up to make physical forces substantial against block mass
+						// (1 block has mass ~10, thrust is ~0.02, without scale a=0.002, we want a~0.02)
+						thrust_power *= 500;
+
+						// Add force (local coordinate space aligned with the grid where +y is 'backward' relative to ship facing)
+						// Ship forward is local -y direction
+						// Ship left is local -x direction
+						// Let's assume standard grid (0,0 is top-left).
+						// Moving "forward" means moving grid into -y.
+						if (direction === 'forward') force_y_local -= thrust_power;
+						else if (direction === 'backward') force_y_local += thrust_power;
+						else if (direction === 'left') force_x_local -= thrust_power;
+						else if (direction === 'right') force_x_local += thrust_power;
+
+						// Add torque
+						if (direction === 'forward') torque_total -= thrust_power * rx;
+						else if (direction === 'backward') torque_total += thrust_power * rx;
+						else if (direction === 'left') torque_total += thrust_power * ry;
+						else if (direction === 'right') torque_total -= thrust_power * ry;
+					}
+				}
+			}
+		}
+
+		// Newton's laws
+		const m = Math.max(1, this.mass.total);
+		const I = this.mass.moment_of_inertia || m * 10;
+
+		const angle = this.position.r;
+		const cos_a = Math.cos(angle);
+		const sin_a = Math.sin(angle);
+
+		// Transform local forces to world space based on ship rotation
+		const force_x_global = force_x_local * cos_a - force_y_local * sin_a;
+		const force_y_global = force_x_local * sin_a + force_y_local * cos_a;
+
+		// Accelerate COM
+		this.velocity.vx += (force_x_global / m) * delta_frames;
+		this.velocity.vy += (force_y_global / m) * delta_frames;
+		this.velocity.vr += (torque_total / I) * delta_frames;
+
+		// World coordinates of Center of Mass (COM)
+		let com_world_x = this.position.x + cos_a * com_x - sin_a * com_y;
+		let com_world_y = this.position.y + sin_a * com_x + cos_a * com_y;
+
+		// Integrate velocity into COM position
+		com_world_x += this.velocity.vx * delta_frames;
+		com_world_y += this.velocity.vy * delta_frames;
+		this.position.r += this.velocity.vr * delta_frames;
+
+		// Recompute origin (top-left) from the newly rotated/translated COM
+		const back_cos = Math.cos(this.position.r);
+		const back_sin = Math.sin(this.position.r);
+
+		this.position.x = com_world_x - (back_cos * com_x - back_sin * com_y);
+		this.position.y = com_world_y - (back_sin * com_x + back_cos * com_y);
+
+		// Apply friction
+		this.velocity.vx *= friction_factor;
+		this.velocity.vy *= friction_factor;
+		this.velocity.vr *= friction_factor;
+
+		if (Math.abs(this.velocity.vx) < 0.0001) this.velocity.vx = 0;
+		if (Math.abs(this.velocity.vy) < 0.0001) this.velocity.vy = 0;
+		if (Math.abs(this.velocity.vr) < 0.0001) this.velocity.vr = 0;
 	}
 
 	removeManagementOverlay() {

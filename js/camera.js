@@ -129,8 +129,12 @@ class Camera {
 		if (!entity) return;
 
 		const target_r = align_world ? 0 : entity.position.r;
-		let target_x = entity.position.x;
-		let target_y = entity.position.y;
+
+		// Focus camera on center of mass instead of entity origin
+		const cos_a = Math.cos(entity.position.r);
+		const sin_a = Math.sin(entity.position.r);
+		let target_x = entity.position.x + cos_a * (entity.mass?.cx || 0) - sin_a * (entity.mass?.cy || 0);
+		let target_y = entity.position.y + sin_a * (entity.mass?.cx || 0) + cos_a * (entity.mass?.cy || 0);
 
 		if (free) {
 			// Convert pan screen offset back into world-space using camera rotation.
