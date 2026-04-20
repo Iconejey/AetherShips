@@ -589,6 +589,10 @@ class Entity extends HTMLElement {
 	disconnectedCallback() {
 		// Stop energy loop
 		clearInterval(this.tick_interval_id);
+
+		if (this.flame_animation_frame) {
+			cancelAnimationFrame(this.flame_animation_frame);
+		}
 	}
 
 	tick() {
@@ -1091,6 +1095,10 @@ class Entity extends HTMLElement {
 	removeThrusterFlames() {
 		const overlay = this.querySelector(':scope > svg.thrusters-overlay');
 		if (overlay) overlay.remove();
+		if (this.flame_animation_frame) {
+			cancelAnimationFrame(this.flame_animation_frame);
+			this.flame_animation_frame = null;
+		}
 	}
 
 	renderThrusterFlames() {
@@ -1100,6 +1108,8 @@ class Entity extends HTMLElement {
 		const svg_ns = 'http://www.w3.org/2000/svg';
 		const svg = document.createElementNS(svg_ns, 'svg');
 		svg.classList.add('thrusters-overlay');
+
+		this._flame_elements = [];
 
 		if (this.utility_rect_groups) {
 			for (const group of this.utility_rect_groups) {
@@ -1123,40 +1133,124 @@ class Entity extends HTMLElement {
 					const inner_flame_len = flame_len * 0.6;
 					const inner_flame_width = flame_width * 0.5;
 
-					let points = '';
-					let inner_points = '';
+					let b1x, b1y, b2x, b2y, tx, ty;
+					let ib1x, ib1y, ib2x, ib2y, itx, ity;
 
 					if (direction === 'forward') {
-						const flame_base_y = group.y + group.h;
-						points = `${group.x + group.w / 2 - flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y + flame_len}`;
-						inner_points = `${group.x + group.w / 2 - inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y + inner_flame_len}`;
+						const by = group.y + group.h;
+						b1x = cx - flame_width / 2;
+						b1y = by;
+						b2x = cx + flame_width / 2;
+						b2y = by;
+						tx = cx;
+						ty = by + flame_len;
+						ib1x = cx - inner_flame_width / 2;
+						ib1y = by;
+						ib2x = cx + inner_flame_width / 2;
+						ib2y = by;
+						itx = cx;
+						ity = by + inner_flame_len;
 					} else if (direction === 'backward') {
-						const flame_base_y = group.y;
-						points = `${group.x + group.w / 2 - flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y - flame_len}`;
-						inner_points = `${group.x + group.w / 2 - inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y - inner_flame_len}`;
+						const by = group.y;
+						b1x = cx - flame_width / 2;
+						b1y = by;
+						b2x = cx + flame_width / 2;
+						b2y = by;
+						tx = cx;
+						ty = by - flame_len;
+						ib1x = cx - inner_flame_width / 2;
+						ib1y = by;
+						ib2x = cx + inner_flame_width / 2;
+						ib2y = by;
+						itx = cx;
+						ity = by - inner_flame_len;
 					} else if (direction === 'left') {
-						const flame_base_x = group.x + group.w;
-						points = `${flame_base_x},${group.y + group.h / 2 - flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + flame_width / 2} ${flame_base_x + flame_len},${group.y + group.h / 2}`;
-						inner_points = `${flame_base_x},${group.y + group.h / 2 - inner_flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + inner_flame_width / 2} ${flame_base_x + inner_flame_len},${group.y + group.h / 2}`;
+						const bx = group.x + group.w;
+						b1x = bx;
+						b1y = cy - flame_width / 2;
+						b2x = bx;
+						b2y = cy + flame_width / 2;
+						tx = bx + flame_len;
+						ty = cy;
+						ib1x = bx;
+						ib1y = cy - inner_flame_width / 2;
+						ib2x = bx;
+						ib2y = cy + inner_flame_width / 2;
+						itx = bx + inner_flame_len;
+						ity = cy;
 					} else if (direction === 'right') {
-						const flame_base_x = group.x;
-						points = `${flame_base_x},${group.y + group.h / 2 - flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + flame_width / 2} ${flame_base_x - flame_len},${group.y + group.h / 2}`;
-						inner_points = `${flame_base_x},${group.y + group.h / 2 - inner_flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + inner_flame_width / 2} ${flame_base_x - inner_flame_len},${group.y + group.h / 2}`;
+						const bx = group.x;
+						b1x = bx;
+						b1y = cy - flame_width / 2;
+						b2x = bx;
+						b2y = cy + flame_width / 2;
+						tx = bx - flame_len;
+						ty = cy;
+						ib1x = bx;
+						ib1y = cy - inner_flame_width / 2;
+						ib2x = bx;
+						ib2y = cy + inner_flame_width / 2;
+						itx = bx - inner_flame_len;
+						ity = cy;
 					}
 
-					flame.setAttribute('points', points);
+					flame.setAttribute('points', `${b1x},${b1y} ${b2x},${b2y} ${tx},${ty}`);
 					flame.classList.add('thruster-flame-outer');
 					svg.appendChild(flame);
 
 					const inner_flame = document.createElementNS(svg_ns, 'polygon');
-					inner_flame.setAttribute('points', inner_points);
+					inner_flame.setAttribute('points', `${ib1x},${ib1y} ${ib2x},${ib2y} ${itx},${ity}`);
 					inner_flame.classList.add('thruster-flame-inner');
 					svg.appendChild(inner_flame);
+
+					this._flame_elements.push({
+						element: flame,
+						b1x,
+						b1y,
+						b2x,
+						b2y,
+						base_tx: tx,
+						base_ty: ty,
+						len: flame_len,
+						dir: direction
+					});
+
+					this._flame_elements.push({
+						element: inner_flame,
+						b1x: ib1x,
+						b1y: ib1y,
+						b2x: ib2x,
+						b2y: ib2y,
+						base_tx: itx,
+						base_ty: ity,
+						len: inner_flame_len,
+						dir: direction
+					});
 				}
 			}
 		}
 
 		this.appendChild(svg);
+
+		const animate = () => {
+			this.flame_animation_frame = requestAnimationFrame(animate);
+			for (const data of this._flame_elements) {
+				// Adds a tiny jitter noise to the tip of the flame proportional to its size
+				let noiseX = (Math.random() - 0.5) * data.len * 0.05;
+				let noiseY = (Math.random() - 0.5) * data.len * 0.05;
+
+				// Emphasize scale noise on the thrust axis
+				if (data.dir === 'forward' || data.dir === 'backward') {
+					noiseY *= 2;
+				} else {
+					noiseX *= 2;
+				}
+
+				data.element.setAttribute('points', `${data.b1x},${data.b1y} ${data.b2x},${data.b2y} ${data.base_tx + noiseX},${data.base_ty + noiseY}`);
+			}
+		};
+
+		if (this._flame_elements.length > 0) animate();
 	}
 
 	removeManagementOverlay() {
