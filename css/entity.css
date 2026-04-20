@@ -44,7 +44,7 @@ entity-root {
 		--above-op: 0.1;
 
 		.followed & {
-			body.edit-layer-0 & {
+			body:not(.management-mode).edit-layer-0 & {
 				&[data-layer='1'] {
 					opacity: var(--above-op);
 				}
@@ -54,7 +54,7 @@ entity-root {
 				}
 			}
 
-			body.edit-layer-1 & {
+			body:not(.management-mode).edit-layer-1 & {
 				&[data-layer='0'] {
 					opacity: var(--below-op);
 				}
@@ -64,7 +64,7 @@ entity-root {
 				}
 			}
 
-			body.edit-layer-2 & {
+			body:not(.management-mode).edit-layer-2 & {
 				&[data-layer='0'] {
 					opacity: var(--below-op);
 				}
@@ -74,21 +74,21 @@ entity-root {
 				}
 			}
 
-			body.hide-non-selected-layers.edit-layer-0 & {
+			body:not(.management-mode).hide-non-selected-layers.edit-layer-0 & {
 				&[data-layer='1'],
 				&[data-layer='2'] {
 					opacity: 0 !important;
 				}
 			}
 
-			body.hide-non-selected-layers.edit-layer-1 & {
+			body:not(.management-mode).hide-non-selected-layers.edit-layer-1 & {
 				&[data-layer='0'],
 				&[data-layer='2'] {
 					opacity: 0 !important;
 				}
 			}
 
-			body.hide-non-selected-layers.edit-layer-2 & {
+			body:not(.management-mode).hide-non-selected-layers.edit-layer-2 & {
 				&[data-layer='0'],
 				&[data-layer='1'] {
 					opacity: 0 !important;
