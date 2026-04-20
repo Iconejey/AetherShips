@@ -577,6 +577,7 @@ class Entity extends HTMLElement {
 		this.mass_needs_update = true;
 		this.utility_rect_groups = [];
 		this.utility_line_groups = [];
+		this.active_maneuvers = new Set();
 		this.groups_update_timeout = null;
 		this.tick_interval_id = null;
 	}
@@ -1124,6 +1125,20 @@ class Entity extends HTMLElement {
 					const cx = group.x + group.w / 2;
 					const cy = group.y + group.h / 2;
 
+					// Calculate torque contribution based on distance from center of mass
+					// Force applied by thruster:
+					// forward: Fx = 0, Fy = -1 => Torque = rx*Fy - ry*Fx = -rx
+					// backward: Fx = 0, Fy = 1 => Torque = rx
+					// left: Fx = -1, Fy = 0 => Torque = ry
+					// right: Fx = 1, Fy = 0 => Torque = -ry
+					const rx = cx - this.mass.cx;
+					const ry = cy - this.mass.cy;
+					let torque = 0;
+					if (direction === 'forward') torque = -rx;
+					else if (direction === 'backward') torque = rx;
+					else if (direction === 'left') torque = ry;
+					else if (direction === 'right') torque = -ry;
+
 					// Base length of flame and width
 					const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
 					const flame_len = thrust_power * 20; // Scale length suitably
@@ -1211,7 +1226,8 @@ class Entity extends HTMLElement {
 						base_tx: tx,
 						base_ty: ty,
 						len: flame_len,
-						dir: direction
+						dir: direction,
+						torque
 					});
 
 					this._flame_elements.push({
@@ -1223,7 +1239,8 @@ class Entity extends HTMLElement {
 						base_tx: itx,
 						base_ty: ity,
 						len: inner_flame_len,
-						dir: direction
+						dir: direction,
+						torque
 					});
 				}
 			}
@@ -1234,6 +1251,23 @@ class Entity extends HTMLElement {
 		const animate = () => {
 			this.flame_animation_frame = requestAnimationFrame(animate);
 			for (const data of this._flame_elements) {
+				let is_active = false;
+				if (this.active_maneuvers) {
+					if (data.dir === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
+					if (data.dir === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
+					if (data.dir === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
+					if (data.dir === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
+
+					// Torque turning
+					// A positive torque turns the ship right. A negative torque turns it left.
+					if (this.active_maneuvers.has('turn_left') && data.torque < -0.1) is_active = true;
+					if (this.active_maneuvers.has('turn_right') && data.torque > 0.1) is_active = true;
+				}
+
+				data.element.style.display = is_active ? 'block' : 'none';
+
+				if (!is_active) continue;
+
 				// Adds a tiny jitter noise to the tip of the flame proportional to its size
 				let noise_x = (Math.random() - 0.5) * data.len * 0.05;
 				let noise_y = (Math.random() - 0.5) * data.len * 0.05;

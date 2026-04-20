@@ -558,6 +558,9 @@ class Game extends HTMLElement {
 	 */
 	handleKeyboardInput(delta_frames) {
 		if (!this.camera.followed_entity) return;
+
+		this.camera.followed_entity.active_maneuvers.clear();
+
 		if (this.mode !== 'navigation') return;
 		if (document.body.classList.contains('start-menu')) return;
 
@@ -568,29 +571,35 @@ class Game extends HTMLElement {
 		// Rotation controls
 		if (this.pressed_keys['q'] || this.pressed_keys['Q']) {
 			this.camera.followed_entity.velocity.vr -= rotation_speed * delta_frames * 0.5;
+			this.camera.followed_entity.active_maneuvers.add('turn_left');
 		}
 		if (this.pressed_keys['d'] || this.pressed_keys['D']) {
 			this.camera.followed_entity.velocity.vr += rotation_speed * delta_frames * 0.5;
+			this.camera.followed_entity.active_maneuvers.add('turn_right');
 		}
 
 		// Forward/backward movement
 		if (this.pressed_keys['z'] || this.pressed_keys['Z']) {
 			this.camera.followed_entity.velocity.vx += Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy -= Math.cos(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.active_maneuvers.add('forward');
 		}
 		if (this.pressed_keys['s'] || this.pressed_keys['S']) {
 			this.camera.followed_entity.velocity.vx -= Math.sin(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy += Math.cos(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.active_maneuvers.add('backward');
 		}
 
 		// Left/right strafing
 		if (this.pressed_keys['a'] || this.pressed_keys['A']) {
 			this.camera.followed_entity.velocity.vx -= Math.cos(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy -= Math.sin(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.active_maneuvers.add('strafe_left');
 		}
 		if (this.pressed_keys['e'] || this.pressed_keys['E']) {
 			this.camera.followed_entity.velocity.vx += Math.cos(angle) * thrust_force * delta_frames;
 			this.camera.followed_entity.velocity.vy += Math.sin(angle) * thrust_force * delta_frames;
+			this.camera.followed_entity.active_maneuvers.add('strafe_right');
 		}
 	}
 
@@ -610,10 +619,15 @@ class Game extends HTMLElement {
 		for (const entity of this.children) {
 			if (!(entity instanceof Entity)) continue;
 
+			if (!entity.active_maneuvers) {
+				entity.active_maneuvers = new Set();
+			}
+
 			if (entity.classList.contains('auto-thrust')) {
 				const angle = entity.position.r;
 				entity.velocity.vx += Math.sin(angle) * auto_thrust_force * delta_frames;
 				entity.velocity.vy -= Math.cos(angle) * auto_thrust_force * delta_frames;
+				entity.active_maneuvers.add('forward');
 			}
 
 			entity.position.x += entity.velocity.vx * delta_frames;
