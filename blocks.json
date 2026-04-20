@@ -366,7 +366,7 @@
 			"can_be_painted": true,
 			"utility": "rect",
 			"mass": 12,
-			"thrust_power": 0.02,
+			"thrust_power": 0.01,
 			"electric_consumption": 0.01
 		},
 		{
@@ -377,7 +377,7 @@
 			"can_be_painted": true,
 			"utility": "rect",
 			"mass": 11,
-			"thrust_power": 0.03
+			"thrust_power": 0.02
 		},
 		{
 			"name": "uranium_thruster",
@@ -387,7 +387,7 @@
 			"can_be_painted": true,
 			"utility": "rect",
 			"mass": 13,
-			"thrust_power": 0.04
+			"thrust_power": 0.03
 		},
 		{
 			"name": "warp_drive",

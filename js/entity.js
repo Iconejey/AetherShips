@@ -1149,7 +1149,7 @@ class Entity extends HTMLElement {
 
 					// Base length of flame and width
 					const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
-					const flame_len = thrust_power * 20; // Scale length suitably
+					const flame_len = thrust_power * 40; // Scale length suitably
 					const flame_width = (direction === 'forward' || direction === 'backward' ? group.w : group.h) * 0.9;
 
 					const inner_flame_len = flame_len * 0.6;
