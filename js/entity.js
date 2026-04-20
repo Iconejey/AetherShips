@@ -1126,6 +1126,22 @@ class Entity extends HTMLElement {
 				rect.style.setProperty('--g', g);
 				rect.style.setProperty('--b', b);
 
+				// Right-click to change direction dynamically
+				const handleRightClick = e => {
+					e.preventDefault();
+					const is_thruster = ['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name);
+					if (is_thruster) {
+						const directions = ['forward', 'right', 'backward', 'left'];
+						const current_dir = group.data?.direction ?? 'forward';
+						const next_dir = directions[(directions.indexOf(current_dir) + 1) % directions.length];
+						group.data.direction = next_dir;
+
+						game?.planSave(1000); // ensure game reacts to changes globally
+						this.renderManagementOverlay();
+					}
+				};
+
+				rect.addEventListener('contextmenu', handleRightClick);
 				svg.appendChild(rect);
 
 				// Direction arrow for thrusters
@@ -1171,6 +1187,8 @@ class Entity extends HTMLElement {
 						path.style.setProperty('--r', r);
 						path.style.setProperty('--g', g);
 						path.style.setProperty('--b', b);
+						path.style.pointerEvents = 'auto'; // allow right clicking the arrow as well
+						path.addEventListener('contextmenu', handleRightClick);
 						svg.appendChild(path);
 					}
 				}
