@@ -7,15 +7,6 @@ class Game extends HTMLElement {
 	static max_zoom = 20;
 	static default_zoom = 8;
 
-	static rng(seed) {
-		return function (n) {
-			let t = n !== undefined ? seed + Math.imul(n, 0x6d2b79f5) : (seed += 0x6d2b79f5);
-			t = Math.imul(t ^ (t >>> 15), t | 1);
-			t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-			return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-		};
-	}
-
 	static kelvinToRGB(kelvin) {
 		let temp = kelvin / 100;
 		let r, g, b;
@@ -36,7 +27,7 @@ class Game extends HTMLElement {
 	static generateStars(seed) {
 		const stars = [];
 		const seen = new Set();
-		const rng = Game.rng(seed);
+		const rng = new RNG(seed);
 
 		const arms = 3;
 		const twist = 0.4; // controls how curled the spiral is
@@ -68,11 +59,11 @@ class Game extends HTMLElement {
 							// Higher probability of stars at the center of the arm, lower near the edge of the arm
 							const probability = width === 0 ? 1 : 1 - (dist_to_arm_center / width) * 0.9;
 
-							if (rng() <= probability) {
+							if (rng.get() <= probability) {
 								const key = `${x},${y}`;
 								if (!seen.has(key)) {
 									seen.add(key);
-									const kelvin = 4000 + Math.floor(rng() * rng() * 20000);
+									const kelvin = 4000 + Math.floor(rng.get() * rng.get() * 20000);
 									stars.push({ sx: x - 1, sy: y - 1, color: Game.kelvinToRGB(kelvin) });
 								}
 							}
