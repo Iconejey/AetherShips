@@ -8,6 +8,10 @@ entity-root {
 
 	body.map-mode & {
 		--game-scale: 1;
+
+		& > .thrusters-overlay {
+			display: none;
+		}
 	}
 
 	body.management-mode & > entity-layer {

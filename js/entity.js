@@ -1102,7 +1102,6 @@ class Entity extends HTMLElement {
 	}
 
 	renderThrusterFlames() {
-		console.log('Rendering thruster flames...');
 		this.removeThrusterFlames();
 
 		const svg_ns = 'http://www.w3.org/2000/svg';
@@ -1236,17 +1235,14 @@ class Entity extends HTMLElement {
 			this.flame_animation_frame = requestAnimationFrame(animate);
 			for (const data of this._flame_elements) {
 				// Adds a tiny jitter noise to the tip of the flame proportional to its size
-				let noiseX = (Math.random() - 0.5) * data.len * 0.05;
-				let noiseY = (Math.random() - 0.5) * data.len * 0.05;
+				let noise_x = (Math.random() - 0.5) * data.len * 0.05;
+				let noise_y = (Math.random() - 0.5) * data.len * 0.05;
 
 				// Emphasize scale noise on the thrust axis
-				if (data.dir === 'forward' || data.dir === 'backward') {
-					noiseY *= 2;
-				} else {
-					noiseX *= 2;
-				}
+				if (data.dir === 'forward' || data.dir === 'backward') noise_y *= 2;
+				else noise_x *= 2;
 
-				data.element.setAttribute('points', `${data.b1x},${data.b1y} ${data.b2x},${data.b2y} ${data.base_tx + noiseX},${data.base_ty + noiseY}`);
+				data.element.setAttribute('points', `${data.b1x},${data.b1y} ${data.b2x},${data.b2y} ${data.base_tx + noise_x},${data.base_ty + noise_y}`);
 			}
 		};
 
