@@ -31,7 +31,7 @@ class ToolBar extends HTMLElement {
 			}
 
 			// Open sidebar with appropriate tools
-			if (value === 'edit' || value === 'management') sidebar.showTools(value);
+			if (value === 'edit') sidebar.showTools();
 		};
 
 		window.addEventListener('keydown', e => this.handleShortcut(e));
