@@ -15,6 +15,29 @@ entity-root {
 		transition: opacity 0.2s;
 	}
 
+	& > .thrusters-overlay {
+		--flame-color: rgb(50, 150, 255);
+
+		position: absolute;
+		top: 0;
+		left: 0;
+		width: 1px;
+		height: 1px;
+		overflow: visible;
+		z-index: 1; /* z-index between layer 1 and layer 2 (which are 1 and 2 respectively) */
+		pointer-events: none;
+
+		& .thruster-flame-outer {
+			fill: color-mix(in srgb, var(--flame-color) 40%, transparent);
+			filter: drop-shadow(0 0 1px color-mix(in srgb, var(--flame-color) 80%, transparent));
+		}
+
+		& .thruster-flame-inner {
+			fill: color-mix(in srgb, white 80%, var(--flame-color)); /* Brighter calculation */
+			filter: drop-shadow(0 0 1px color-mix(in srgb, white 90%, var(--flame-color)));
+		}
+	}
+
 	& entity-layer {
 		display: block;
 		position: absolute;

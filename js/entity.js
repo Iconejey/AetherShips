@@ -1081,9 +1081,82 @@ class Entity extends HTMLElement {
 		this.utility_rect_groups = final_groups;
 		this.utility_line_groups = line_groups;
 
+		this.renderThrusterFlames();
+
 		if (window.game?.mode === 'management' && this === window.game?.player?.driven_entity) {
 			this.renderManagementOverlay();
 		}
+	}
+
+	removeThrusterFlames() {
+		const overlay = this.querySelector(':scope > svg.thrusters-overlay');
+		if (overlay) overlay.remove();
+	}
+
+	renderThrusterFlames() {
+		console.log('Rendering thruster flames...');
+		this.removeThrusterFlames();
+
+		const svg_ns = 'http://www.w3.org/2000/svg';
+		const svg = document.createElementNS(svg_ns, 'svg');
+		svg.classList.add('thrusters-overlay');
+
+		if (this.utility_rect_groups) {
+			for (const group of this.utility_rect_groups) {
+				const block_def = blocks_by_type[group.type];
+
+				if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
+					const direction = group.data?.direction ?? 'forward';
+
+					// Draw thrust flame based on direction
+					const flame = document.createElementNS(svg_ns, 'polygon');
+
+					// Triangle vertices relative to thruster center
+					const cx = group.x + group.w / 2;
+					const cy = group.y + group.h / 2;
+
+					// Base length of flame and width
+					const thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+					const flame_len = thrust_power * 20; // Scale length suitably
+					const flame_width = Math.min(group.w, group.h) * 0.9;
+
+					const inner_flame_len = flame_len * 0.6;
+					const inner_flame_width = flame_width * 0.5;
+
+					let points = '';
+					let inner_points = '';
+
+					if (direction === 'forward') {
+						const flame_base_y = group.y + group.h;
+						points = `${group.x + group.w / 2 - flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y + flame_len}`;
+						inner_points = `${group.x + group.w / 2 - inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y + inner_flame_len}`;
+					} else if (direction === 'backward') {
+						const flame_base_y = group.y;
+						points = `${group.x + group.w / 2 - flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y - flame_len}`;
+						inner_points = `${group.x + group.w / 2 - inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2 + inner_flame_width / 2},${flame_base_y} ${group.x + group.w / 2},${flame_base_y - inner_flame_len}`;
+					} else if (direction === 'left') {
+						const flame_base_x = group.x + group.w;
+						points = `${flame_base_x},${group.y + group.h / 2 - flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + flame_width / 2} ${flame_base_x + flame_len},${group.y + group.h / 2}`;
+						inner_points = `${flame_base_x},${group.y + group.h / 2 - inner_flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + inner_flame_width / 2} ${flame_base_x + inner_flame_len},${group.y + group.h / 2}`;
+					} else if (direction === 'right') {
+						const flame_base_x = group.x;
+						points = `${flame_base_x},${group.y + group.h / 2 - flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + flame_width / 2} ${flame_base_x - flame_len},${group.y + group.h / 2}`;
+						inner_points = `${flame_base_x},${group.y + group.h / 2 - inner_flame_width / 2} ${flame_base_x},${group.y + group.h / 2 + inner_flame_width / 2} ${flame_base_x - inner_flame_len},${group.y + group.h / 2}`;
+					}
+
+					flame.setAttribute('points', points);
+					flame.classList.add('thruster-flame-outer');
+					svg.appendChild(flame);
+
+					const inner_flame = document.createElementNS(svg_ns, 'polygon');
+					inner_flame.setAttribute('points', inner_points);
+					inner_flame.classList.add('thruster-flame-inner');
+					svg.appendChild(inner_flame);
+				}
+			}
+		}
+
+		this.appendChild(svg);
 	}
 
 	removeManagementOverlay() {
@@ -1572,6 +1645,7 @@ class Entity extends HTMLElement {
 		}
 
 		this.flagMassUpdate();
+		this.flagGroupUpdate();
 		this.render();
 	}
 
