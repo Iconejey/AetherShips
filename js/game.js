@@ -595,6 +595,33 @@ class Game extends HTMLElement {
 		if (this.pressed_keys['e'] || this.pressed_keys['E']) {
 			this.camera.followed_entity.active_maneuvers.add('strafe_right');
 		}
+
+		// Brake
+		if (this.pressed_keys['x'] || this.pressed_keys['X']) {
+			const ent = this.camera.followed_entity;
+			const { vx, vy, vr } = ent.velocity || { vx: 0, vy: 0, vr: 0 };
+
+			if (Math.abs(vr) > 0.001) {
+				if (vr > 0) ent.active_maneuvers.add('turn_left');
+				else ent.active_maneuvers.add('turn_right');
+			}
+
+			const a = ent.position.r;
+			const cos_a = Math.cos(a);
+			const sin_a = Math.sin(a);
+
+			const vx_local = vx * cos_a + vy * sin_a;
+			const vy_local = -vx * sin_a + vy * cos_a;
+
+			if (Math.abs(vx_local) > 0.01) {
+				if (vx_local > 0) ent.active_maneuvers.add('strafe_left');
+				else ent.active_maneuvers.add('strafe_right');
+			}
+			if (Math.abs(vy_local) > 0.01) {
+				if (vy_local > 0) ent.active_maneuvers.add('forward');
+				else ent.active_maneuvers.add('backward');
+			}
+		}
 	}
 
 	/**
