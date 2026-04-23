@@ -747,7 +747,7 @@ class Entity extends HTMLElement {
 		process(['basic_capacitor', 'high_density_capacitor'], def => {
 			const capacity = def.capacity * total_blocks;
 			const charge = target_group.data.charge ?? 0;
-			
+
 			const res = {
 				charge: formatted ? `${charge.toFixed(2)}/${capacity} u` : charge
 			};
@@ -1262,21 +1262,28 @@ class Entity extends HTMLElement {
 		const animate = () => {
 			this.flame_animation_frame = requestAnimationFrame(animate);
 			for (const data of this._flame_elements) {
-				const is_active = !!data.group.is_firing;
+				const firing_power = data.group.is_firing || 0;
+				const is_active = firing_power > 0;
 
 				data.element.style.display = is_active ? 'block' : 'none';
 
 				if (!is_active) continue;
 
+				// Calculate adjusted tip based on firing power
+				const base_cx = (data.b1x + data.b2x) / 2;
+				const base_cy = (data.b1y + data.b2y) / 2;
+				const adj_tx = base_cx + (data.base_tx - base_cx) * firing_power;
+				const adj_ty = base_cy + (data.base_ty - base_cy) * firing_power;
+
 				// Adds a tiny jitter noise to the tip of the flame proportional to its size
-				let noise_x = (Math.random() - 0.5) * data.len * 0.05;
-				let noise_y = (Math.random() - 0.5) * data.len * 0.05;
+				let noise_x = (Math.random() - 0.5) * data.len * firing_power * 0.05;
+				let noise_y = (Math.random() - 0.5) * data.len * firing_power * 0.05;
 
 				// Emphasize scale noise on the thrust axis
 				if (data.dir === 'forward' || data.dir === 'backward') noise_y *= 2;
 				else noise_x *= 2;
 
-				data.element.setAttribute('points', `${data.b1x},${data.b1y} ${data.b2x},${data.b2y} ${data.base_tx + noise_x},${data.base_ty + noise_y}`);
+				data.element.setAttribute('points', `${data.b1x},${data.b1y} ${data.b2x},${data.b2y} ${adj_tx + noise_x},${adj_ty + noise_y}`);
 			}
 		};
 
@@ -1311,18 +1318,20 @@ class Entity extends HTMLElement {
 						else if (direction === 'left') structural_torque = ry;
 						else if (direction === 'right') structural_torque = -ry;
 
-						let is_active = false;
-						if (direction === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
-						if (direction === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
-						if (direction === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
-						if (direction === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
-						if (this.active_maneuvers.has('turn_left') && structural_torque < -0.1) is_active = true;
-						if (this.active_maneuvers.has('turn_right') && structural_torque > 0.1) is_active = true;
+						let contributing_maneuvers = 0;
+						if (direction === 'forward' && this.active_maneuvers.has('forward')) contributing_maneuvers++;
+						if (direction === 'backward' && this.active_maneuvers.has('backward')) contributing_maneuvers++;
+						if (direction === 'left' && this.active_maneuvers.has('strafe_left')) contributing_maneuvers++;
+						if (direction === 'right' && this.active_maneuvers.has('strafe_right')) contributing_maneuvers++;
+						if (this.active_maneuvers.has('turn_left') && structural_torque < -0.1) contributing_maneuvers++;
+						if (this.active_maneuvers.has('turn_right') && structural_torque > 0.1) contributing_maneuvers++;
 
-						if (is_active) {
+						let firing_power = contributing_maneuvers / this.active_maneuvers.size;
+
+						if (firing_power > 0) {
 							// Energy Consumption Check
 							if (block_def.name === 'electric_thruster') {
-								const energy_consumption_per_sec = (block_def.electric_consumption || 0.01) * group.w * group.h;
+								const energy_consumption_per_sec = (block_def.electric_consumption || 0.01) * group.w * group.h * firing_power;
 								// delta_frames is approximately 60 per second (60 frames * 1 = 60).
 								// So delta_seconds = delta_frames / 60
 								const energy_needed = energy_consumption_per_sec * (delta_frames / 60);
@@ -1335,7 +1344,7 @@ class Entity extends HTMLElement {
 								}
 
 								if (available_energy < energy_needed) {
-									is_active = false;
+									firing_power = 0; // Not enough energy, cannot fire
 								} else {
 									// Drain the energy proportionally or evenly
 									let energy_to_drain = energy_needed;
@@ -1352,11 +1361,11 @@ class Entity extends HTMLElement {
 							}
 						}
 
-						if (is_active) {
-							group.is_firing = true;
+						if (firing_power > 0) {
+							group.is_firing = firing_power;
 
 							// Thrust power per unit block area
-							let thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+							let thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h * firing_power;
 
 							// Scale up to make physical forces substantial against block mass
 							// (1 block has mass ~10, thrust is ~0.02, without scale a=0.002, we want a~0.02)
