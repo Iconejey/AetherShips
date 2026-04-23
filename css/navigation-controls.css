@@ -40,21 +40,6 @@ navigation-controls .tools-layer > * {
 	background-color: var(--hover-bg);
 }
 
-icon-toggle.stabilisation-toggle button {
-	width: 48px;
-	height: 48px;
-	border-radius: 50%;
-	background: var(--bg);
-	border: 1px solid var(--border);
-	color: var(--text);
-	cursor: pointer;
-	transition: background-color 0.2s;
-}
-
-icon-toggle.stabilisation-toggle button:hover {
-	background-color: var(--hover-bg);
-}
-
 utility-sliders {
 	width: 100%;
 	display: flex;

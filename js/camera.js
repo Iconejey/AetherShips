@@ -95,14 +95,14 @@ class Camera {
 		this.y += (y - this.y) * lerp_speed;
 
 		// Find shortest angle
-		const diff = (r - this.r) % (Math.PI * 2);
-		let target_r = this.r + diff;
-		if (target_r - this.r > Math.PI) target_r -= Math.PI * 2;
-		if (target_r - this.r < -Math.PI) target_r += Math.PI * 2;
+		let diff = (r - this.r) % (Math.PI * 2);
+		if (diff > Math.PI) diff -= Math.PI * 2;
+		if (diff < -Math.PI) diff += Math.PI * 2;
 
+		let target_r = this.r + diff;
 		this.r += (target_r - this.r) * lerp_speed;
 
-		if (Math.abs(x - this.x) < 0.01 && Math.abs(y - this.y) < 0.01 && Math.abs(target_r - this.r) < 0.001) {
+		if (Math.abs(x - this.x) < 1 && Math.abs(y - this.y) < 1 && Math.abs(diff) < 0.01) {
 			this.moveTo(x, y, r);
 			this.is_transitioning = false;
 		}

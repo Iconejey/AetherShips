@@ -248,6 +248,14 @@ class Game extends HTMLElement {
 				return;
 			}
 
+			const is_compass_shortcut = (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c';
+			if (is_compass_shortcut) {
+				event.preventDefault();
+				this.camera_align_world = !this.camera_align_world;
+				this.camera.startTransition();
+				return;
+			}
+
 			if (event.key === 'Escape' || event.code === 'Escape') {
 				// Exit map mode
 				if (this.scale < Game.map_zoom) {
