@@ -233,3 +233,15 @@ svg.management-overlay .management-node-rect {
 	x: calc(var(--node-x) - 1.5px / var(--game-scale));
 	y: calc(var(--node-y) - 1.5px / var(--game-scale));
 }
+
+svg.management-overlay .management-capacitor-text {
+	text-anchor: middle;
+	dominant-baseline: middle;
+	fill: white;
+	font-size: 2px;
+	pointer-events: none;
+}
+
+svg.management-overlay .management-capacitor-text .icon {
+	font-family: 'Material Symbols Outlined';
+}

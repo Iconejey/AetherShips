@@ -1,7 +1,7 @@
 /**
  * A simple tagged template function to create HTML strings. It concatenates the string literals and interpolated values into a single string.
  */
-const html = (strings, ...values) => strings.reduce((result, string, i) => result + string + (values[i] || ''), '');
+const html = (strings, ...values) => strings.reduce((result, string, i) => result + string + (values[i] !== undefined && values[i] !== null && values[i] !== false ? values[i] : ''), '');
 
 // Add $ property to HTMLElement prototype
 Object.defineProperty(HTMLElement.prototype, '$', {

@@ -610,7 +610,7 @@ class Entity extends HTMLElement {
 					const charge_per_capacitor = group_info.electric_output / connected_capacitors.length;
 					for (const cap of connected_capacitors) {
 						const cap_info = this.getGroupInfo(cap);
-						cap.data.charge = Math.min(cap.data.charge + charge_per_capacitor, cap_info.max_capacity);
+						cap.data.charge = Math.min(cap.data.charge + charge_per_capacitor, cap_info.capacity);
 					}
 				}
 			}
@@ -745,13 +745,14 @@ class Entity extends HTMLElement {
 
 		// Capacitors
 		process(['basic_capacitor', 'high_density_capacitor'], def => {
-			const max_capacity = def.capacity * total_blocks;
+			const capacity = def.capacity * total_blocks;
 			const charge = target_group.data.charge ?? 0;
-
-			return {
-				charge: formatted ? `${charge.toFixed(2)}/${max_capacity} u` : charge,
-				max_capacity: formatted ? null : max_capacity
+			
+			const res = {
+				charge: formatted ? `${charge.toFixed(2)}/${capacity} u` : charge
 			};
+			if (!formatted) res.capacity = capacity;
+			return res;
 		});
 
 		// Refineries
@@ -1235,7 +1236,8 @@ class Entity extends HTMLElement {
 						base_ty: ty,
 						len: flame_len,
 						dir: direction,
-						torque
+						torque,
+						group
 					});
 
 					this._flame_elements.push({
@@ -1248,7 +1250,8 @@ class Entity extends HTMLElement {
 						base_ty: ity,
 						len: inner_flame_len,
 						dir: direction,
-						torque
+						torque,
+						group
 					});
 				}
 			}
@@ -1259,18 +1262,7 @@ class Entity extends HTMLElement {
 		const animate = () => {
 			this.flame_animation_frame = requestAnimationFrame(animate);
 			for (const data of this._flame_elements) {
-				let is_active = false;
-				if (this.active_maneuvers) {
-					if (data.dir === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
-					if (data.dir === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
-					if (data.dir === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
-					if (data.dir === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
-
-					// Torque turning
-					// A positive torque turns the ship right. A negative torque turns it left.
-					if (this.active_maneuvers.has('turn_left') && data.torque < -0.1) is_active = true;
-					if (this.active_maneuvers.has('turn_right') && data.torque > 0.1) is_active = true;
-				}
+				const is_active = !!data.group.is_firing;
 
 				data.element.style.display = is_active ? 'block' : 'none';
 
@@ -1299,54 +1291,93 @@ class Entity extends HTMLElement {
 		const com_x = this.mass.cx;
 		const com_y = this.mass.cy;
 
-		if (this.utility_rect_groups && this.active_maneuvers && this.active_maneuvers.size > 0) {
+		if (this.utility_rect_groups) {
 			for (const group of this.utility_rect_groups) {
 				const block_def = blocks_by_type[group.type];
 				if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {
 					const direction = group.data?.direction ?? 'forward';
+					group.is_firing = false;
 
-					const cx = group.x + group.w / 2;
-					const cy = group.y + group.h / 2;
-					const rx = cx - com_x;
-					const ry = cy - com_y;
+					// Only evaluate manuevers if we have active intents
+					if (this.active_maneuvers && this.active_maneuvers.size > 0) {
+						const cx = group.x + group.w / 2;
+						const cy = group.y + group.h / 2;
+						const rx = cx - com_x;
+						const ry = cy - com_y;
 
-					let structural_torque = 0;
-					if (direction === 'forward') structural_torque = -rx;
-					else if (direction === 'backward') structural_torque = rx;
-					else if (direction === 'left') structural_torque = ry;
-					else if (direction === 'right') structural_torque = -ry;
+						let structural_torque = 0;
+						if (direction === 'forward') structural_torque = -rx;
+						else if (direction === 'backward') structural_torque = rx;
+						else if (direction === 'left') structural_torque = ry;
+						else if (direction === 'right') structural_torque = -ry;
 
-					let is_active = false;
-					if (direction === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
-					if (direction === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
-					if (direction === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
-					if (direction === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
-					if (this.active_maneuvers.has('turn_left') && structural_torque < -0.1) is_active = true;
-					if (this.active_maneuvers.has('turn_right') && structural_torque > 0.1) is_active = true;
+						let is_active = false;
+						if (direction === 'forward' && this.active_maneuvers.has('forward')) is_active = true;
+						if (direction === 'backward' && this.active_maneuvers.has('backward')) is_active = true;
+						if (direction === 'left' && this.active_maneuvers.has('strafe_left')) is_active = true;
+						if (direction === 'right' && this.active_maneuvers.has('strafe_right')) is_active = true;
+						if (this.active_maneuvers.has('turn_left') && structural_torque < -0.1) is_active = true;
+						if (this.active_maneuvers.has('turn_right') && structural_torque > 0.1) is_active = true;
 
-					if (is_active) {
-						// Thrust power per unit block area
-						let thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+						if (is_active) {
+							// Energy Consumption Check
+							if (block_def.name === 'electric_thruster') {
+								const energy_consumption_per_sec = (block_def.electric_consumption || 0.01) * group.w * group.h;
+								// delta_frames is approximately 60 per second (60 frames * 1 = 60).
+								// So delta_seconds = delta_frames / 60
+								const energy_needed = energy_consumption_per_sec * (delta_frames / 60);
 
-						// Scale up to make physical forces substantial against block mass
-						// (1 block has mass ~10, thrust is ~0.02, without scale a=0.002, we want a~0.02)
-						thrust_power *= 500;
+								const connected_capacitors = (group.connected_targets || []).map(idx => this.utility_rect_groups[idx]).filter(g => ['basic_capacitor', 'high_density_capacitor'].includes(blocks_by_type[g.type]?.name));
 
-						// Add force (local coordinate space aligned with the grid where +y is 'backward' relative to ship facing)
-						// Ship forward is local -y direction
-						// Ship left is local -x direction
-						// Let's assume standard grid (0,0 is top-left).
-						// Moving "forward" means moving grid into -y.
-						if (direction === 'forward') force_y_local -= thrust_power;
-						else if (direction === 'backward') force_y_local += thrust_power;
-						else if (direction === 'left') force_x_local -= thrust_power;
-						else if (direction === 'right') force_x_local += thrust_power;
+								let available_energy = 0;
+								for (const cap of connected_capacitors) {
+									available_energy += cap.data.charge || 0;
+								}
 
-						// Add torque
-						if (direction === 'forward') torque_total -= thrust_power * rx;
-						else if (direction === 'backward') torque_total += thrust_power * rx;
-						else if (direction === 'left') torque_total += thrust_power * ry;
-						else if (direction === 'right') torque_total -= thrust_power * ry;
+								if (available_energy < energy_needed) {
+									is_active = false;
+								} else {
+									// Drain the energy proportionally or evenly
+									let energy_to_drain = energy_needed;
+									for (const cap of connected_capacitors) {
+										const charge = cap.data.charge || 0;
+										if (charge > 0) {
+											const drain = Math.min(charge, energy_to_drain);
+											cap.data.charge -= drain;
+											energy_to_drain -= drain;
+											if (energy_to_drain <= 0) break;
+										}
+									}
+								}
+							}
+						}
+
+						if (is_active) {
+							group.is_firing = true;
+
+							// Thrust power per unit block area
+							let thrust_power = (block_def.thrust_power || 0.02) * group.w * group.h;
+
+							// Scale up to make physical forces substantial against block mass
+							// (1 block has mass ~10, thrust is ~0.02, without scale a=0.002, we want a~0.02)
+							thrust_power *= 500;
+
+							// Add force (local coordinate space aligned with the grid where +y is 'backward' relative to ship facing)
+							// Ship forward is local -y direction
+							// Ship left is local -x direction
+							// Let's assume standard grid (0,0 is top-left).
+							// Moving "forward" means moving grid into -y.
+							if (direction === 'forward') force_y_local -= thrust_power;
+							else if (direction === 'backward') force_y_local += thrust_power;
+							else if (direction === 'left') force_x_local -= thrust_power;
+							else if (direction === 'right') force_x_local += thrust_power;
+
+							// Add torque
+							if (direction === 'forward') torque_total -= thrust_power * rx;
+							else if (direction === 'backward') torque_total += thrust_power * rx;
+							else if (direction === 'left') torque_total += thrust_power * ry;
+							else if (direction === 'right') torque_total -= thrust_power * ry;
+						}
 					}
 				}
 			}
@@ -1415,6 +1446,7 @@ class Entity extends HTMLElement {
 		svg.style.zIndex = '100';
 
 		if (this.utility_rect_groups) {
+			let capacitor_idx = 0;
 			for (const group of this.utility_rect_groups) {
 				const block_def = blocks_by_type[group.type];
 				const color_val = block_def?.colors?.[0] ?? 0xffffffff;
@@ -1453,6 +1485,18 @@ class Entity extends HTMLElement {
 
 				rect.addEventListener('contextmenu', handleRightClick);
 				svg.appendChild(rect);
+
+				// Numbering for capacitors
+				if (['basic_capacitor', 'high_density_capacitor'].includes(block_def?.name)) {
+					capacitor_idx++;
+					const text = document.createElementNS(svg_ns, 'text');
+					text.setAttribute('x', group.x + group.w / 2);
+					text.setAttribute('y', group.y + group.h / 2);
+					text.classList.add('management-capacitor-text');
+
+					text.innerHTML = html`<tspan class="icon" dy="0.5">bolt</tspan><tspan dy="-0.25">${capacitor_idx}</tspan>`;
+					svg.appendChild(text);
+				}
 
 				// Direction arrow for thrusters
 				if (['electric_thruster', 'bio_fuel_thruster', 'uranium_thruster'].includes(block_def?.name)) {

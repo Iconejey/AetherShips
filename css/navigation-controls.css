@@ -1,0 +1,137 @@
+navigation-controls {
+	position: fixed;
+	top: 2rem;
+	right: 2rem;
+	display: flex;
+	flex-direction: column;
+	align-items: flex-end;
+	gap: 12px;
+	z-index: 1000;
+	pointer-events: none;
+}
+
+navigation-controls * {
+	pointer-events: auto;
+}
+
+navigation-controls .tools-layer {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	pointer-events: none;
+}
+
+navigation-controls .tools-layer > * {
+	pointer-events: auto;
+}
+
+#compass {
+	width: 48px;
+	height: 48px;
+	cursor: pointer;
+	border-radius: 50%;
+	transition: background-color 0.2s ease;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	padding: 8px;
+}
+
+#compass:hover {
+	background-color: var(--hover-bg);
+}
+
+icon-toggle.stabilisation-toggle button {
+	width: 48px;
+	height: 48px;
+	border-radius: 50%;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	color: var(--text);
+	cursor: pointer;
+	transition: background-color 0.2s;
+}
+
+icon-toggle.stabilisation-toggle button:hover {
+	background-color: var(--hover-bg);
+}
+
+utility-sliders {
+	width: 100%;
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 6px;
+	padding: 8px;
+	min-width: 150px;
+}
+
+.slider-container {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+	width: 100%;
+}
+
+.slider-header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	font-size: 12px;
+	color: var(--text);
+	cursor: pointer;
+	user-select: none;
+}
+
+.slider-header .icon-label {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+}
+
+.slider-header .icon {
+	font-family: 'Material Symbols Outlined';
+	font-size: 14px;
+}
+
+.slider-header.sub-header {
+	font-size: 10px;
+	opacity: 0.8;
+}
+
+.slider-header.sub-header .icon {
+	font-size: 12px;
+}
+
+.slider-bar {
+	width: 100%;
+	height: 8px;
+	background: rgba(255, 255, 255, 0.1);
+	border-radius: 4px;
+	overflow: hidden;
+}
+
+.slider-bar.sub-bar {
+	height: 4px;
+}
+
+.slider-fill {
+	height: 100%;
+	background: var(--ura-primary);
+	width: 0%;
+	transition: width 0.1s linear;
+}
+
+.sub-sliders {
+	display: none;
+	flex-direction: column;
+	gap: 6px;
+	margin-top: 4px;
+	padding-left: 8px;
+	border-left: 1px solid var(--border);
+}
+
+.sub-sliders.open {
+	display: flex;
+}
