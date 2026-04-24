@@ -469,9 +469,10 @@ class Entity extends HTMLElement {
 		return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
 	}
 
-	static create(position, add_to_dom = false) {
+	static create(position, type = "ship", add_to_dom = false) {
 		const entity = document.createElement('entity-root');
 		entity.id = Entity.generateId();
+		entity.setAttribute('type', type);
 		if (add_to_dom) entity.addToDOM();
 		entity.position = { ...position };
 		entity.fillRect(1, -1, -1, 2, 2, 'iron_hull_tier_1');

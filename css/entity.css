@@ -129,7 +129,6 @@ entity-root {
 	}
 
 	body.map-mode &::after {
-		content: 'rocket_launch';
 		font-family: 'Material Symbols Outlined';
 		font-size: 24px;
 		color: white;
@@ -138,7 +137,16 @@ entity-root {
 		left: 50%;
 		pointer-events: none;
 		text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+	}
+
+	body.map-mode &[type='ship']::after {
+		content: 'rocket_launch';
 		transform: translate(-50%, -50%) rotate(-45deg);
+	}
+
+	body.map-mode &[type='asteroid']::after {
+		content: 'motion_blur';
+		transform: translate(-50%, -50%) rotate(-90deg);
 	}
 }
 
