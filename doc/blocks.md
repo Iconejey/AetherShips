@@ -21,6 +21,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 9. **Raw Crystal**
 10. **Dirt**
 11. **Vegetation**
+12. **Ice**
 
 ## Refined Materials & Components (20-49)
 
@@ -46,7 +47,7 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 53. **Alloy Hull - Tier 4**
 54. **Glass Window**
 55. **Lamp**
-56. **Solar shield**
+56. **Radiation shield**
 57. **Door**
 58. **Control Panel**
 
@@ -98,8 +99,9 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 170. **Industrial Container**
 171. **Bio-Fuel Container**
 172. **Uranium Container**
-173. **Connector**
-174. **Rack**
+173. **Water Container**
+174. **Connector**
+175. **Rack**
 
 ## Detection & Communication (200-209)
 
