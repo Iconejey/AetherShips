@@ -6,16 +6,17 @@ Some biomes are more common than others, some can be for planets only, asteroids
 
 ## Biome types and resources
 
-| Resource   | Plant     | Arid      | Ice       | Tectonic | Crystal   | Radioactive |
-| ---------- | --------- | --------- | --------- | -------- | --------- | ----------- |
-| Vegetation | Exclusive | -         | -         | -        | -         | -           |
-| Dirt       | Abundant  | Present   | -         | Rare     | -         | -           |
-| Sand       | -         | Exclusive | -         | -        | -         | -           |
-| Iron       | Primary   | -         | -         | Present  | -         | -           |
-| Coal       | Exclusive | -         | -         | -        | -         | -           |
-| Copper     | -         | Primary   | -         | Present  | -         | -           |
-| Lead       | -         | Primary   | -         | -        | Present   | -           |
-| Ice        | -         | -         | Exclusive | -        | -         | -           |
-| Titanium   | -         | -         | Primary   | Primary  | -         | -           |
-| Crystals   | -         | -         | -         | Geodes   | Exclusive | -           |
-| Uranium    | -         | -         | Rare      | -        | -         | Exclusive   |
+| Resource     | Plant     | Arid      | Ice       | Tectonic | Crystal   | Radioactive |
+| ------------ | --------- | --------- | --------- | -------- | --------- | ----------- |
+| Vegetation   | Exclusive | -         | -         | -        | -         | -           |
+| Dirt         | Abundant  | Present   | -         | Rare     | -         | -           |
+| Sand         | -         | Exclusive | -         | -        | -         | -           |
+| Iron         | Primary   | -         | -         | Present  | -         | -           |
+| Coal         | Exclusive | -         | -         | -        | -         | -           |
+| Copper       | -         | Primary   | -         | Present  | -         | -           |
+| Lead         | -         | Primary   | -         | -        | Present   | -           |
+| Ice          | -         | -         | Exclusive | -        | -         | -           |
+| Titanium     | -         | -         | Present   | Present  | -         | -           |
+| Crystals     | -         | -         | -         | Rare     | Abundant  | -           |
+| Uranium      | -         | -         | Rare      | -        | -         | Abundant    |
+| **Location** | Planets   | Both      | Both      | Planets  | Asteroids | Asteroids   |
