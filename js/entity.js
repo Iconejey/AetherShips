@@ -472,7 +472,7 @@ class Entity extends HTMLElement {
 	static create(position, type = 'ship', add_to_dom = false) {
 		const entity = document.createElement('entity-root');
 		entity.id = Entity.generateId();
-		entity.setAttribute('type', type);
+		entity.type = type;
 		if (add_to_dom) entity.addToDOM();
 		entity.position = { ...position };
 		return entity;
@@ -555,6 +555,14 @@ class Entity extends HTMLElement {
 				sy: Math.floor(position.y / (32 * 256))
 			}
 		};
+	}
+
+	set type(value) {
+		this.setAttribute('type', value);
+	}
+
+	get type() {
+		return this.getAttribute('type');
 	}
 
 	get sunlight() {
@@ -1883,7 +1891,7 @@ class Entity extends HTMLElement {
 	 */
 	serialize() {
 		const obj = {};
-		const keys = ['id', 'position', 'velocity', 'mass', 'utility_rect_groups', 'utility_line_groups'];
+		const keys = ['id', 'type', 'position', 'velocity', 'mass', 'utility_rect_groups', 'utility_line_groups'];
 		for (const key of keys) obj[key] = this[key];
 		return obj;
 	}
