@@ -11,33 +11,34 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 0. **Empty Block** (Reserved)
 
 1. **Rock**
-2. **Iron Ore**
-3. **Copper Ore**
-4. **Titanium Ore**
-5. **Lead Ore**
-6. **Uranium Ore**
-7. **Coal**
-8. **Sand**
-9. **Raw Crystal**
-10. **Dirt**
-11. **Vegetation**
-12. **Ice**
+2. **Sand**
+3. **Ice**
+4. **Dirt**
+5. **Vegetation**
+6. **Coal**
+7. **Iron Ore**
+8. **Copper Ore**
+9. **Titanium Ore**
+10. **Lead Ore**
+11. **Uranium Ore**
+12. **Raw Crystal**
 
 ## Refined Materials & Components (20-49)
 
-20. **Iron Ingot**
-21. **Copper Ingot**
-22. **Titanium Ingot**
-23. **Carbon**
-24. **Steel**
-25. **Glass**
-26. **Cut Crystal**
-27. **Refined Uranium**
-28. **Bio-Fuel**
+20. **Silicon**
+21. **Glass**
+22. **Iron Ingot**
+23. **Copper Ingot**
+24. **Titanium Ingot**
+25. **Carbon**
+26. **Bio-Plastic**
+27. **Steel**
+28. **Refined Uranium**
 29. **Copper Wire**
 30. **Electronic Component**
 31. **Processor**
 32. **Lead plate**
+33. **Cut Crystal**
 
 ## Structure (50-79)
 
@@ -59,12 +60,15 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 83. **Solar Panel - Tier 4**
 84. **Basic Capacitor**
 85. **High-Density Capacitor**
-86. **Industrial Refinery**
-87. **Uranium Refinery**
-88. **Bio-Refinery**
-89. **Bio-Fuel Electric Generator**
-90. **Uranium Electric Generator**
-91. **Greenhouse**
+86. **Material Refinery**
+87. **Bio-Refinery**
+88. **Uranium Refinery**
+89. **Crafting Station - Tier 1**
+90. **Crafting Station - Tier 2**
+91. **Crafting Station - Tier 3**
+92. **Bio-Fuel Electric Generator**
+93. **Uranium Electric Generator**
+94. **Greenhouse**
 
 ## Propulsion (110-139)
 
@@ -74,18 +78,18 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 113. **Warp Drive**
 114. **Warp Gate**
 
-## Combat & Defense (140-169)
+## Combat & Mining (140-169)
 
-140. **Cannon - Tier 1**
-141. **Cannon - Tier 2**
-142. **Cannon - Tier 3**
-143. **Cannon - Tier 4**
-144. **Explosive Charge - Tier 1**
-145. **Explosive Charge - Tier 2**
-146. **Explosive Charge - Tier 3**
-147. **Drill - Tier 1**
-148. **Drill - Tier 2**
-149. **Drill - Tier 3**
+140. **Drill - Tier 1**
+141. **Drill - Tier 2**
+142. **Drill - Tier 3**
+143. **Cannon - Tier 1**
+144. **Cannon - Tier 2**
+145. **Cannon - Tier 3**
+146. **Cannon - Tier 4**
+147. **Explosive Charge - Tier 1**
+148. **Explosive Charge - Tier 2**
+149. **Explosive Charge - Tier 3**
 150. **Missile Launcher - Tier 1**
 151. **Missile Launcher - Tier 2**
 152. **Missile Launcher - Tier 3**
@@ -96,12 +100,14 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 
 ## Logistics & Automation (170-199)
 
-170. **Industrial Container**
-171. **Bio-Fuel Container**
-172. **Uranium Container**
-173. **Water Container**
+170. **Material Container**
+171. **Water Tank**
+172. **Bio-Fuel Tank**
+173. **Uranium Container**
 174. **Connector**
 175. **Rack**
+176. **Construction Module**
+177. **Drone Computer**
 
 ## Detection & Communication (200-209)
 

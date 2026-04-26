@@ -469,7 +469,7 @@ class Entity extends HTMLElement {
 		return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
 	}
 
-	static create(position, type = "ship", add_to_dom = false) {
+	static create(position, type = 'ship', add_to_dom = false) {
 		const entity = document.createElement('entity-root');
 		entity.id = Entity.generateId();
 		entity.setAttribute('type', type);
@@ -757,7 +757,7 @@ class Entity extends HTMLElement {
 		});
 
 		// Refineries
-		process(['industrial_refinery', 'uranium_refinery', 'bio_refinery'], def => ({}));
+		process(['material_refinery', 'uranium_refinery', 'bio_refinery'], def => ({}));
 
 		// Generators
 		process(['bio_fuel_electric_generator', 'uranium_electric_generator'], def => ({}));
@@ -795,7 +795,7 @@ class Entity extends HTMLElement {
 		process(['flare_launcher'], def => ({}));
 
 		// Containers
-		process(['industrial_container', 'bio_fuel_container', 'uranium_container'], def => ({}));
+		process(['material_container', 'bio_fuel_container', 'uranium_container'], def => ({}));
 
 		// Radars
 		process(['radar'], def => ({}));
