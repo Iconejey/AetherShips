@@ -611,7 +611,8 @@ class Entity extends HTMLElement {
 					const charge_per_capacitor = group_info.electric_output / connected_capacitors.length;
 					for (const cap of connected_capacitors) {
 						const cap_info = this.getGroupInfo(cap);
-						cap.data.charge = Math.min(cap.data.charge + charge_per_capacitor, cap_info.capacity);
+						const current_charge = cap.data.charge || 0;
+						cap.data.charge = Math.min(current_charge + charge_per_capacitor, cap_info.capacity);
 					}
 				}
 			}
