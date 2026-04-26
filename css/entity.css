@@ -65,6 +65,12 @@ entity-root {
 				transform: translate(-0.5px, -0.5px) scale(0.5);
 				filter: blur(1px);
 			}
+
+			&.debug-generation {
+				z-index: 9999;
+				pointer-events: none;
+				transform: none;
+			}
 		}
 
 		--below-op: 0.8;

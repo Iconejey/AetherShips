@@ -185,11 +185,7 @@ class UserTerminal extends HTMLElement {
 			const dd = String(date.getDate()).padStart(2, '0');
 			const date_str = `${yyyy}.${mm}.${dd}`;
 
-			const start = () => {
-				window.game.loadGalaxy(name);
-				this.clear();
-				this.mode = 'navigation';
-			};
+			const start = () => window.game.loadGalaxy(name);
 
 			this.button(name, date_str, start, () => this.deleteGalaxy(name));
 		}

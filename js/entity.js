@@ -482,12 +482,56 @@ class Entity extends HTMLElement {
 		return Entity.create(position, 'ship', add_to_dom);
 	}
 
-	static createAsteroid(positionn, biome, add_to_dom = false) {
-		const entity = Entity.create(positionn, 'asteroid', add_to_dom);
-		entity.biome = 'rock';
-		entity.fillEllipse(0, 0, 0, 14, 14, 'rock');
-		entity.fillEllipse(1, 0, 0, 16, 16, 'rock');
-		entity.fillEllipse(2, 0, 0, 14, 14, 'rock');
+	static createAsteroid(position, biome, size, add_to_dom = false) {
+		const entity = Entity.create(position, 'asteroid', add_to_dom);
+		entity.biome = biome;
+
+		const seed = Math.random() * 1000000;
+		const shape_noise = new Noise2D(seed);
+		const ore_noise_1 = new Noise2D(seed + 1);
+		const ore_noise_2 = new Noise2D(seed + 2);
+
+		for (let layer = 0; layer <= 2; layer++) {
+			const layer_radius = layer === 1 ? size : size - 2;
+			if (layer_radius <= 0) continue;
+
+			for (let y = -layer_radius; y <= layer_radius; y++) {
+				for (let x = -layer_radius; x <= layer_radius; x++) {
+					const dist_norm = Math.sqrt(x * x + y * y) / layer_radius;
+					if (dist_norm > 1) continue;
+
+					const noise_val = shape_noise.get(x * 0.1, y * 0.1);
+					const threshold = 0.8 + noise_val * 0.2;
+
+					if (dist_norm <= threshold) {
+						let block = 'rock';
+
+						const v1 = ore_noise_1.get(x * 0.15, y * 0.15);
+						const v2 = ore_noise_2.get(x * 0.15, y * 0.15);
+
+						if (biome === 'arid') {
+							if (v1 > 0.4) block = 'copper_ore';
+							else if (v2 > 0.4) block = 'lead_ore';
+							else if (v1 < -0.6) block = 'dirt';
+							else if (v2 < -0.8) block = 'iron_ore';
+							else if (v1 > 0.1 && v1 <= 0.4) block = 'sand';
+						} else if (biome === 'ice') {
+							if (v1 > 0.2) block = 'ice';
+							else if (v2 > 0.8) block = 'titanium_ore';
+							else if (v2 < -0.8) block = 'raw_crystal';
+						} else if (biome === 'crystal') {
+							if (v1 > 0.2) block = 'raw_crystal';
+							else if (v2 > 0.6) block = 'lead_ore';
+						} else if (biome === 'radioactive') {
+							if (v1 > 0.2) block = 'uranium_ore';
+						}
+
+						entity.setByName(layer, x, y, block);
+					}
+				}
+			}
+		}
+
 		entity.render();
 		return entity;
 	}
@@ -1868,6 +1912,58 @@ class Entity extends HTMLElement {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Debugs a generation filter by rendering its output to an absolutely positioned transparent canvas
+	 * overlaid on top of the entity. The canvas spans from block (-size, -size) to (size, size).
+	 * 0 = transparent, 1 = white.
+	 * @param {number} layer - The layer index to generate for.
+	 * @param {number} size - The radius around the center to generate (in blocks).
+	 * @param {Generation|Function} gen - Generation instance or filter function.
+	 * @returns {HTMLCanvasElement} The created canvas element.
+	 */
+	debugGeneration(layer, size, gen) {
+		// Clean up any existing debug canvases
+		for (const old_canvas of this.querySelectorAll('canvas.debug-generation')) {
+			old_canvas.remove();
+		}
+
+		const entity_layer = this.getEntityLayer(layer, true);
+		const canvas = document.createElement('canvas');
+		const canvas_size = size * 2 + 1;
+		canvas.width = canvas_size;
+		canvas.height = canvas_size;
+		canvas.classList.add('debug-generation');
+
+		canvas.style.top = `${-size}px`;
+		canvas.style.left = `${-size}px`;
+		canvas.style.width = `${canvas_size}px`;
+		canvas.style.height = `${canvas_size}px`;
+
+		entity_layer.appendChild(canvas);
+
+		const ctx = canvas.getContext('2d');
+		const img_data = ctx.createImageData(canvas_size, canvas_size);
+		const buf = new Uint32Array(img_data.data.buffer);
+
+		for (let py = 0; py < canvas_size; py++) {
+			for (let px = 0; px < canvas_size; px++) {
+				const x = px - size;
+				const y = py - size;
+
+				const val = gen.get(x, y, layer);
+
+				// Map 0-1 to alpha, RGB is white
+				const i = py * canvas_size + px;
+				const a = Math.max(0, Math.min(255, Math.floor(val * 255)));
+				buf[i] = (a << 24) | (255 << 16) | (255 << 8) | 255;
+			}
+		}
+
+		ctx.putImageData(img_data, 0, 0);
+
+		return canvas;
 	}
 
 	/**

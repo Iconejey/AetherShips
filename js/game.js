@@ -5,7 +5,7 @@ class Game extends HTMLElement {
 	static min_zoom = 0.001;
 	static map_zoom = 0.5;
 	static max_zoom = 20;
-	static default_zoom = 8;
+	static default_zoom = 5;
 
 	static kelvinToRGB(kelvin) {
 		let temp = kelvin / 100;
@@ -313,7 +313,7 @@ class Game extends HTMLElement {
 		this.startGameLoop();
 		await this.startMenu();
 
-		setTimeout(() => this.test(), 1);
+		setTimeout(() => this.test?.(), 200);
 	}
 
 	async startMenu() {
@@ -353,11 +353,18 @@ class Game extends HTMLElement {
 			if (driven_entity_id) {
 				const driven_entity = Entity.get(driven_entity_id);
 				this.player.drive(driven_entity);
+			} else {
+				const escape_pod = await Entity.fromTemplate('escape_pod', true, {
+					position: this.player.position
+				});
+				this.player.drive(escape_pod);
 			}
 
 			this.resetStars();
 			this.loading = false;
 			document.body.classList.remove('start-menu');
+			$('user-terminal').clear();
+			$('user-terminal').mode = 'navigation';
 		} catch (err) {
 			console.error('Failed to load galaxy:', err);
 			$('user-terminal').startMenu(() => $('user-terminal').error(`Failed to load galaxy: ${err.message}`));
@@ -367,21 +374,45 @@ class Game extends HTMLElement {
 	/**
 	 * Tests for dev purposes
 	 */
-	test() {
-		// // Test planet
-		// const test_planet = document.createElement('entity-root');
-		// this.appendChild(test_planet);
-		// test_planet.fillEllipse(0, 0, 0, 64, 64, 'rock');
-		// test_planet.fillEllipse(1, 0, 0, 48, 48, 'dirt');
-		// test_planet.fillEllipse(2, 0, 0, 32, 32, 'vegetation');
-		// test_planet.render();
-		// // Test ship
-		// const test_ship = document.createElement('entity-root');
-		// this.appendChild(test_ship);
-		// test_ship.fillRect(2, -8, -16, 16, 32, 'iron_hull_tier_1');
-		// test_ship.render();
-		// // Follow ship with camera
-		// this.camera.followed_entity = test_ship;
+	async test() {
+		const saves = await window.saves.listGalaxies();
+		if (saves.length > 0) await this.loadGalaxy(saves[0].name);
+
+		const seed = Math.random() * 1000000;
+		// const seed = 12345;
+		const entity = game.player.driven_entity;
+		const gen = new Generation();
+		const size = 64;
+
+		// Noises
+		const radial_shape = RadialNoise.shape(seed, size, 20, [70, 0.5], [10, 1.5]);
+		const crater_noise = new Noise2D(seed + 1, 0.03);
+		const titanium_noise = new Noise2D(seed, 0.1);
+
+		gen.add((x, y, l) => {
+			let val = 0;
+
+			// Shape
+			const rs = radial_shape(x, y);
+			if (rs > 1) return 0;
+
+			// Crater
+			val += Math.floor((crater_noise.get01(x, y) + 0.1) * 4 - 0.5) * 0.25;
+
+			// Titanium ore veins
+			if (titanium_noise.get01(x, y) ** 8 > 0.5) val = 1;
+
+			return val;
+		});
+
+		window.addEventListener('keydown', event => {
+			// If key is 1, 2 or 3, generate corresponding layer
+			if (event.key === '&') entity.debugGeneration(0, size, gen);
+			if (event.key === 'é') entity.debugGeneration(1, size, gen);
+			if (event.key === '"') entity.debugGeneration(2, size, gen);
+		});
+
+		entity.debugGeneration(1, size, gen);
 	}
 
 	get mode() {
