@@ -475,7 +475,19 @@ class Entity extends HTMLElement {
 		entity.setAttribute('type', type);
 		if (add_to_dom) entity.addToDOM();
 		entity.position = { ...position };
-		entity.fillRect(1, -1, -1, 2, 2, 'iron_hull_tier_1');
+		return entity;
+	}
+
+	static createShip(position, add_to_dom = false) {
+		return Entity.create(position, 'ship', add_to_dom);
+	}
+
+	static createAsteroid(positionn, biome, add_to_dom = false) {
+		const entity = Entity.create(positionn, 'asteroid', add_to_dom);
+		entity.biome = 'rock';
+		entity.fillEllipse(0, 0, 0, 14, 14, 'rock');
+		entity.fillEllipse(1, 0, 0, 16, 16, 'rock');
+		entity.fillEllipse(2, 0, 0, 14, 14, 'rock');
 		entity.render();
 		return entity;
 	}
