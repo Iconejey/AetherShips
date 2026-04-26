@@ -1,19 +1,20 @@
 {
-  "id": "mo2te1wr-rrfkqpmnmu9",
+  "id": "mofrygjq-wdfie9feeu",
   "position": {
-    "x": -3801.658486750993,
-    "y": 3558.214366531612,
-    "r": 10.650311850785684
+    "x": -4108.92096494908,
+    "y": 4119.605776973286,
+    "r": 8.258201483487765
   },
   "velocity": {
-    "vx": 0,
-    "vy": 0,
+    "vx": 0.0003433371312734923,
+    "vy": 0.00016561326272044962,
     "vr": 0
   },
   "mass": {
     "cx": 0.10095147478591818,
     "cy": 3.5532825880114176,
-    "total": 10510
+    "total": 10510,
+    "moment_of_inertia": 724718.5522359657
   },
   "utility_rect_groups": [
     {
@@ -42,7 +43,8 @@
         2,
         3,
         0
-      ]
+      ],
+      "is_firing": false
     },
     {
       "l": 1,
@@ -52,7 +54,7 @@
       "w": 8,
       "h": 4,
       "data": {
-        "charge": 29.22119999999996
+        "charge": 32
       },
       "connected_targets": [
         1,
@@ -67,20 +69,19 @@
       "y": 5,
       "w": 3,
       "h": 4,
-      "data": {
-        "direction": "forward"
-      },
+      "data": {},
       "connected_targets": [
         1,
         2,
         0
-      ]
+      ],
+      "is_firing": false
     }
   ],
   "utility_line_groups": [
     {
       "l": 1,
-      "type": 173,
+      "type": 174,
       "nodes": [
         {
           "x": -6,
