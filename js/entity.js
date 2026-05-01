@@ -1677,8 +1677,13 @@ class Entity extends HTMLElement {
 		// Set z-index based on layer depth
 		entity_layer.style.zIndex = layer_index.toString();
 
-		// Add drop shadow to layers above 0
-		if (layer_index > 0) entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
+		// Add drop shadow to layers above 0 and draken layers below 2
+		// if (layer_index > 0) entity_layer.style.filter = 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))';
+		entity_layer.style.filter = {
+			0: 'brightness(.8)',
+			1: 'drop-shadow(0 0 1px rgba(0, 0, 0, .5)) brightness(.9)',
+			2: 'drop-shadow(0 0 1px rgba(0, 0, 0, .5))'
+		}[entity_layer.layer_index];
 
 		this.appendChild(entity_layer);
 		return entity_layer;
