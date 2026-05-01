@@ -5,7 +5,7 @@ class Game extends HTMLElement {
 	static min_zoom = 0.001;
 	static map_zoom = 0.5;
 	static max_zoom = 20;
-	static default_zoom = 5;
+	static default_zoom = 8;
 
 	static kelvinToRGB(kelvin) {
 		let temp = kelvin / 100;
@@ -378,41 +378,9 @@ class Game extends HTMLElement {
 		const saves = await window.saves.listGalaxies();
 		if (saves.length > 0) await this.loadGalaxy(saves[0].name);
 
-		const seed = Math.random() * 1000000;
-		// const seed = 12345;
 		const entity = game.player.driven_entity;
-		const gen = new Generation();
-		const size = 64;
-
-		// Noises
-		const radial_shape = RadialNoise.shape(seed, size, 20, [70, 0.5], [10, 1.5]);
-		const crater_noise = new Noise2D(seed + 1, 0.03);
-		const titanium_noise = new Noise2D(seed, 0.1);
-
-		gen.add((x, y, l) => {
-			let val = 0;
-
-			// Shape
-			const rs = radial_shape(x, y);
-			if (rs > 1) return 0;
-
-			// Crater
-			val += Math.floor((crater_noise.get01(x, y) + 0.1) * 4 - 0.5) * 0.25;
-
-			// Titanium ore veins
-			if (titanium_noise.get01(x, y) ** 8 > 0.5) val = 1;
-
-			return val;
-		});
-
-		window.addEventListener('keydown', event => {
-			// If key is 1, 2 or 3, generate corresponding layer
-			if (event.key === '&') entity.debugGeneration(0, size, gen);
-			if (event.key === 'é') entity.debugGeneration(1, size, gen);
-			if (event.key === '"') entity.debugGeneration(2, size, gen);
-		});
-
-		entity.debugGeneration(1, size, gen);
+		const size = 48;
+		entity.applyGeneration(size, GEN.asteroid(size, 'arid'));
 	}
 
 	get mode() {

@@ -222,24 +222,78 @@ class RadialNoise {
 	}
 }
 
-/**
- * Combines multiple generation filters.
- * A generation filter is a function that takes (x, y, l, p) and returns a value between 0 and 1.
- */
-class Generation {
-	constructor(filters = []) {
-		this.filters = filters;
+class GEN {
+	static asteroidShape(seed, size) {
+		const radial_noise = RadialNoise.shape(seed, size, 20, [70, 0.5], [10, 1.5]);
+		const crater_noise = new Noise2D(seed + 1, 0.02);
+
+		return (x, y, l) => {
+			// Outline
+			if (radial_noise(x, y) > 1) return 0;
+
+			// Craters
+			const craters_val = Math.min(crater_noise.get01(x, y) * 5 + 0.1, 4);
+			return craters_val > l + 1 ? craters_val : 0;
+		};
 	}
 
-	add(filter) {
-		this.filters.push(filter);
+	static ore(seed, block_name, spread, exp) {
+		const noises = [];
+		for (const l of [0, 1, 2]) noises.push(new Noise2D(seed + l, 1 / spread));
+		return (x, y, l) => (noises[l].get01(x, y) ** exp > 0.5 ? block_name : null);
 	}
 
-	get(x, y, l) {
-		let value = 1;
-		for (const filter of this.filters) {
-			value = filter(x, y, l, value);
-		}
-		return value;
+	static ores(seed, biome) {
+		const ores = {
+			plant: [
+				{ name: 'iron_ore', spread: 10, exp: 6 },
+				{ name: 'coal', spread: 20, exp: 3 }
+			],
+			arid: [
+				{ name: 'iron_ore', spread: 10, exp: 8 },
+				{ name: 'copper_ore', spread: 15, exp: 4 },
+				{ name: 'lead_ore', spread: 10, exp: 8 }
+			],
+			ice: [
+				{ name: 'titanium_ore', rarity: 10 },
+				{ name: 'raw_crystal', rarity: 10 }
+			],
+			tectonic: [
+				{ name: 'iron_ore', rarity: 5 },
+				{ name: 'copper_ore', rarity: 10 },
+				{ name: 'titanium_ore', rarity: 20 },
+				{ name: 'uranium_ore', rarity: 20 }
+			],
+			crystal: [
+				{ name: 'raw_crystal', rarity: 2 },
+				{ name: 'lead_ore', rarity: 5 }
+			]
+		};
+
+		let count = 0;
+		const ore_gens = [];
+		for (const { name, spread, exp } of ores[biome]) ore_gens.push(GEN.ore(seed + count++ * 10, name, spread, exp));
+		return ore_gens;
+	}
+
+	static asteroid(size, biome) {
+		const seed = Math.random() * 1000000;
+		const shape = GEN.asteroidShape(seed, size);
+		const ore_gens = GEN.ores(seed, biome);
+
+		return (x, y, l) => {
+			const terrain = shape(x, y, l);
+			if (!terrain) return null;
+
+			// Plants
+
+			// Ores
+			for (const gen of ore_gens) {
+				const ore = gen(x, y, l);
+				if (ore) return ore;
+			}
+
+			return 'rock';
+		};
 	}
 }

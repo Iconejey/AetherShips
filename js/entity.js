@@ -1925,7 +1925,7 @@ class Entity extends HTMLElement {
 	 * 0 = transparent, 1 = white.
 	 * @param {number} layer - The layer index to generate for.
 	 * @param {number} size - The radius around the center to generate (in blocks).
-	 * @param {Generation|Function} gen - Generation instance or filter function.
+	 * @param {Function} gen - Filter function.
 	 * @returns {HTMLCanvasElement} The created canvas element.
 	 */
 	debugGeneration(layer, size, gen) {
@@ -1957,7 +1957,7 @@ class Entity extends HTMLElement {
 				const x = px - size;
 				const y = py - size;
 
-				const val = gen.get(x, y, layer);
+				const val = gen(x, y, layer) !== null ? 0.5 : 0;
 
 				// Map 0-1 to alpha, RGB is white
 				const i = py * canvas_size + px;
@@ -1969,6 +1969,65 @@ class Entity extends HTMLElement {
 		ctx.putImageData(img_data, 0, 0);
 
 		return canvas;
+	}
+
+	applyGeneration(size, gen) {
+		let has_any_change = false;
+
+		for (let layer_index = 0; layer_index <= 2; layer_index++) {
+			for (let y = -size; y <= size; y++) {
+				for (let x = -size; x <= size; x++) {
+					const block_name = gen(x, y, layer_index);
+					const { cx, cy } = Entity.blockToChunkCoord(x, y);
+
+					if (block_name === null) {
+						const entity_layer = this.getEntityLayer(layer_index, false);
+						if (!entity_layer) continue;
+
+						const chunk_layer = entity_layer.getChunkLayer(cx, cy, false);
+						if (!chunk_layer?.layer) continue;
+
+						const local_x = this.toLocalCoord(x);
+						const local_y = this.toLocalCoord(y);
+						const info = chunk_layer.layer.getBlockInfo(local_x, local_y);
+						if (info.is_empty) continue;
+
+						chunk_layer.layer.deleteBlock(local_x, local_y, true);
+						has_any_change = true;
+
+						if (chunk_layer.layer.block_count === 0) {
+							entity_layer.removeChunkLayer(cx, cy);
+						}
+
+						continue;
+					}
+
+					const block_def = blocks_by_name[block_name];
+					if (!block_def) throw new Error(`Block name "${block_name}" does not exist`);
+
+					const entity_layer = this.getEntityLayer(layer_index, true);
+					const chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
+					if (!chunk_layer.layer) {
+						chunk_layer.layer = new Layer(chunk_layer, layer_index, entity_layer);
+					}
+
+					const local_x = this.toLocalCoord(x);
+					const local_y = this.toLocalCoord(y);
+					if (chunk_layer.layer.setBlock(local_x, local_y, block_def.init(), true)) {
+						has_any_change = true;
+					}
+				}
+			}
+		}
+
+		if (!has_any_change) return false;
+
+		this.flagMassUpdate();
+		this.flagGroupUpdate();
+		this.render();
+		game?.planSave?.(1000);
+
+		return true;
 	}
 
 	/**
