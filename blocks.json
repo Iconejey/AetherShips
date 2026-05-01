@@ -4,7 +4,7 @@
 			"name": "rock",
 			"type": 1,
 			"health": 4,
-			"colors": ["#606060ff", "#686868ff", "#6f6f6fff"],
+			"colors": ["#6a6a6aff", "#6d6d6dff", "#6f6f6fff"],
 			"mass": 4
 		},
 		{
@@ -53,7 +53,7 @@
 			"name": "copper_ore",
 			"type": 8,
 			"health": 5,
-			"colors": ["#8b5a3cff", "#9b6342ff", "#a66f4bff"],
+			"colors": ["#7d6556ff", "#846049ff", "#7d735aff"],
 			"mass": 5
 		},
 		{
