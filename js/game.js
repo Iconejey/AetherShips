@@ -380,7 +380,7 @@ class Game extends HTMLElement {
 
 		const entity = game.player.driven_entity;
 		const size = 48;
-		entity.applyGeneration(size, GEN.asteroid(size, 'arid'));
+		entity.applyGeneration(size, GEN.asteroid(size, 'radioactive'));
 	}
 
 	get mode() {

@@ -11,14 +11,14 @@
 			"name": "sand",
 			"type": 2,
 			"health": 2,
-			"colors": ["#c8b37bff", "#d6bf87ff", "#e0cb95ff"],
+			"colors": ["#d8c38dff", "#dcc791ff", "#e0cb95ff"],
 			"mass": 2
 		},
 		{
 			"name": "ice",
 			"type": 3,
 			"health": 2,
-			"colors": ["#cddae3ff", "#b4cbd6ff"],
+			"colors": ["#cddae3cc", "#c9d7d9cc", "#d1e0e9cc"],
 			"mass": 2
 		},
 		{
@@ -74,15 +74,17 @@
 			"name": "uranium_ore",
 			"type": 11,
 			"health": 7,
-			"colors": ["#4b6a2eff", "#597d38ff", "#679142ff"],
-			"mass": 7
+			"colors": ["#899142ff", "#799142ff", "#679142ff"],
+			"mass": 7,
+			"glow": true
 		},
 		{
 			"name": "raw_crystal",
 			"type": 12,
 			"health": 5,
-			"colors": ["#b23a69b0", "#c54874b0", "#d75582b0"],
-			"mass": 5
+			"colors": ["#bd406db0", "#c14470b0", "#c54874b0"],
+			"mass": 5,
+			"glow": true
 		}
 	],
 	"refined_materials_and_components": [

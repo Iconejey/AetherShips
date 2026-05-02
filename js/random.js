@@ -243,6 +243,18 @@ class GEN {
 		return (x, y, l) => (noises[l].get01(x, y) ** exp > 0.5 ? block_name : null);
 	}
 
+	static geode(seed, block_name, spread, exp) {
+		const noises = [];
+		for (const l of [0, 1, 2]) noises.push(new Noise2D(seed + l, 1 / spread));
+
+		return (x, y, l) => {
+			const val = noises[l].get01(x, y) ** exp;
+			if (val > 0.7) return 'air';
+			if (val > 0.6) return block_name;
+			return null;
+		};
+	}
+
 	static ores(seed, biome) {
 		const ores = {
 			plant: [
@@ -250,29 +262,37 @@ class GEN {
 				{ name: 'coal', spread: 20, exp: 3 }
 			],
 			arid: [
+				{ name: 'dirt', spread: 20, exp: 2 },
 				{ name: 'iron_ore', spread: 10, exp: 8 },
 				{ name: 'copper_ore', spread: 15, exp: 4 },
 				{ name: 'lead_ore', spread: 10, exp: 8 }
 			],
 			ice: [
-				{ name: 'titanium_ore', rarity: 10 },
-				{ name: 'raw_crystal', rarity: 10 }
+				{ name: 'dirt', spread: 20, exp: 2 },
+				{ name: 'raw_crystal', spread: 20, exp: 4, geode: true },
+				{ name: 'titanium_ore', spread: 10, exp: 8 }
 			],
 			tectonic: [
-				{ name: 'iron_ore', rarity: 5 },
-				{ name: 'copper_ore', rarity: 10 },
-				{ name: 'titanium_ore', rarity: 20 },
-				{ name: 'uranium_ore', rarity: 20 }
+				{ name: 'iron_ore', spread: 10, exp: 8 },
+				{ name: 'copper_ore', spread: 15, exp: 4 },
+				{ name: 'titanium_ore', spread: 10, exp: 8 },
+				{ name: 'uranium_ore', spread: 5, exp: 10 }
 			],
 			crystal: [
-				{ name: 'raw_crystal', rarity: 2 },
-				{ name: 'lead_ore', rarity: 5 }
-			]
+				{ name: 'lead_ore', spread: 10, exp: 8 },
+				{ name: 'raw_crystal', spread: 10, exp: 2, geode: true }
+			],
+			radioactive: [{ name: 'uranium_ore', spread: 10, exp: 10 }]
 		};
 
 		let count = 0;
 		const ore_gens = [];
-		for (const { name, spread, exp } of ores[biome]) ore_gens.push(GEN.ore(seed + count++ * 10, name, spread, exp));
+
+		for (const { name, spread, exp, geode } of ores[biome]) {
+			const gen = geode ? GEN.geode : GEN.ore;
+			ore_gens.push(gen(seed + count++ * 10, name, spread, exp));
+		}
+
 		return ore_gens;
 	}
 
@@ -285,12 +305,16 @@ class GEN {
 			const terrain = shape(x, y, l);
 			if (!terrain) return null;
 
-			// Plants
+			// Surface
+			if (terrain < l + 2.2) {
+				if (biome === 'arid') return 'sand';
+				if (biome === 'ice') return 'ice';
+			}
 
 			// Ores
 			for (const gen of ore_gens) {
 				const ore = gen(x, y, l);
-				if (ore) return ore;
+				if (ore) return ore === 'air' ? null : ore;
 			}
 
 			return 'rock';
