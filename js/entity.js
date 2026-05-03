@@ -489,6 +489,10 @@ class Entity extends HTMLElement {
 		return entity;
 	}
 
+	static createPlanet(position, add_to_dom = false) {
+		return Entity.create(position, 'planet', add_to_dom);
+	}
+
 	static async fromSerialized(data, load_blocks = false) {
 		const entity = document.createElement('entity-root');
 		for (const key in data) entity[key] = data[key];

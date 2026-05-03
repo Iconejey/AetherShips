@@ -154,6 +154,11 @@ entity-root {
 		content: 'motion_blur';
 		transform: translate(-50%, -50%) rotate(-90deg);
 	}
+
+	body.map-mode &[type='planet']::after {
+		content: 'planet';
+		transform: translate(-50%, -50%);
+	}
 }
 
 .center-of-mass {

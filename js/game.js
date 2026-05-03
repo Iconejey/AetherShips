@@ -329,7 +329,7 @@ class Game extends HTMLElement {
 		this.startGameLoop();
 		await this.startMenu();
 
-		// setTimeout(() => this.test?.(), 200);
+		setTimeout(() => this.test?.(), 200);
 	}
 
 	async startMenu() {
@@ -394,9 +394,13 @@ class Game extends HTMLElement {
 		const saves = await window.saves.listGalaxies();
 		if (saves.length > 0) await this.loadGalaxy(saves[0].name);
 
-		const entity = game.player.driven_entity;
-		const size = 48;
-		entity.applyGeneration(size, GEN.asteroid(size, 'radioactive'));
+		const driven = game.player.driven_entity;
+		if (driven?.type !== 'planet') {
+			const position = driven?.position || game.player.position;
+			const planet = Entity.createPlanet({ ...position }, true);
+			game.player.drive(planet);
+			driven?.remove();
+		}
 	}
 
 	/**
