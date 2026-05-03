@@ -33,12 +33,11 @@ Ranges take more type IDs than needed so that we can still add new blocks to the
 25. **Carbon**
 26. **Bio-Plastic**
 27. **Steel**
-28. **Refined Uranium**
-29. **Copper Wire**
-30. **Electronic Component**
-31. **Processor**
-32. **Lead plate**
-33. **Cut Crystal**
+28. **Copper Wire**
+29. **Electronic Component**
+30. **Processor**
+31. **Lead plate**
+32. **Cut Crystal**
 
 ## Structure (50-79)
 
