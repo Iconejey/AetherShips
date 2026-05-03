@@ -7,6 +7,18 @@ class Game extends HTMLElement {
 	static max_zoom = 20;
 	static default_zoom = 8;
 
+	// Asteroid biome ring thresholds
+	static ASTEROID_BIOME_INNER_RING_RATIO = 0.2;
+	static ASTEROID_BIOME_OUTER_RING_RATIO = 0.55;
+
+	// Asteroid lifecycle tuning
+	static ASTEROID_SPAWN_RADIUS_SECTORS = 1;
+	static ASTEROID_DESPAWN_RADIUS_SECTORS = 0.5;
+	static ASTEROID_IMMEDIATE_DESPAWN_RADIUS_SECTORS = 2;
+	static ASTEROID_DESPAWN_DELAY_SECONDS = 300;
+	static ASTEROID_TARGET_COUNT = 4;
+	static ASTEROID_SPAWN_INTERVAL_SECONDS = 30;
+
 	static kelvinToRGB(kelvin) {
 		let temp = kelvin / 100;
 		let r, g, b;
@@ -123,6 +135,10 @@ class Game extends HTMLElement {
 		this.start_menu_camera_rotation_offset_radians = -Math.PI / 4;
 		this.scale = 1;
 		this.camera_align_world = false;
+
+		// Asteroid lifecycle instance state
+		this.asteroid_spawn_timer_seconds = 0;
+		this.asteroid_far_seconds_by_id = new Map();
 
 		// Player instance
 		this.player = null;
@@ -313,7 +329,7 @@ class Game extends HTMLElement {
 		this.startGameLoop();
 		await this.startMenu();
 
-		setTimeout(() => this.test?.(), 200);
+		// setTimeout(() => this.test?.(), 200);
 	}
 
 	async startMenu() {
@@ -381,6 +397,129 @@ class Game extends HTMLElement {
 		const entity = game.player.driven_entity;
 		const size = 48;
 		entity.applyGeneration(size, GEN.asteroid(size, 'radioactive'));
+	}
+
+	/**
+	 * Picks an asteroid biome based on distance to galaxy center.
+	 * Arid and ice can spawn everywhere; radioactive is inner-ring weighted; crystal is outer-ring weighted.
+	 * @param {number} sector_x
+	 * @param {number} sector_y
+	 * @returns {string}
+	 */
+	pickAsteroidBiome(sector_x, sector_y) {
+		const max_ring_distance = Math.sqrt(16 * 16 + 16 * 16);
+		const ring_distance = Math.sqrt(sector_x * sector_x + sector_y * sector_y);
+		const ring_ratio = ring_distance / max_ring_distance;
+
+		const biome_pool = ['arid', 'ice'];
+		if (ring_ratio <= Game.ASTEROID_BIOME_INNER_RING_RATIO) biome_pool.push('radioactive');
+		if (ring_ratio >= Game.ASTEROID_BIOME_OUTER_RING_RATIO) biome_pool.push('crystal');
+
+		const biome_index = Math.floor(Math.random() * biome_pool.length);
+		return biome_pool[biome_index];
+	}
+
+	/**
+	 * Attempts to spawn one asteroid in a random sector inside a 4-sector radius around the player.
+	 * Skips sectors that contain stars.
+	 * @returns {boolean}
+	 */
+	spawnAsteroidNearPlayer() {
+		const player_position = this.player?.driven_entity?.position || this.player?.position;
+		if (!player_position) return false;
+
+		const sector_size = 32 * 256;
+		const spawn_radius_world = Game.ASTEROID_SPAWN_RADIUS_SECTORS * sector_size;
+
+		// Pick random angle and distance within radius
+		const angle = Math.random() * Math.PI * 2;
+		const distance = Math.random() * spawn_radius_world;
+
+		const asteroid_x = player_position.x + Math.cos(angle) * distance;
+		const asteroid_y = player_position.y + Math.sin(angle) * distance;
+		const asteroid_rotation = Math.random() * Math.PI * 2;
+
+		// Determine sector for biome selection
+		const target_sector_x = Math.floor(asteroid_x / sector_size);
+		const target_sector_y = Math.floor(asteroid_y / sector_size);
+
+		// Check if in valid galaxy bounds
+		if (target_sector_x < -16 || target_sector_x > 15 || target_sector_y < -16 || target_sector_y > 15) return false;
+
+		// Check if sector has a star
+		const sector_has_star = this.galaxy.stars?.some(star => star.sx === target_sector_x && star.sy === target_sector_y);
+		if (sector_has_star) return false;
+
+		const asteroid_biome = this.pickAsteroidBiome(target_sector_x, target_sector_y);
+		const asteroid_size = 24 + Math.floor(Math.random() * 24);
+
+		const asteroid = Entity.createAsteroid({ x: asteroid_x, y: asteroid_y, r: asteroid_rotation }, asteroid_biome, asteroid_size, true);
+
+		this.planSave(1000);
+		return true;
+	}
+
+	/**
+	 * Spawns asteroids around the player and despawns distant ones after a grace delay.
+	 * @param {number} delta_seconds
+	 */
+	updateAsteroidLifecycle(delta_seconds) {
+		if (!this.player || document.body.classList.contains('start-menu')) return;
+
+		const player_position = this.player.driven_entity?.position || this.player.position;
+		if (!player_position) return;
+
+		const sector_size = 32 * 256;
+		const asteroids = Array.from(this.$$('entity-root[type="asteroid"]'));
+
+		this.asteroid_spawn_timer_seconds += delta_seconds;
+		if (this.asteroid_spawn_timer_seconds >= Game.ASTEROID_SPAWN_INTERVAL_SECONDS) {
+			this.asteroid_spawn_timer_seconds = 0;
+
+			if (asteroids.length < Game.ASTEROID_TARGET_COUNT) {
+				const missing_count = Game.ASTEROID_TARGET_COUNT - asteroids.length;
+				const spawn_attempts = Math.min(3, missing_count);
+				for (let i = 0; i < spawn_attempts; i++) {
+					this.spawnAsteroidNearPlayer();
+				}
+			}
+		}
+
+		const asteroid_ids = new Set();
+		for (const asteroid of asteroids) {
+			if (asteroid === this.player.driven_entity) continue;
+			asteroid_ids.add(asteroid.id);
+
+			const dx = asteroid.position.x - player_position.x;
+			const dy = asteroid.position.y - player_position.y;
+			const distance_sectors = Math.sqrt(dx * dx + dy * dy) / sector_size;
+
+			if (distance_sectors >= Game.ASTEROID_IMMEDIATE_DESPAWN_RADIUS_SECTORS) {
+				this.asteroid_far_seconds_by_id.delete(asteroid.id);
+				asteroid.remove();
+				this.planSave(1000);
+				continue;
+			}
+
+			if (distance_sectors >= Game.ASTEROID_DESPAWN_RADIUS_SECTORS) {
+				const far_seconds = (this.asteroid_far_seconds_by_id.get(asteroid.id) || 0) + delta_seconds;
+				if (far_seconds >= Game.ASTEROID_DESPAWN_DELAY_SECONDS) {
+					this.asteroid_far_seconds_by_id.delete(asteroid.id);
+					asteroid.remove();
+					this.planSave(1000);
+					continue;
+				}
+
+				this.asteroid_far_seconds_by_id.set(asteroid.id, far_seconds);
+				continue;
+			}
+
+			this.asteroid_far_seconds_by_id.delete(asteroid.id);
+		}
+
+		for (const asteroid_id of this.asteroid_far_seconds_by_id.keys()) {
+			if (!asteroid_ids.has(asteroid_id)) this.asteroid_far_seconds_by_id.delete(asteroid_id);
+		}
 	}
 
 	get mode() {
@@ -672,6 +811,8 @@ class Game extends HTMLElement {
 				this.camera.update(followed_entity, this.scale, this.mode !== 'navigation', this.camera_align_world, delta_seconds);
 			}
 		}
+
+		this.updateAsteroidLifecycle(delta_seconds);
 	}
 
 	/**

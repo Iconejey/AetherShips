@@ -485,54 +485,7 @@ class Entity extends HTMLElement {
 	static createAsteroid(position, biome, size, add_to_dom = false) {
 		const entity = Entity.create(position, 'asteroid', add_to_dom);
 		entity.biome = biome;
-
-		const seed = Math.random() * 1000000;
-		const shape_noise = new Noise2D(seed);
-		const ore_noise_1 = new Noise2D(seed + 1);
-		const ore_noise_2 = new Noise2D(seed + 2);
-
-		for (let layer = 0; layer <= 2; layer++) {
-			const layer_radius = layer === 1 ? size : size - 2;
-			if (layer_radius <= 0) continue;
-
-			for (let y = -layer_radius; y <= layer_radius; y++) {
-				for (let x = -layer_radius; x <= layer_radius; x++) {
-					const dist_norm = Math.sqrt(x * x + y * y) / layer_radius;
-					if (dist_norm > 1) continue;
-
-					const noise_val = shape_noise.get(x * 0.1, y * 0.1);
-					const threshold = 0.8 + noise_val * 0.2;
-
-					if (dist_norm <= threshold) {
-						let block = 'rock';
-
-						const v1 = ore_noise_1.get(x * 0.15, y * 0.15);
-						const v2 = ore_noise_2.get(x * 0.15, y * 0.15);
-
-						if (biome === 'arid') {
-							if (v1 > 0.4) block = 'copper_ore';
-							else if (v2 > 0.4) block = 'lead_ore';
-							else if (v1 < -0.6) block = 'dirt';
-							else if (v2 < -0.8) block = 'iron_ore';
-							else if (v1 > 0.1 && v1 <= 0.4) block = 'sand';
-						} else if (biome === 'ice') {
-							if (v1 > 0.2) block = 'ice';
-							else if (v2 > 0.8) block = 'titanium_ore';
-							else if (v2 < -0.8) block = 'raw_crystal';
-						} else if (biome === 'crystal') {
-							if (v1 > 0.2) block = 'raw_crystal';
-							else if (v2 > 0.6) block = 'lead_ore';
-						} else if (biome === 'radioactive') {
-							if (v1 > 0.2) block = 'uranium_ore';
-						}
-
-						entity.setByName(layer, x, y, block);
-					}
-				}
-			}
-		}
-
-		entity.render();
+		entity.applyGeneration(size, GEN.asteroid(size, biome));
 		return entity;
 	}
 
