@@ -161,6 +161,19 @@ entity-root {
 	}
 }
 
+.planet-atmosphere {
+	position: absolute;
+	border-radius: 50%;
+
+	width: calc(var(--planet-radius) * 2.2);
+	height: calc(var(--planet-radius) * 2.2);
+	left: calc(-1 * var(--planet-radius) * 1.1);
+	top: calc(-1 * var(--planet-radius) * 1.1);
+	background: radial-gradient(circle, var(--atmosphere-color) 0%, var(--atmosphere-color) 60%, transparent 70%);
+	pointer-events: none;
+	z-index: 0;
+}
+
 .center-of-mass {
 	position: absolute;
 	border-radius: 50%;
@@ -196,6 +209,10 @@ entity-root:not(.followed) .center-of-mass {
 
 body:not(.management-mode) svg.management-overlay,
 body.map-mode svg.management-overlay {
+	display: none;
+}
+
+body.map-mode .planet-atmosphere {
 	display: none;
 }
 

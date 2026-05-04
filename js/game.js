@@ -547,6 +547,23 @@ class Game extends HTMLElement {
 			if (!planet._gen) planet._gen = GEN.planet(planet.seed, planet.biome, planet.radius);
 			const gen = planet._gen;
 
+			// Lazily create the atmosphere overlay
+			if (!planet._atmosphere) {
+				const atmosphere_colors = {
+					plant: 'rgba(150, 220, 255, 0.3)',
+					arid: 'rgba(220, 150, 50, 0.3)',
+					ice: 'rgba(150, 220, 255, 0.3)',
+					radioactive: 'rgba(180, 255, 50, 0.3)',
+					crystal: 'rgba(180, 100, 255, 0.3)'
+				};
+				const atmosphere = document.createElement('div');
+				atmosphere.className = 'planet-atmosphere';
+				atmosphere.style.setProperty('--planet-radius', `${planet.radius}px`);
+				atmosphere.style.setProperty('--atmosphere-color', atmosphere_colors[planet.biome] ?? 'rgba(100, 180, 255, 0.8)');
+				planet.appendChild(atmosphere);
+				planet._atmosphere = atmosphere;
+			}
+
 			if (!planet._generated_chunks) planet._generated_chunks = new Set();
 
 			// Camera center in planet-local block coordinates
