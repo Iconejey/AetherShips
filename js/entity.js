@@ -504,6 +504,86 @@ class Entity extends HTMLElement {
 		return entity;
 	}
 
+	ensureCloudCanvas() {
+		if (this._clouds || !this.radius || !this.seed) return;
+
+		const diameter = this.radius * 2;
+		const cloud_pixel_size = 4;
+		const canvas_size = Math.max(16, Math.ceil(diameter / cloud_pixel_size));
+		const canvas = document.createElement('canvas');
+		canvas.width = canvas_size;
+		canvas.height = canvas_size;
+		canvas.className = 'planet-clouds';
+		canvas.style.left = `${-this.radius}px`;
+		canvas.style.top = `${-this.radius}px`;
+		canvas.style.width = `${diameter}px`;
+		canvas.style.height = `${diameter}px`;
+
+		const ctx = canvas.getContext('2d');
+		const img_data = ctx.createImageData(canvas_size, canvas_size);
+		const buf = new Uint32Array(img_data.data.buffer);
+
+		this.appendChild(canvas);
+		this._clouds = {
+			canvas,
+			ctx,
+			img_data,
+			buf,
+			base_noise: new Noise3D(this.seed + 1000, 0.02),
+			detail_noise: new Noise3D(this.seed + 2000, 0.03),
+			last_offset_x: Number.NaN,
+			last_offset_z: Number.NaN
+		};
+	}
+
+	renderClouds(offset_x, offset_z) {
+		const cloud_info = this._clouds;
+		if (!cloud_info) return;
+
+		const sample_offset_x = Math.floor(offset_x * 2) / 2;
+		const sample_offset_z = Math.floor(offset_z * 20) / 20;
+		if (cloud_info.last_offset_x === sample_offset_x && cloud_info.last_offset_z === sample_offset_z) return;
+
+		const radius = this.radius;
+		const diameter = radius * 2;
+		const radius_sq = radius * radius;
+		const edge_fade = Math.max(8, radius * 0.14);
+		const canvas_size = cloud_info.canvas.width;
+
+		for (let py = 0; py < canvas_size; py++) {
+			const local_y = ((py + 0.5) / canvas_size) * diameter - radius;
+
+			for (let px = 0; px < canvas_size; px++) {
+				const local_x = ((px + 0.5) / canvas_size) * diameter - radius;
+				const index = py * canvas_size + px;
+				const dist_sq = local_x * local_x + local_y * local_y;
+
+				if (dist_sq > radius_sq) {
+					cloud_info.buf[index] = 0;
+					continue;
+				}
+
+				const dist = Math.sqrt(dist_sq);
+				const edge_alpha = Math.max(0, Math.min(1, (radius - dist) / edge_fade));
+				const base_value = cloud_info.base_noise.get01(local_x + sample_offset_x, local_y, sample_offset_z);
+				const detail_value = cloud_info.detail_noise.get01(local_x * 1.8 + sample_offset_x * 1.5, local_y * 1.8, sample_offset_z * 1.8);
+				const cloud_density = Math.max(0, Math.min(1, (base_value - 0.52) * 2 + (detail_value - 0.58) * 0.6));
+
+				if (cloud_density <= 0.03 || edge_alpha <= 0) {
+					cloud_info.buf[index] = 0;
+					continue;
+				}
+
+				const alpha = Math.max(0, Math.min(255, Math.floor(220 * cloud_density * edge_alpha)));
+				cloud_info.buf[index] = (alpha << 24) | (255 << 16) | (255 << 8) | 255;
+			}
+		}
+
+		cloud_info.ctx.putImageData(cloud_info.img_data, 0, 0);
+		cloud_info.last_offset_x = sample_offset_x;
+		cloud_info.last_offset_z = sample_offset_z;
+	}
+
 	static async fromSerialized(data, load_blocks = false) {
 		const entity = document.createElement('entity-root');
 		for (const key in data) entity[key] = data[key];

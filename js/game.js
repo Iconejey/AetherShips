@@ -139,6 +139,8 @@ class Game extends HTMLElement {
 		// Asteroid lifecycle instance state
 		this.asteroid_spawn_timer_seconds = 0;
 		this.asteroid_far_seconds_by_id = new Map();
+		this.planet_cloud_offset_x = 0;
+		this.planet_cloud_offset_z = 0;
 
 		// Player instance
 		this.player = null;
@@ -526,6 +528,20 @@ class Game extends HTMLElement {
 		}
 	}
 
+	updatePlanetClouds(delta_seconds) {
+		if (document.body.classList.contains('map-mode')) return;
+
+		this.planet_cloud_offset_x += delta_seconds * 2;
+		this.planet_cloud_offset_z += delta_seconds * 2;
+
+		const planets = Array.from(this.$$('entity-root[type="planet"]'));
+		for (const planet of planets) {
+			if (!planet.radius || !planet.seed) continue;
+			planet.ensureCloudCanvas();
+			planet.renderClouds(this.planet_cloud_offset_x, this.planet_cloud_offset_z);
+		}
+	}
+
 	/**
 	 * Generates planet chunks that are visible in the current camera view, and unloads
 	 * seed-generated chunks that have moved out of range.
@@ -550,19 +566,21 @@ class Game extends HTMLElement {
 			// Lazily create the atmosphere overlay
 			if (!planet._atmosphere) {
 				const atmosphere_colors = {
-					plant: 'rgba(150, 220, 255, 0.3)',
-					arid: 'rgba(220, 150, 50, 0.3)',
-					ice: 'rgba(150, 220, 255, 0.3)',
-					radioactive: 'rgba(180, 255, 50, 0.3)',
-					crystal: 'rgba(180, 100, 255, 0.3)'
+					plant: 'rgba(150, 220, 255, 0.2)',
+					arid: 'rgba(220, 150, 50, 0.2)',
+					ice: 'rgba(150, 220, 255, 0.2)',
+					radioactive: 'rgba(180, 255, 50, 0.2)',
+					crystal: 'rgba(180, 100, 255, 0.2)'
 				};
 				const atmosphere = document.createElement('div');
 				atmosphere.className = 'planet-atmosphere';
 				atmosphere.style.setProperty('--planet-radius', `${planet.radius}px`);
-				atmosphere.style.setProperty('--atmosphere-color', atmosphere_colors[planet.biome] ?? 'rgba(100, 180, 255, 0.8)');
+				atmosphere.style.setProperty('--atmosphere-color', atmosphere_colors[planet.biome] ?? 'rgba(100, 180, 255, 0.2)');
 				planet.appendChild(atmosphere);
 				planet._atmosphere = atmosphere;
 			}
+
+			planet.ensureCloudCanvas();
 
 			if (!planet._generated_chunks) planet._generated_chunks = new Set();
 
@@ -916,6 +934,7 @@ class Game extends HTMLElement {
 
 		this.updateAsteroidLifecycle(delta_seconds);
 		this.updatePlanetChunks();
+		this.updatePlanetClouds(delta_seconds);
 	}
 
 	/**
