@@ -397,7 +397,7 @@ class Game extends HTMLElement {
 		const driven = game.player.driven_entity;
 		if (driven?.type !== 'planet') {
 			const position = driven?.position || game.player.position;
-			const planet = Entity.createPlanet({ ...position }, true);
+			const planet = Entity.createPlanet({ ...position }, 'plant', 200, Math.random() * 100000, true);
 			game.player.drive(planet);
 			driven?.remove();
 		}
@@ -523,6 +523,86 @@ class Game extends HTMLElement {
 
 		for (const asteroid_id of this.asteroid_far_seconds_by_id.keys()) {
 			if (!asteroid_ids.has(asteroid_id)) this.asteroid_far_seconds_by_id.delete(asteroid_id);
+		}
+	}
+
+	/**
+	 * Generates planet chunks that are visible in the current camera view, and unloads
+	 * seed-generated chunks that have moved out of range.
+	 */
+	updatePlanetChunks() {
+		const planets = Array.from(this.$$('entity-root[type="planet"]'));
+		if (!planets.length) return;
+
+		const vw = window.innerWidth;
+		const vh = window.innerHeight;
+		// Half-diagonal of the viewport in world units, plus one chunk of margin
+		const view_radius = Math.sqrt((vw / 2) ** 2 + (vh / 2) ** 2) / this.scale + 32;
+		const unload_radius = view_radius * 2;
+
+		for (const planet of planets) {
+			if (!planet.seed || !planet.biome || !planet.radius) continue;
+
+			// Build/cache the generation function so noise objects aren't recreated every frame
+			if (!planet._gen) planet._gen = GEN.planet(planet.seed, planet.biome, planet.radius);
+			const gen = planet._gen;
+
+			if (!planet._generated_chunks) planet._generated_chunks = new Set();
+
+			// Camera center in planet-local block coordinates
+			const cam_x = this.camera.x - planet.position.x;
+			const cam_y = this.camera.y - planet.position.y;
+
+			const planet_chunk_radius = Math.ceil(planet.radius / 32) + 1;
+
+			const min_cx = Math.max(Math.floor((cam_x - view_radius) / 32), -planet_chunk_radius);
+			const max_cx = Math.min(Math.ceil((cam_x + view_radius) / 32), planet_chunk_radius);
+			const min_cy = Math.max(Math.floor((cam_y - view_radius) / 32), -planet_chunk_radius);
+			const max_cy = Math.min(Math.ceil((cam_y + view_radius) / 32), planet_chunk_radius);
+
+			for (let cy = min_cy; cy <= max_cy; cy++) {
+				for (let cx = min_cx; cx <= max_cx; cx++) {
+					const chunk_center_x = cx * 32 + 16;
+					const chunk_center_y = cy * 32 + 16;
+
+					// Skip chunk entirely outside the planet's radius
+					if (Math.sqrt(chunk_center_x ** 2 + chunk_center_y ** 2) > planet.radius + 32) continue;
+
+					// Skip chunk outside the visible area
+					const dx = chunk_center_x - cam_x;
+					const dy = chunk_center_y - cam_y;
+					if (Math.sqrt(dx ** 2 + dy ** 2) > view_radius) continue;
+
+					const key = `${cx},${cy}`;
+					if (planet._generated_chunks.has(key)) continue;
+
+					// If already loaded from a save, just mark as known and skip generation
+					if (planet.getChunkLayer(0, cx, cy, false)?.layer) {
+						planet._generated_chunks.add(key);
+						continue;
+					}
+
+					planet._generated_chunks.add(key);
+					planet.generateChunkFromSeed(cx, cy, gen);
+				}
+			}
+
+			// Unload seed-generated chunks that are beyond the unload radius
+			const layer0 = planet.getEntityLayer(0, false);
+			if (!layer0) continue;
+			const keys_to_unload = [];
+			for (const [key, chunk_layer] of layer0.chunk_layers) {
+				if (!chunk_layer.layer?.seed_generated) continue;
+				const chunk_center_x = chunk_layer.chunk_x * 32 + 16;
+				const chunk_center_y = chunk_layer.chunk_y * 32 + 16;
+				const dx = chunk_center_x - cam_x;
+				const dy = chunk_center_y - cam_y;
+				if (Math.sqrt(dx ** 2 + dy ** 2) > unload_radius) keys_to_unload.push({ key, cx: chunk_layer.chunk_x, cy: chunk_layer.chunk_y });
+			}
+			for (const { key, cx, cy } of keys_to_unload) {
+				for (let l = 0; l < 3; l++) planet.getEntityLayer(l, false)?.removeChunkLayer(cx, cy);
+				planet._generated_chunks.delete(key);
+			}
 		}
 	}
 
@@ -817,6 +897,7 @@ class Game extends HTMLElement {
 		}
 
 		this.updateAsteroidLifecycle(delta_seconds);
+		this.updatePlanetChunks();
 	}
 
 	/**

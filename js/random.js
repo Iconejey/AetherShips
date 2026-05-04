@@ -223,20 +223,6 @@ class RadialNoise {
 }
 
 class GEN {
-	static asteroidShape(seed, size) {
-		const radial_noise = RadialNoise.shape(seed, size, 20, [70, 0.5], [10, 1.5]);
-		const crater_noise = new Noise2D(seed + 1, 0.02);
-
-		return (x, y, l) => {
-			// Outline
-			if (radial_noise(x, y) > 1) return 0;
-
-			// Craters
-			const craters_val = Math.min(crater_noise.get01(x, y) * 5 + 0.1, 4);
-			return craters_val > l + 1 ? craters_val : 0;
-		};
-	}
-
 	static ore(seed, block_name, spread, exp) {
 		const noises = [];
 		for (const l of [0, 1, 2]) noises.push(new Noise2D(seed + l, 1 / spread));
@@ -296,6 +282,20 @@ class GEN {
 		return ore_gens;
 	}
 
+	static asteroidShape(seed, size) {
+		const radial_noise = RadialNoise.shape(seed, size, 20, [70, 0.5], [10, 1.5]);
+		const topography_noise = new Noise2D(seed + 1, 0.02);
+
+		return (x, y, l) => {
+			// Outline
+			if (radial_noise(x, y) > 1) return 0;
+
+			// Topography
+			const topographys_val = Math.min(topography_noise.get01(x, y) * 5 + 0.1, 4);
+			return craters_val > l + 1 ? craters_val : 0;
+		};
+	}
+
 	static asteroid(size, biome) {
 		const seed = Math.random() * 1000000;
 		const shape = GEN.asteroidShape(seed, size);
@@ -316,6 +316,34 @@ class GEN {
 				const ore = gen(x, y, l);
 				if (ore) return ore === 'air' ? null : ore;
 			}
+
+			return 'rock';
+		};
+	}
+
+	static planetShape(seed, size) {
+		const radial_noise = RadialNoise.shape(seed, size, 90, [8, 0.5], [2, 1.5]);
+		const topography_noise1 = new Noise2D(seed + 1, 0.005);
+		const topography_noise2 = new Noise2D(seed + 2, 0.01);
+
+		return (x, y, l) => {
+			// Outline
+			if (radial_noise(x, y) > 1) return 0;
+
+			// Topography
+			const t1 = topography_noise1.get01(x, y) ** 2 * 4;
+			const t2 = topography_noise2.get01(x, y) * 1;
+			const topography_val = Math.min(t1 + t2, 4);
+			return topography_val > l ? topography_val : 0;
+		};
+	}
+
+	static planet(seed, biome, radius) {
+		const shape = GEN.planetShape(seed, radius);
+
+		return (x, y, l) => {
+			const terrain = shape(x, y, l);
+			if (!terrain) return null;
 
 			return 'rock';
 		};

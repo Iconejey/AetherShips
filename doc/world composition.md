@@ -24,8 +24,6 @@ Planets are entities that contain large amounts of exhaustible, localized, and n
 
 They are procedurally generated with a random position around their star and a defined type. The type determines the planet's appearance and the resources it contains. The player can mine planets for resources, but once a planet is depleted, it will not regenerate.
 
-The player can also build structures on planets, such as mining stations or factories, to automate resource extraction and processing.
-
 ## Asteroids
 
 Asteroids are entities that spawn randomly in sectors. They are smaller than planets and contain fewer resources, but they can be found in any sector, including those without a star. They can also be mined for resources, knowing that they will despawn after a certain time and others will spawn to replace them.

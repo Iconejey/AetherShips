@@ -106,6 +106,7 @@ class Layer {
 		this.block_count = 0;
 		this.glow_count = 0;
 		this.dirty = false;
+		this.seed_generated = false; // True when chunk is generated from planet seed and not yet modified by the player
 
 		this.addCanvas('main');
 	}
@@ -195,6 +196,7 @@ class Layer {
 		}
 
 		if (changed && !skip_events) {
+			this.seed_generated = false; // Player modified this chunk — must be saved
 			this.entity.flagMassUpdate();
 			const had_utility = blocks_by_type[old_type]?.utility ?? false;
 			const has_utility = blocks_by_type[new_type]?.utility ?? false;
@@ -378,6 +380,9 @@ class Layer {
 	 * @returns {Promise<void>}
 	 */
 	async save() {
+		// Skip saving chunks that are purely seed-generated and have no player modifications
+		if (this.seed_generated) return;
+
 		const serialized_entity = this.entity.serialize();
 		const layer_index = this.layer_index;
 		const chunk_x = this.chunk_layer.chunk_x;
@@ -489,8 +494,12 @@ class Entity extends HTMLElement {
 		return entity;
 	}
 
-	static createPlanet(position, add_to_dom = false) {
-		return Entity.create(position, 'planet', add_to_dom);
+	static createPlanet(position, biome, radius, seed, add_to_dom = false) {
+		const entity = Entity.create(position, 'planet', add_to_dom);
+		entity.biome = biome;
+		entity.radius = radius;
+		entity.seed = seed;
+		return entity;
 	}
 
 	static async fromSerialized(data, load_blocks = false) {
@@ -2009,7 +2018,9 @@ class Entity extends HTMLElement {
 	serialize() {
 		const obj = {};
 		const keys = ['id', 'type', 'position', 'velocity', 'mass', 'utility_rect_groups', 'utility_line_groups'];
+		const optional_keys = ['biome', 'radius', 'seed'];
 		for (const key of keys) obj[key] = this[key];
+		for (const key of optional_keys) if (this[key] !== undefined) obj[key] = this[key];
 		return obj;
 	}
 
@@ -2022,10 +2033,44 @@ class Entity extends HTMLElement {
 		const entity_data = this.serialize();
 		await window.saves.writeEntity(galaxy_name, entity_data);
 
-		// Save all blocks data
+		// Save all blocks data, skipping seed-generated (unmodified) planet chunks
 		for (const chunk_layer of this.getAllChunkLayers()) {
 			await chunk_layer?.layer.save(galaxy_name);
 		}
+	}
+
+	/**
+	 * Generates all blocks in a given chunk from a generation function, marking the chunk as seed-generated.
+	 * Blocks are set without triggering save or mass/group updates.
+	 * @param {number} cx - Chunk x coordinate
+	 * @param {number} cy - Chunk y coordinate
+	 * @param {Function} gen - Generation function (x, y, l) => block_name | null
+	 */
+	generateChunkFromSeed(cx, cy, gen) {
+		for (let layer_index = 0; layer_index <= 2; layer_index++) {
+			for (let local_y = 0; local_y < 32; local_y++) {
+				for (let local_x = 0; local_x < 32; local_x++) {
+					const x = cx * 32 + local_x;
+					const y = cy * 32 + local_y;
+					const block_name = gen(x, y, layer_index);
+					if (block_name === null) continue;
+
+					const block_def = blocks_by_name[block_name];
+					if (!block_def) continue;
+
+					const entity_layer = this.getEntityLayer(layer_index, true);
+					const chunk_layer = entity_layer.getChunkLayer(cx, cy, true);
+					if (!chunk_layer.layer) {
+						chunk_layer.layer = new Layer(chunk_layer, layer_index, entity_layer);
+						chunk_layer.layer.seed_generated = true;
+					}
+
+					chunk_layer.layer.setBlock(local_x, local_y, block_def.init(), true /* skip_events */);
+				}
+			}
+		}
+
+		this.render();
 	}
 
 	async loadBlocksFromSource(list_chunks, load_layer_chunk, source_name = 'data') {
