@@ -861,6 +861,7 @@ class Game extends HTMLElement {
 
 		for (const entity of this.children) {
 			if (!(entity instanceof Entity)) continue;
+			if (entity.type === 'planet') continue;
 
 			if (!entity.active_maneuvers) {
 				entity.active_maneuvers = new Set();

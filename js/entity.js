@@ -496,6 +496,8 @@ class Entity extends HTMLElement {
 
 	static createPlanet(position, biome, radius, seed, add_to_dom = false) {
 		const entity = Entity.create(position, 'planet', add_to_dom);
+		const random_rotation = Math.random() * Math.PI * 2;
+		entity.position.r = random_rotation;
 		entity.biome = biome;
 		entity.radius = radius;
 		entity.seed = seed;
@@ -661,6 +663,36 @@ class Entity extends HTMLElement {
 	}
 
 	updateMass(force = false) {
+		if (this.type === 'planet') {
+			this.mass.cx = 0;
+			this.mass.cy = 0;
+			this.mass.total = 999999;
+			this.mass.moment_of_inertia = 999999;
+
+			let com_el = this.querySelector('.center-of-mass');
+			if (!com_el) {
+				com_el = document.createElement('div');
+				com_el.className = 'center-of-mass';
+				com_el.innerHTML = html`
+					<div>
+						<div class="yellow square"></div>
+						<div class="dark square"></div>
+					</div>
+					<div>
+						<div class="dark square"></div>
+						<div class="yellow square"></div>
+					</div>
+				`;
+
+				this.appendChild(com_el);
+			}
+
+			com_el.style.left = '0px';
+			com_el.style.top = '0px';
+			this.mass_needs_update = false;
+			return;
+		}
+
 		if (!this.mass_needs_update && !force) return;
 
 		let total_mass = 0;
