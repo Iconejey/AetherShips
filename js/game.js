@@ -532,7 +532,7 @@ class Game extends HTMLElement {
 		if (document.body.classList.contains('map-mode')) return;
 
 		this.planet_cloud_offset_x += delta_seconds * 2;
-		this.planet_cloud_offset_z += delta_seconds * 2;
+		this.planet_cloud_offset_z += delta_seconds * 1;
 
 		const planets = Array.from(this.$$('entity-root[type="planet"]'));
 		for (const planet of planets) {

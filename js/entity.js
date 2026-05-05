@@ -529,7 +529,7 @@ class Entity extends HTMLElement {
 			ctx,
 			img_data,
 			buf,
-			base_noise: new Noise3D(this.seed + 1000, 0.02),
+			base_noise: new Noise3D(this.seed + 1000, 0.015),
 			detail_noise: new Noise3D(this.seed + 2000, 0.03),
 			last_offset_x: Number.NaN,
 			last_offset_z: Number.NaN
