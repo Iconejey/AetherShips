@@ -397,12 +397,10 @@ class Game extends HTMLElement {
 		if (saves.length > 0) await this.loadGalaxy(saves[0].name);
 
 		const driven = game.player.driven_entity;
-		if (driven?.type !== 'planet') {
-			const position = driven?.position || game.player.position;
-			const planet = Entity.createPlanet({ ...position }, 'plant', 200, Math.random() * 100000, true);
-			game.player.drive(planet);
-			driven?.remove();
-		}
+		const position = driven?.position || game.player.position;
+		const planet = Entity.createPlanet({ ...position }, 'arid', 200, Math.random() * 100000, true);
+		game.player.drive(planet);
+		driven?.remove();
 	}
 
 	/**
