@@ -453,29 +453,37 @@ class GEN {
 	static planet(seed, biome, radius) {
 		const shape = GEN.planetShape(seed, radius);
 		const ore_gens = GEN.ores(seed, biome);
+		const rock_variant = GEN.variantNoise(seed + 101, 3, 0.01, 0.01);
+
+		// Plant biome
 		const polar_noise1 = new Noise2D(seed + 99, 0.01);
 		const polar_noise2 = new Noise2D(seed + 100, 0.03);
-		const rock_variant = GEN.variantNoise(seed + 101, 3, 0.01, 0.01);
 		const veg_variant = GEN.variantNoise(seed + 104, 3, 0.01, 0.02);
 
 		return (x, y, l) => {
 			const terrain = shape(x, y, l);
 			if (!terrain) return null;
 
-			// Surface
-			if (l > 1 || terrain < l + 1.1) {
-				// Polar ice caps
-				const polar_val = (polar_noise1.get01(x, y) + polar_noise2.get01(x, y)) / 2;
-				const polar = Math.abs(y) / radius + polar_val * 0.2;
-				if (polar > 0.9) return 'ice';
+			if (biome === 'arid') {
+				// Surface: sand
+				if (l > 1 || terrain < l + 1.1) return 'sand';
 
-				// Vegetation variant: pick the index with the highest noise value
-				const veg_variant_idx = veg_variant(x, y);
-				return `vegetation:${veg_variant_idx}`;
+				// Dirt layer just below surface
+				if (terrain < l + 2.1) return 'dirt';
+			} else {
+				// Surface: vegetation with polar ice caps (plant biome)
+				if (l > 1 || terrain < l + 1.1) {
+					const polar_val = (polar_noise1.get01(x, y) + polar_noise2.get01(x, y)) / 2;
+					const polar = Math.abs(y) / radius + polar_val * 0.2;
+					if (polar > 0.9) return 'ice';
+
+					const veg_variant_idx = veg_variant(x, y);
+					return `vegetation:${veg_variant_idx}`;
+				}
+
+				// Dirt (just below surface)
+				if (terrain < l + 2.1) return 'dirt';
 			}
-
-			// Dirt (just below surface)
-			if (terrain < l + 2.1) return 'dirt';
 
 			// Ores
 			for (const gen of ore_gens) {
@@ -483,7 +491,7 @@ class GEN {
 				if (ore) return ore === 'air' ? null : ore;
 			}
 
-			// Rock variant: pick the index with the highest noise value
+			// Rock variant
 			const rock_variant_idx = rock_variant(x, y);
 			return `rock:${rock_variant_idx}`;
 		};
