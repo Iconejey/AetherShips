@@ -439,6 +439,9 @@ class GEN {
 			const terrain = shape(x, y, l);
 			if (!terrain) return null;
 
+			// Surface
+			if (l > 1 || terrain < l + 1.1) return 'vegetation';
+
 			return 'rock';
 		};
 	}
