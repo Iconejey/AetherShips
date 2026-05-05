@@ -442,6 +442,9 @@ class GEN {
 			// Surface
 			if (l > 1 || terrain < l + 1.1) return 'vegetation';
 
+			// Dirt (just below surface)
+			if (terrain < l + 2.1) return 'dirt';
+
 			return 'rock';
 		};
 	}
