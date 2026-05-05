@@ -434,6 +434,7 @@ class GEN {
 
 	static planet(seed, biome, radius) {
 		const shape = GEN.planetShape(seed, radius);
+		const ore_gens = GEN.ores(seed, biome);
 
 		return (x, y, l) => {
 			const terrain = shape(x, y, l);
@@ -444,6 +445,12 @@ class GEN {
 
 			// Dirt (just below surface)
 			if (terrain < l + 2.1) return 'dirt';
+
+			// Ores
+			for (const gen of ore_gens) {
+				const ore = gen(x, y, l);
+				if (ore) return ore === 'air' ? null : ore;
+			}
 
 			return 'rock';
 		};
