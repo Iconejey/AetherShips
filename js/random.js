@@ -435,13 +435,21 @@ class GEN {
 	static planet(seed, biome, radius) {
 		const shape = GEN.planetShape(seed, radius);
 		const ore_gens = GEN.ores(seed, biome);
+		const polar_noise1 = new Noise2D(seed + 99, 0.01);
+		const polar_noise2 = new Noise2D(seed + 100, 0.03);
 
 		return (x, y, l) => {
 			const terrain = shape(x, y, l);
 			if (!terrain) return null;
 
 			// Surface
-			if (l > 1 || terrain < l + 1.1) return 'vegetation';
+			if (l > 1 || terrain < l + 1.1) {
+				// Polar ice caps
+				const polar_val = (polar_noise1.get01(x, y) + polar_noise2.get01(x, y)) / 2;
+				const polar = Math.abs(y) / radius + polar_val * 0.2;
+				if (polar > 0.9) return 'ice';
+				return 'vegetation';
+			}
 
 			// Dirt (just below surface)
 			if (terrain < l + 2.1) return 'dirt';

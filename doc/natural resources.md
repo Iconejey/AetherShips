@@ -15,7 +15,7 @@ In games, biomes usually refer to the types of terrain found on a zone in the ma
 | Coal       | Exclusive | -         | -         | -        | -        | -           |
 | Copper     | -         | Primary   | -         | Present  | -        | -           |
 | Lead       | -         | Primary   | -         | -        | Present  | -           |
-| Ice        | -         | -         | Exclusive | -        | -        | -           |
+| Ice        | Poles     | -         | Exclusive | -        | -        | -           |
 | Titanium   | -         | -         | Rare      | Rare     | -        | -           |
 | Crystals   | -         | -         | Rare      | -        | Abundant | -           |
 | Uranium    | -         | -         | -         | Rare     | -        | Abundant    |
