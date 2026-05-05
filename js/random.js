@@ -353,7 +353,7 @@ class GEN {
 		};
 	}
 
-	static ores(seed, biome) {
+	static ores(seed, biome, type) {
 		const ores = {
 			plant: [
 				{ name: 'iron_ore', spread: 10, exp: 6 },
@@ -367,7 +367,12 @@ class GEN {
 			],
 			ice: [
 				{ name: 'dirt', spread: 20, exp: 2 },
-				{ name: 'raw_crystal', spread: 20, exp: 4, geode: true },
+				{
+					name: 'raw_crystal',
+					spread: 20,
+					exp: type === 'planet' ? 10 : 4,
+					geode: true
+				},
 				{ name: 'titanium_ore', spread: 10, exp: 8 }
 			],
 			tectonic: [
@@ -411,7 +416,7 @@ class GEN {
 	static asteroid(size, biome) {
 		const seed = Math.random() * 1000000;
 		const shape = GEN.asteroidShape(seed, size);
-		const ore_gens = GEN.ores(seed, biome);
+		const ore_gens = GEN.ores(seed, biome, 'asteroid');
 
 		return (x, y, l) => {
 			const terrain = shape(x, y, l);
@@ -470,6 +475,9 @@ class GEN {
 
 				// Dirt layer just below surface
 				if (terrain < l + 2.1) return 'dirt';
+			} else if (biome === 'ice') {
+				// Surface: ice everywhere
+				if (l > 1 || terrain < l + 1.1) return 'ice';
 			} else {
 				// Surface: vegetation with polar ice caps (plant biome)
 				if (l > 1 || terrain < l + 1.1) {

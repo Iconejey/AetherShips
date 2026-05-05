@@ -398,7 +398,7 @@ class Game extends HTMLElement {
 
 		const driven = game.player.driven_entity;
 		const position = driven?.position || game.player.position;
-		const planet = Entity.createPlanet({ ...position }, 'arid', 200, Math.random() * 100000, true);
+		const planet = Entity.createPlanet({ ...position }, 'ice', 200, Math.random() * 100000, true);
 		game.player.drive(planet);
 		driven?.remove();
 	}
