@@ -27,10 +27,12 @@ class RNG {
 class Noise2D {
 	/**
 	 * @param {number} seed
-	 * @param {number} scale
+	 * @param {number} scaleX
+	 * @param {number} [scaleY]
 	 */
-	constructor(seed, scale = 1) {
-		this.scale = scale;
+	constructor(seed, scaleX = 1, scaleY = scaleX) {
+		this.scaleX = scaleX;
+		this.scaleY = scaleY;
 		this.grad_3 = [
 			[1, 1, 0],
 			[-1, 1, 0],
@@ -75,8 +77,8 @@ class Noise2D {
 	 * @returns {number} A value between -1 and 1
 	 */
 	get(x, y) {
-		x *= this.scale;
-		y *= this.scale;
+		x *= this.scaleX;
+		y *= this.scaleY;
 		const f_2 = 0.5 * (Math.sqrt(3.0) - 1.0);
 		const g_2 = (3.0 - Math.sqrt(3.0)) / 6.0;
 
@@ -317,6 +319,22 @@ class RadialNoise {
 }
 
 class GEN {
+	static variantNoise(seed, count, scaleX, scaleY = scaleX) {
+		const noises = Array.from({ length: count }, (_, i) => new Noise2D(seed + i, scaleX, scaleY));
+		return (x, y) => {
+			let best = -1,
+				winner = 0;
+			for (let i = 0; i < count; i++) {
+				const val = noises[i].get01(x, y);
+				if (val > best) {
+					best = val;
+					winner = i;
+				}
+			}
+			return winner;
+		};
+	}
+
 	static ore(seed, block_name, spread, exp) {
 		const noises = [];
 		for (const l of [0, 1, 2]) noises.push(new Noise2D(seed + l, 1 / spread));
@@ -437,6 +455,8 @@ class GEN {
 		const ore_gens = GEN.ores(seed, biome);
 		const polar_noise1 = new Noise2D(seed + 99, 0.01);
 		const polar_noise2 = new Noise2D(seed + 100, 0.03);
+		const rock_variant = GEN.variantNoise(seed + 101, 3, 0.01, 0.01);
+		const veg_variant = GEN.variantNoise(seed + 104, 3, 0.01, 0.02);
 
 		return (x, y, l) => {
 			const terrain = shape(x, y, l);
@@ -448,7 +468,10 @@ class GEN {
 				const polar_val = (polar_noise1.get01(x, y) + polar_noise2.get01(x, y)) / 2;
 				const polar = Math.abs(y) / radius + polar_val * 0.2;
 				if (polar > 0.9) return 'ice';
-				return 'vegetation';
+
+				// Vegetation variant: pick the index with the highest noise value
+				const veg_variant_idx = veg_variant(x, y);
+				return `vegetation:${veg_variant_idx}`;
 			}
 
 			// Dirt (just below surface)
@@ -460,7 +483,9 @@ class GEN {
 				if (ore) return ore === 'air' ? null : ore;
 			}
 
-			return 'rock';
+			// Rock variant: pick the index with the highest noise value
+			const rock_variant_idx = rock_variant(x, y);
+			return `rock:${rock_variant_idx}`;
 		};
 	}
 }

@@ -1129,13 +1129,16 @@ class Game extends HTMLElement {
 		block_categories = data;
 		for (const category in block_categories) {
 			for (const block of block_categories[category]) {
-				block.colors = block.colors.map(hexToRgba8888);
+				// Normalize colors: if array of arrays, each sub-array is a variant; if flat, wrap in one variant
+				const raw_colors = block.colors;
+				const is_multi = Array.isArray(raw_colors[0]);
+				block.colors = is_multi ? raw_colors[0].map(hexToRgba8888) : raw_colors.map(hexToRgba8888);
 				block.category = category;
 				blocks_by_type[block.type] = block;
 				blocks_by_name[block.name] = block;
-				block.init = paint_color => {
+				const makeInit = colors => paint_color => {
 					// Get default color
-					let block_default_color = oneOf(block.colors);
+					let block_default_color = oneOf(colors);
 
 					// Get default alpha (needed even with paint color)
 					const block_default_alpha = block_default_color & 0xff;
@@ -1156,6 +1159,18 @@ class Game extends HTMLElement {
 						color
 					};
 				};
+
+				block.init = makeInit(block.colors);
+
+				// Register named variants (e.g. "rock:0", "rock:1") if colors is an array of arrays
+				if (is_multi) {
+					raw_colors.forEach((variant_hex_colors, i) => {
+						const variant_colors = variant_hex_colors.map(hexToRgba8888);
+						const variant_entry = Object.assign({}, block, { colors: variant_colors });
+						variant_entry.init = makeInit(variant_colors);
+						blocks_by_name[`${block.name}:${i}`] = variant_entry;
+					});
+				}
 			}
 		}
 	}

@@ -4,7 +4,11 @@
 			"name": "rock",
 			"type": 1,
 			"health": 4,
-			"colors": ["#6a6a6aff", "#6d6d6dff", "#6f6f6fff"],
+			"colors": [
+				["#6a6a6aff", "#6d6d6dff", "#6f6f6fff"],
+				["#636363ff", "#666666ff", "#686868ff"],
+				["#727272ff", "#757575ff", "#777777ff"]
+			],
 			"mass": 4
 		},
 		{
@@ -32,7 +36,11 @@
 			"name": "vegetation",
 			"type": 5,
 			"health": 1,
-			"colors": ["#858f4fff", "#7a8547ff", "#8a9a57ff", "#80904eff"],
+			"colors": [
+				["#858f4fff", "#7a8547ff", "#8a9a57ff", "#80904eff"],
+				["#7d8748ff", "#737e42ff", "#82924eff", "#79884aff"],
+				["#8d9756ff", "#838d50ff", "#92a25eff", "#899854ff"]
+			],
 			"mass": 1
 		},
 		{
