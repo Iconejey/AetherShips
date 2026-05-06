@@ -478,6 +478,9 @@ class GEN {
 			} else if (biome === 'ice') {
 				// Surface: ice everywhere
 				if (l > 1 || terrain < l + 1.1) return 'ice';
+			} else if (biome === 'tectonic') {
+				// Surface: bare rock, rare dirt patches just below
+				if (terrain < l + 2.1) return 'dirt';
 			} else {
 				// Surface: vegetation with polar ice caps (plant biome)
 				if (l > 1 || terrain < l + 1.1) {
