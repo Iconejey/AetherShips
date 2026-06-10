@@ -192,6 +192,7 @@ class Game extends HTMLElement {
 
 		this.scale = Game.default_zoom;
 		this.style.setProperty('--game-scale', this.scale);
+		document.body.classList.toggle('far-zoom', this.scale < 6);
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -282,12 +283,14 @@ class Game extends HTMLElement {
 						this.scale += (Game.default_zoom - this.scale) * 0.15;
 						this.style.setProperty('--game-scale', this.scale);
 						document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
+						document.body.classList.toggle('far-zoom', this.scale < 6);
 
 						if (Math.abs(this.scale - Game.default_zoom) > 0.01) requestAnimationFrame(zoom_transition);
 						else {
 							this.scale = Game.default_zoom;
 							this.style.setProperty('--game-scale', this.scale);
 							document.body.classList.toggle('map-mode', false);
+							document.body.classList.toggle('far-zoom', this.scale < 6);
 						}
 					};
 					requestAnimationFrame(zoom_transition);
@@ -398,7 +401,7 @@ class Game extends HTMLElement {
 
 		const driven = game.player.driven_entity;
 		const position = driven?.position || game.player.position;
-		const planet = Entity.createPlanet({ ...position }, 'tectonic', 200, Math.random() * 100000, true);
+		const planet = Entity.createPlanet({ ...position }, 'plant', 200, Math.random() * 100000, true);
 		game.player.drive(planet);
 		driven?.remove();
 	}
@@ -568,7 +571,7 @@ class Game extends HTMLElement {
 			// Lazily create the atmosphere overlay
 			if (!planet._atmosphere) {
 				const atmosphere_colors = {
-					plant: 'rgba(150, 220, 255, 0.2)',
+					plant: 'rgba(138, 154, 87, 0.2)',
 					arid: 'rgba(220, 150, 50, 0.2)',
 					ice: 'rgba(150, 220, 255, 0.2)',
 					radioactive: 'rgba(180, 255, 50, 0.2)',
@@ -1029,6 +1032,7 @@ class Game extends HTMLElement {
 		this.scale = Math.min(Math.max(Game.min_zoom, this.scale * zoom_factor), Game.max_zoom);
 		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
+		document.body.classList.toggle('far-zoom', this.scale < 6);
 	}
 
 	/**
@@ -1102,6 +1106,7 @@ class Game extends HTMLElement {
 		this.scale = new_scale;
 		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
+		document.body.classList.toggle('far-zoom', this.scale < 6);
 	}
 
 	/**
