@@ -408,8 +408,8 @@ class GEN {
 			if (radial_noise(x, y) > 1) return 0;
 
 			// Topography
-			const topographys_val = Math.min(topography_noise.get01(x, y) * 5 + 0.1, 4);
-			return craters_val > l + 1 ? craters_val : 0;
+			const topography_val = Math.min(topography_noise.get01(x, y) * 5 + 0.1, 4);
+			return topography_val > l + 1 ? topography_val : 0;
 		};
 	}
 
