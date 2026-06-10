@@ -591,7 +591,7 @@ class Game extends HTMLElement {
 		const vh = window.innerHeight;
 		// Half-diagonal of the viewport in world units, plus one chunk of margin
 		const view_radius = Math.sqrt((vw / 2) ** 2 + (vh / 2) ** 2) / this.scale + 32;
-		const unload_radius = view_radius * 2;
+		const unload_radius = Math.max(view_radius * 4, 2000);
 
 		for (const planet of planets) {
 			if (!planet.seed || !planet.biome || !planet.radius) continue;
