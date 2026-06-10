@@ -849,7 +849,12 @@ class Game extends HTMLElement {
 			// Update CSS position for this star
 			const screen_x = this.viewport_center_x + star.x;
 			const screen_y = this.viewport_center_y + star.y;
-			star.element.style.transform = `translate(${screen_x}px, ${screen_y}px)`;
+
+			const new_transform = `translate(${screen_x}px, ${screen_y}px)`;
+			if (star._last_transform !== new_transform) {
+				star.element.style.transform = new_transform;
+				star._last_transform = new_transform;
+			}
 		}
 	}
 
@@ -1212,9 +1217,22 @@ class Game extends HTMLElement {
 			const screen_pos = this.camera.worldToScreen(entity.position.x, entity.position.y, this.scale);
 			const entity_rotation_relative_to_camera = entity.position.r - this.camera.r;
 
-			entity.style.setProperty('--entity-screen-x', `${viewport_center_x + screen_pos.x}px`);
-			entity.style.setProperty('--entity-screen-y', `${viewport_center_y + screen_pos.y}px`);
-			entity.style.setProperty('--entity-rotation', `${entity_rotation_relative_to_camera}rad`);
+			const new_x = `${viewport_center_x + screen_pos.x}px`;
+			const new_y = `${viewport_center_y + screen_pos.y}px`;
+			const new_r = `${entity_rotation_relative_to_camera}rad`;
+
+			if (entity._last_screen_x !== new_x) {
+				entity.style.setProperty('--entity-screen-x', new_x);
+				entity._last_screen_x = new_x;
+			}
+			if (entity._last_screen_y !== new_y) {
+				entity.style.setProperty('--entity-screen-y', new_y);
+				entity._last_screen_y = new_y;
+			}
+			if (entity._last_rotation !== new_r) {
+				entity.style.setProperty('--entity-rotation', new_r);
+				entity._last_rotation = new_r;
+			}
 		}
 	}
 
