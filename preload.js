@@ -11,7 +11,7 @@ contextBridge.exposeInMainWorld('saves', {
 	deleteGalaxy: galaxy_name => ipc.invoke('save-delete-galaxy', galaxy_name),
 	writeGalaxy: galaxy => ipc.invoke('save-write-galaxy', galaxy),
 	loadGalaxy: galaxy_name => ipc.invoke('save-load-galaxy', galaxy_name),
-	writeEntity: (galaxy_name, serialized_entity) => ipc.invoke('save-write-entity', galaxy_name, serialized_entity),
+	writeEntity: (galaxy_name, serialized_entity, is_temp = true) => ipc.invoke('save-write-entity', galaxy_name, serialized_entity, is_temp),
 	loadEntities: (galaxy_name, position) => ipc.invoke('save-load-entities', galaxy_name, position),
 
 	writeLayerChunk: (galaxy_name, serialized_entity, layer_index, chunk_x, chunk_y, type, uint32_array) => {

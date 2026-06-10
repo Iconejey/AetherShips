@@ -105,7 +105,33 @@ class Game extends HTMLElement {
 			}
 		};
 
-		return window.saves.createGalaxy(name, data);
+		await window.saves.createGalaxy(name, data);
+
+		const rng = new RNG(seed);
+		const sector_size = 32 * 256;
+		const planet_biomes = ['plant', 'arid', 'ice', 'tectonic'];
+
+		for (const star of stars) {
+			const num_planets = Math.floor(rng.get() * 3); // 0, 1, or 2
+			for (let i = 0; i < num_planets; i++) {
+				const sector_center_x = star.sx * sector_size + sector_size / 2;
+				const sector_center_y = star.sy * sector_size + sector_size / 2;
+
+				// Scatter planets within the sector using the star's coordinates as the base range
+				const offset_x = (rng.get() - 0.5) * sector_size * 0.8;
+				const offset_y = (rng.get() - 0.5) * sector_size * 0.8;
+
+				const x = sector_center_x + offset_x;
+				const y = sector_center_y + offset_y;
+
+				const biome = planet_biomes[Math.floor(rng.get() * planet_biomes.length)];
+				const radius = 100 + Math.floor(rng.get() * 400); // 100 to 500
+				const planet_seed = rng.get() * 100000;
+
+				const planet = Entity.createPlanet({ x, y, r: 0 }, biome, radius, planet_seed, false);
+				await window.saves.writeEntity(name, planet.serialize(), false);
+			}
+		}
 	}
 
 	/**
@@ -396,14 +422,13 @@ class Game extends HTMLElement {
 	 * Tests for dev purposes
 	 */
 	async test() {
-		const saves = await window.saves.listGalaxies();
-		if (saves.length > 0) await this.loadGalaxy(saves[0].name);
-
-		const driven = game.player.driven_entity;
-		const position = driven?.position || game.player.position;
-		const planet = Entity.createPlanet({ ...position }, 'plant', 200, Math.random() * 100000, true);
-		game.player.drive(planet);
-		driven?.remove();
+		// const saves = await window.saves.listGalaxies();
+		// if (saves.length > 0) await this.loadGalaxy(saves[0].name);
+		// const driven = game.player.driven_entity;
+		// const position = driven?.position || game.player.position;
+		// const planet = Entity.createPlanet({ ...position }, 'plant', 200, Math.random() * 100000, true);
+		// game.player.drive(planet);
+		// driven?.remove();
 	}
 
 	/**

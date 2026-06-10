@@ -190,8 +190,9 @@ ipcMain.handle('save-load-galaxy', async (event, name) => {
 });
 
 // Write entity.json
-ipcMain.handle('save-write-entity', async (event, name, serialized_entity) => {
-	const { entity_data_path } = getSavePaths(true, name, serialized_entity);
+ipcMain.handle('save-write-entity', async (event, name, serialized_entity, is_temp = true) => {
+	console.log(`save-write-entity called with is_temp:`, is_temp);
+	const { entity_data_path } = getSavePaths(is_temp, name, serialized_entity);
 
 	try {
 		// Ensure parent directory exists
@@ -255,7 +256,17 @@ ipcMain.handle('save-list-chunks', async (event, galaxy_name, serialized_entity,
 // Remove temporary save folder on game save start (in case of crash during save)
 ipcMain.handle('save-clean', async (event, galaxy_name) => {
 	const temp_path = getSavePaths(true, galaxy_name).save_path;
+	const real_path = getSavePaths(false, galaxy_name).save_path;
+	
 	if (fs.existsSync(temp_path)) fs.rmSync(temp_path, { recursive: true, force: true });
+	
+	// Copy the current real save to the temp folder as a baseline, so we don't lose unloaded entities.
+	if (fs.existsSync(real_path)) {
+		fs.cpSync(real_path, temp_path, { recursive: true });
+	} else {
+		fs.mkdirSync(temp_path, { recursive: true });
+	}
+
 	return true;
 });
 
