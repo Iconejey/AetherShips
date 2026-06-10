@@ -1121,7 +1121,6 @@ class Game extends HTMLElement {
 		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 		document.body.classList.toggle('far-zoom', this.scale < 6);
 		document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
-		console.log(`Zoom: ${this.scale.toFixed(2)}`);
 	}
 
 	/**

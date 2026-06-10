@@ -191,7 +191,6 @@ ipcMain.handle('save-load-galaxy', async (event, name) => {
 
 // Write entity.json
 ipcMain.handle('save-write-entity', async (event, name, serialized_entity, is_temp = true) => {
-	console.log(`save-write-entity called with is_temp:`, is_temp);
 	const { entity_data_path } = getSavePaths(is_temp, name, serialized_entity);
 
 	try {
