@@ -219,6 +219,7 @@ class Game extends HTMLElement {
 		this.scale = Game.default_zoom;
 		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.toggle('far-zoom', this.scale < 6);
+		document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
 
 		// Initialize stars first (so they're behind other elements)
 		this.initializeStars();
@@ -310,6 +311,7 @@ class Game extends HTMLElement {
 						this.style.setProperty('--game-scale', this.scale);
 						document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 						document.body.classList.toggle('far-zoom', this.scale < 6);
+						document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
 
 						if (Math.abs(this.scale - Game.default_zoom) > 0.01) requestAnimationFrame(zoom_transition);
 						else {
@@ -317,6 +319,7 @@ class Game extends HTMLElement {
 							this.style.setProperty('--game-scale', this.scale);
 							document.body.classList.toggle('map-mode', false);
 							document.body.classList.toggle('far-zoom', this.scale < 6);
+							document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
 						}
 					};
 					requestAnimationFrame(zoom_transition);
@@ -1117,6 +1120,8 @@ class Game extends HTMLElement {
 		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 		document.body.classList.toggle('far-zoom', this.scale < 6);
+		document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
+		console.log(`Zoom: ${this.scale.toFixed(2)}`);
 	}
 
 	/**
@@ -1191,6 +1196,7 @@ class Game extends HTMLElement {
 		this.style.setProperty('--game-scale', this.scale);
 		document.body.classList.toggle('map-mode', this.scale < Game.map_zoom);
 		document.body.classList.toggle('far-zoom', this.scale < 6);
+		document.body.classList.toggle('galaxy-map-mode', this.scale < 0.05);
 	}
 
 	/**

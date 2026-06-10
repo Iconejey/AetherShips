@@ -159,6 +159,10 @@ entity-root {
 		content: 'planet';
 		transform: translate(-50%, -50%);
 	}
+
+	body.galaxy-map-mode &[type='planet']::after {
+		display: none;
+	}
 }
 
 .planet-atmosphere {
