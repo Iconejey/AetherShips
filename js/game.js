@@ -849,8 +849,7 @@ class Game extends HTMLElement {
 			// Update CSS position for this star
 			const screen_x = this.viewport_center_x + star.x;
 			const screen_y = this.viewport_center_y + star.y;
-			star.element.style.left = `${screen_x}px`;
-			star.element.style.top = `${screen_y}px`;
+			star.element.style.transform = `translate(${screen_x}px, ${screen_y}px)`;
 		}
 	}
 
@@ -1213,8 +1212,8 @@ class Game extends HTMLElement {
 			const screen_pos = this.camera.worldToScreen(entity.position.x, entity.position.y, this.scale);
 			const entity_rotation_relative_to_camera = entity.position.r - this.camera.r;
 
-			entity.style.left = `${viewport_center_x + screen_pos.x}px`;
-			entity.style.top = `${viewport_center_y + screen_pos.y}px`;
+			entity.style.setProperty('--entity-screen-x', `${viewport_center_x + screen_pos.x}px`);
+			entity.style.setProperty('--entity-screen-y', `${viewport_center_y + screen_pos.y}px`);
 			entity.style.setProperty('--entity-rotation', `${entity_rotation_relative_to_camera}rad`);
 		}
 	}

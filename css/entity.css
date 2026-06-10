@@ -2,12 +2,14 @@ entity-root {
 	display: block;
 	position: fixed;
 	--entity-rotation: 0rad;
-	transform: translate(-50%, -50%) rotate(var(--entity-rotation)) scale(var(--game-scale));
-	top: 50%;
-	left: 50%;
+	--entity-scale-override: var(--game-scale);
+	top: 0;
+	left: 0;
+	transform: translate(var(--entity-screen-x), var(--entity-screen-y)) translate(-50%, -50%) rotate(var(--entity-rotation)) scale(var(--entity-scale-override));
+	will-change: transform;
 
 	body.map-mode & {
-		--game-scale: 1;
+		--entity-scale-override: 1;
 
 		& > .thrusters-overlay {
 			display: none;

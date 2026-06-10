@@ -186,7 +186,7 @@ class ViewOverlay extends HTMLElement {
 
 	/**
 	 * Returns the entity-space info needed to project between block and screen coords.
-	 * Uses entity.style.left/top (set each frame by updateEntityPositions) so the
+	 * Uses entity.style.getPropertyValue('--entity-screen-x')/('--entity-screen-y') (set each frame by updateEntityPositions) so the
 	 * pan_offset is already baked in — no separate modulo bookkeeping required.
 	 * @returns {{ entity_left: number, entity_top: number, entity_rotation: number, scale: number }|null}
 	 */
@@ -194,8 +194,8 @@ class ViewOverlay extends HTMLElement {
 		const entity = game?.camera?.followed_entity;
 		if (!entity) return null;
 
-		const entity_left = parseFloat(entity.style.left);
-		const entity_top = parseFloat(entity.style.top);
+		const entity_left = parseFloat(entity.style.getPropertyValue('--entity-screen-x'));
+		const entity_top = parseFloat(entity.style.getPropertyValue('--entity-screen-y'));
 		if (isNaN(entity_left) || isNaN(entity_top)) return null;
 
 		const entity_rotation = entity.position.r - game.camera.r;
