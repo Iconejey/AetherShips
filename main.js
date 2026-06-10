@@ -257,9 +257,9 @@ ipcMain.handle('save-list-chunks', async (event, galaxy_name, serialized_entity,
 ipcMain.handle('save-clean', async (event, galaxy_name) => {
 	const temp_path = getSavePaths(true, galaxy_name).save_path;
 	const real_path = getSavePaths(false, galaxy_name).save_path;
-	
+
 	if (fs.existsSync(temp_path)) fs.rmSync(temp_path, { recursive: true, force: true });
-	
+
 	// Copy the current real save to the temp folder as a baseline, so we don't lose unloaded entities.
 	if (fs.existsSync(real_path)) {
 		fs.cpSync(real_path, temp_path, { recursive: true });

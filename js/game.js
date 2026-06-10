@@ -391,6 +391,8 @@ class Game extends HTMLElement {
 
 			// Initialize Player
 			this.player = new Player(this.galaxy.player.position);
+			this.current_sector_x = undefined;
+			this.current_sector_y = undefined;
 
 			// Load all entities near player
 			await Entity.loadNearby(this.player.position, 1000);
@@ -577,6 +579,8 @@ class Game extends HTMLElement {
 	 * seed-generated chunks that have moved out of range.
 	 */
 	updatePlanetChunks() {
+		if (document.body.classList.contains('map-mode')) return;
+
 		const planets = Array.from(this.$$('entity-root[type="planet"]'));
 		if (!planets.length) return;
 
@@ -963,8 +967,63 @@ class Game extends HTMLElement {
 		}
 
 		this.updateAsteroidLifecycle(delta_seconds);
+		this.updatePlanetLifecycle();
 		this.updatePlanetChunks();
 		this.updatePlanetClouds(delta_seconds);
+	}
+
+	async updatePlanetLifecycle() {
+		if (this.is_updating_planets) return;
+		if (!this.player || document.body.classList.contains('start-menu')) return;
+
+		const player_position = this.player.driven_entity?.position || this.player.position;
+		if (!player_position) return;
+
+		const sector_size = 32 * 256;
+		const sx = Math.floor(player_position.x / sector_size);
+		const sy = Math.floor(player_position.y / sector_size);
+
+		if (this.current_sector_x === sx && this.current_sector_y === sy) return;
+
+		this.is_updating_planets = true;
+
+		try {
+			// Unload planets that are outside the 3x3 sector grid centered on the player
+			const active_planets = Array.from(this.$$('entity-root[type="planet"]'));
+			for (const planet of active_planets) {
+				const psx = Math.floor(planet.position.x / sector_size);
+				const psy = Math.floor(planet.position.y / sector_size);
+
+				if (Math.abs(psx - sx) > 1 || Math.abs(psy - sy) > 1) {
+					await planet.save();
+					planet.remove();
+				}
+			}
+
+			// Load planets from the 3x3 sectors
+			for (let dx = -1; dx <= 1; dx++) {
+				for (let dy = -1; dy <= 1; dy++) {
+					const pos = {
+						x: (sx + dx) * sector_size,
+						y: (sy + dy) * sector_size
+					};
+
+					const serialized_entities = await window.saves.loadEntities(this.galaxy.name, pos);
+					for (const seq of serialized_entities) {
+						if (seq.type === 'planet' && !Entity.get(seq.id)) {
+							await Entity.fromSerialized(seq, true);
+						}
+					}
+				}
+			}
+
+			this.current_sector_x = sx;
+			this.current_sector_y = sy;
+		} catch (err) {
+			console.error('Failed to update planet lifecycle sectors:', err);
+		} finally {
+			this.is_updating_planets = false;
+		}
 	}
 
 	/**
