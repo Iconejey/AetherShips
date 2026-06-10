@@ -1217,9 +1217,9 @@ class Game extends HTMLElement {
 			const screen_pos = this.camera.worldToScreen(entity.position.x, entity.position.y, this.scale);
 			const entity_rotation_relative_to_camera = entity.position.r - this.camera.r;
 
-			const new_x = `${viewport_center_x + screen_pos.x}px`;
-			const new_y = `${viewport_center_y + screen_pos.y}px`;
-			const new_r = `${entity_rotation_relative_to_camera}rad`;
+			const new_x = `${(viewport_center_x + screen_pos.x).toFixed(4)}px`;
+			const new_y = `${(viewport_center_y + screen_pos.y).toFixed(4)}px`;
+			const new_r = `${entity_rotation_relative_to_camera.toFixed(4)}rad`;
 
 			if (entity._last_screen_x !== new_x) {
 				entity.style.setProperty('--entity-screen-x', new_x);
