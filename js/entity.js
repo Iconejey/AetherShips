@@ -108,42 +108,31 @@ class Layer {
 		this.dirty = false;
 		this.seed_generated = false; // True when chunk is generated from planet seed and not yet modified by the player
 
-		this.addCanvas('main');
+		this.entity_layer.ensureBounds(chunk_layer.chunk_x, chunk_layer.chunk_y);
+		this.initImageData('main');
 	}
 
 	/*
-	 * Adds a canvas element to the layer for rendering either the main block colors or glow effects.
+	 * Initializes image data buffers in memory for a chunk layer type
 	 * @param {string} type - The type of canvas to add ('main' for block colors, 'glow' for glow effects).
 	 */
-	addCanvas(type) {
-		const canvas = document.createElement('canvas');
+	initImageData(type) {
 		const size = type === 'glow' ? 33 : 32;
-		canvas.width = size;
-		canvas.height = size;
-		if (type === 'glow') canvas.classList.add('glow');
 
-		// Z-index within layer: main = 0, glow = 1
-		const z_index_within_layer = type === 'glow' ? 1 : 0;
-		canvas.style.zIndex = z_index_within_layer.toString();
-
-		// Position canvas for its chunk
-		canvas.style.left = `${this.chunk_layer.chunk_x * 32}px`;
-		canvas.style.top = `${this.chunk_layer.chunk_y * 32}px`;
-
-		const ctx = canvas.getContext('2d');
-		const img_data = ctx.createImageData(size, size);
+		// Use empty canvas to spawn ImageData object cleanly within browser environments
+		const tmp_canvas = document.createElement('canvas');
+		const img_data = tmp_canvas.getContext('2d').createImageData(size, size);
 		const buf = new Uint32Array(img_data.data.buffer);
 
-		this[type] = { canvas, ctx, img_data, buf };
-		this.entity_layer.appendChild(canvas);
+		this[type] = { img_data, buf };
 	}
 
 	/**
-	 * Puts the current image data onto the main canvas. Should be called after drawing pixels to update the visible layer.
+	 * Puts the current image data onto the main chunk layer canvas
 	 */
 	render() {
-		this.main.ctx.putImageData(this.main.img_data, 0, 0);
-		this.glow?.ctx.putImageData(this.glow.img_data, 0, 0);
+		if (this.main) this.entity_layer.renderChunk(this, 'main');
+		if (this.glow) this.entity_layer.renderChunk(this, 'glow');
 		this.dirty = false;
 	}
 
@@ -185,7 +174,7 @@ class Layer {
 		const has_glow = blocks_by_type[new_type]?.glow ?? false;
 		if (!had_glow && has_glow) {
 			this.glow_count++;
-			if (this.glow_count === 1) this.addCanvas('glow');
+			if (this.glow_count === 1) this.initImageData('glow');
 		}
 		if (had_glow && !has_glow) this.glow_count--;
 
@@ -226,8 +215,11 @@ class Layer {
 		if (had_glow) {
 			this.glow_count--;
 			if (this.glow_count === 0 && this.glow) {
-				this.glow.canvas.remove();
 				delete this.glow;
+				// clear glow footprint over entity global canvas.
+				const dx = (this.chunk_layer.chunk_x - this.entity_layer.min_cx) * 32;
+				const dy = (this.chunk_layer.chunk_y - this.entity_layer.min_cy) * 32;
+				if (this.entity_layer.canvases.glow) this.entity_layer.canvases.glow.ctx.clearRect(dx, dy, 33, 33);
 			}
 		}
 		this.block_count--;
@@ -404,6 +396,111 @@ class EntityLayer extends HTMLElement {
 	constructor() {
 		super();
 		this.chunk_layers = new Map(); // Map of "cx,cy" -> ChunkLayer
+		this.min_cx = Infinity;
+		this.max_cx = -Infinity;
+		this.min_cy = Infinity;
+		this.max_cy = -Infinity;
+		this.canvases = {};
+	}
+
+	ensureBounds(cx, cy) {
+		let changed = false;
+		if (this.min_cx === Infinity) {
+			this.min_cx = cx;
+			this.max_cx = cx;
+			this.min_cy = cy;
+			this.max_cy = cy;
+			changed = true;
+		} else {
+			if (cx < this.min_cx) {
+				this.min_cx = cx;
+				changed = true;
+			}
+			if (cx > this.max_cx) {
+				this.max_cx = cx;
+				changed = true;
+			}
+			if (cy < this.min_cy) {
+				this.min_cy = cy;
+				changed = true;
+			}
+			if (cy > this.max_cy) {
+				this.max_cy = cy;
+				changed = true;
+			}
+		}
+
+		if (changed) {
+			this.rebuildCanvases();
+		}
+	}
+
+	rebuildCanvases() {
+		if (this.min_cx === Infinity) return;
+
+		const cols = this.max_cx - this.min_cx + 1;
+		const rows = this.max_cy - this.min_cy + 1;
+
+		const main_w = cols * 32;
+		const main_h = rows * 32;
+
+		const new_canvases = {};
+
+		for (const type of ['main', 'glow']) {
+			const is_glow = type === 'glow';
+			const w = is_glow ? main_w + 1 : main_w;
+			const h = is_glow ? main_h + 1 : main_h;
+
+			const canvas = document.createElement('canvas');
+			canvas.width = w;
+			canvas.height = h;
+			if (is_glow) canvas.classList.add('glow');
+
+			// Z-index within layer: main = 0, glow = 1
+			canvas.style.zIndex = is_glow ? '1' : '0';
+
+			const leftOffset = this.min_cx * 32;
+			const topOffset = this.min_cy * 32;
+
+			canvas.style.left = `${leftOffset}px`;
+			canvas.style.top = `${topOffset}px`;
+
+			if (is_glow) {
+				canvas.style.transform = `translate(-1px, -1px)`;
+			}
+
+			const ctx = canvas.getContext('2d');
+			new_canvases[type] = { canvas, ctx, w, h };
+			this.appendChild(canvas);
+		}
+
+		// Draw old chunk data onto the new canvas!
+		for (const [key, chunk_layer] of this.chunk_layers) {
+			if (chunk_layer.layer) {
+				if (chunk_layer.layer.main) this.renderChunk(chunk_layer.layer, 'main', new_canvases.main.ctx);
+				if (chunk_layer.layer.glow) this.renderChunk(chunk_layer.layer, 'glow', new_canvases.glow.ctx);
+			}
+		}
+
+		// Remove old canvases
+		if (this.canvases.main) this.canvases.main.canvas.remove();
+		if (this.canvases.glow) this.canvases.glow.canvas.remove();
+
+		this.canvases = new_canvases;
+	}
+
+	renderChunk(layer, type, target_ctx = null) {
+		if (this.min_cx === Infinity) return;
+		if (!target_ctx) target_ctx = this.canvases[type]?.ctx;
+		if (!target_ctx) return;
+
+		const img_data = layer[type].img_data;
+		if (!img_data) return;
+
+		const dx = (layer.chunk_layer.chunk_x - this.min_cx) * 32;
+		const dy = (layer.chunk_layer.chunk_y - this.min_cy) * 32;
+
+		target_ctx.putImageData(img_data, dx, dy);
 	}
 
 	/**
@@ -434,9 +531,11 @@ class EntityLayer extends HTMLElement {
 		const key = `${cx},${cy}`;
 		const chunk_layer = this.chunk_layers.get(key);
 		if (chunk_layer && chunk_layer.layer) {
-			// Remove canvases from DOM
-			chunk_layer?.layer?.main?.canvas?.remove();
-			chunk_layer?.layer?.glow?.canvas?.remove();
+			// Clear the image data in the global canvas
+			const dx = (cx - this.min_cx) * 32;
+			const dy = (cy - this.min_cy) * 32;
+			if (this.canvases.main) this.canvases.main.ctx.clearRect(dx, dy, 32, 32);
+			if (this.canvases.glow) this.canvases.glow.ctx.clearRect(dx, dy, 33, 33);
 		}
 		this.chunk_layers.delete(key);
 	}

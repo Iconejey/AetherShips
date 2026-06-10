@@ -55,16 +55,12 @@ entity-root {
 		& canvas {
 			image-rendering: pixelated;
 			position: absolute;
-			width: 64px;
-			height: 64px;
 			transform-origin: top left;
-			transform: translate(0, 0) scale(0.5);
+			transform: translate(0, 0);
 
 			&.glow {
-				width: 66px;
-				height: 66px;
 				opacity: 0.5;
-				transform: translate(-0.5px, -0.5px) scale(0.5);
+				transform: translate(-1px, -1px);
 				filter: blur(1px);
 			}
 
