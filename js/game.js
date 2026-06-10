@@ -532,6 +532,10 @@ class Game extends HTMLElement {
 		this.planet_cloud_offset_x += delta_seconds * 2;
 		this.planet_cloud_offset_z += delta_seconds * 1;
 
+		this.planet_cloud_timer_ms = (this.planet_cloud_timer_ms || 0) + delta_seconds * 1000;
+		if (this.planet_cloud_timer_ms < 100) return;
+		this.planet_cloud_timer_ms = 0;
+
 		const planets = Array.from(this.$$('entity-root[type="planet"]'));
 		for (const planet of planets) {
 			if (!planet.radius || !planet.seed) continue;

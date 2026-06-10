@@ -177,7 +177,7 @@ entity-root {
 .planet-clouds {
 	position: absolute;
 	image-rendering: pixelated;
-	filter: blur(2px);
+	/* filter: blur(2px); */
 	pointer-events: none;
 	opacity: 1;
 	z-index: 3;

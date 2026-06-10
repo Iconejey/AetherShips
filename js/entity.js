@@ -569,12 +569,10 @@ class Entity extends HTMLElement {
 				const detail_value = cloud_info.detail_noise.get01(local_x * 1.8 + sample_offset_x * 1.5, local_y * 1.8, sample_offset_z * 1.8);
 				const cloud_density = Math.max(0, Math.min(1, (base_value - 0.52) * 2 + (detail_value - 0.58) * 0.6));
 
-				if (cloud_density <= 0.03 || edge_alpha <= 0) {
-					cloud_info.buf[index] = 0;
-					continue;
-				}
+				// Make cloud density have steps
+				let alpha = Math.max(0, Math.min(255, Math.floor(255 * cloud_density * edge_alpha)));
+				alpha = Math.floor(alpha / 48) * 48; // 16 steps of density
 
-				const alpha = Math.max(0, Math.min(255, Math.floor(220 * cloud_density * edge_alpha)));
 				cloud_info.buf[index] = (alpha << 24) | (255 << 16) | (255 << 8) | 255;
 			}
 		}
